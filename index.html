@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12140f">
+<title>TRAINING OPS</title>
+<style>
+/* ============================================================
+   TRAINING OPS — home gym command board
+   ============================================================
+   >>> TO EDIT YOUR PLANS: scroll to the PLAN DATA block in the
+   <script> near the bottom. Everything you'd want to change —
+   exercises, sets, reps, the weekly run table — lives in the
+   ATHLETES object. Nothing else needs touching.
+   ============================================================ */
+
+:root{
+  --bg:#12140f; --panel:#1b1e16; --panel-2:#232720; --line:#333a2c;
+  --line-bright:#4a5539; --ink:#e8ead9; --ink-dim:#9aa383; --ink-faint:#6b7358;
+  --amber:#d8b04a; --amber-dim:#8a7530; --lime:#a3c14a; --run:#5aa9c4;
+  --strength:#c98a4a; --rest:#7d8a6a; --done:#7fae4a; --danger:#c46a5a;
+  --mono:"SFMono-Regular",ui-monospace,"Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  line-height:1.5; min-height:100vh;
+  background-image:
+    linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);
+  background-size:26px 26px;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 64px}
+.mono{font-family:var(--mono)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* ---- header ---- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .dot{width:9px;height:9px;background:var(--amber);border-radius:50%;
+  box-shadow:0 0 10px var(--amber);flex:none}
+.brand h1{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.16em;
+  margin:0;color:var(--ink)}
+.top .clock{font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+  letter-spacing:.1em;text-align:right;text-transform:uppercase}
+
+/* ---- eyebrow labels ---- */
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink-faint);margin:0 0 12px}
+
+/* ---- roster (name select) ---- */
+.roster{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:460px){.roster{grid-template-columns:1fr}}
+.op-card{position:relative;background:var(--panel);border:1px solid var(--line);
+  border-radius:4px;padding:20px 18px;text-align:left;overflow:hidden;
+  transition:border-color .15s,transform .1s}
+.op-card:active{transform:scale(.985)}
+.op-card:hover{border-color:var(--line-bright)}
+.op-card .tag{font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+  color:var(--amber-dim);text-transform:uppercase}
+.op-card .name{font-family:var(--mono);font-size:23px;font-weight:600;
+  letter-spacing:.04em;margin:6px 0 2px;color:var(--ink)}
+.op-card .goal{font-size:13px;color:var(--ink-dim);line-height:1.4}
+.op-card .corner{position:absolute;top:0;right:0;width:34px;height:34px;
+  border-top:2px solid var(--line-bright);border-right:2px solid var(--line-bright);
+  border-top-right-radius:4px;opacity:.5}
+.op-card .enter{margin-top:16px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.14em;color:var(--ink-faint);display:flex;align-items:center;gap:6px}
+.op-card:hover .enter{color:var(--amber)}
+
+/* ---- session header ---- */
+.session-top{margin-bottom:18px}
+.backbtn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  color:var(--ink-dim);text-transform:uppercase;display:inline-flex;
+  align-items:center;gap:7px;padding:8px 0;margin-bottom:14px}
+.backbtn:hover{color:var(--amber)}
+.who{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.who .n{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:.04em}
+.who .div{color:var(--line-bright)}
+.who .g{font-size:13px;color:var(--ink-dim)}
+
+/* ---- week strip ---- */
+.weekstrip{display:flex;align-items:center;gap:10px;margin:18px 0 6px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:4px}
+.weekstrip label{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
+  color:var(--ink-faint);text-transform:uppercase;flex:none}
+.weekstrip select{flex:1;background:var(--panel-2);color:var(--ink);
+  border:1px solid var(--line-bright);border-radius:3px;padding:7px 10px;
+  font-family:var(--mono);font-size:13px;letter-spacing:.03em}
+.weekstrip .phase{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  color:var(--amber);text-transform:uppercase;flex:none}
+
+/* ---- day tabs ---- */
+.days{display:flex;gap:6px;margin:16px 0;overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.day-tab{flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+  padding:9px 13px;border:1px solid var(--line);border-radius:3px;
+  background:var(--panel);color:var(--ink-dim);text-transform:uppercase;
+  display:flex;flex-direction:column;align-items:center;gap:3px;min-width:52px;
+  transition:border-color .12s}
+.day-tab .dtype{width:5px;height:5px;border-radius:50%;background:var(--ink-faint)}
+.day-tab.run .dtype{background:var(--run)}
+.day-tab.strength .dtype{background:var(--strength)}
+.day-tab.rest .dtype{background:var(--rest)}
+.day-tab.mixed .dtype{background:var(--lime)}
+.day-tab.active{border-color:var(--amber);color:var(--ink);background:var(--panel-2)}
+.day-tab.active .dtype{box-shadow:0 0 7px currentColor}
+.day-tab.istoday::after{content:"\2022";font-size:6px;color:var(--amber);
+  position:absolute;margin-top:-3px}
+
+/* ---- session card ---- */
+.session{background:var(--panel);border:1px solid var(--line);border-radius:5px;
+  overflow:hidden}
+.session-head{padding:16px 18px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:12px}
+.session-head .st{display:flex;align-items:center;gap:10px}
+.session-head .badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;padding:4px 9px;border-radius:3px;font-weight:600}
+.badge.run{background:rgba(90,169,196,.16);color:var(--run)}
+.badge.strength{background:rgba(201,138,74,.16);color:var(--strength)}
+.badge.rest{background:rgba(125,138,106,.18);color:var(--rest)}
+.badge.mixed{background:rgba(163,193,74,.16);color:var(--lime)}
+.session-head h2{font-family:var(--mono);font-size:15px;font-weight:600;
+  letter-spacing:.03em;margin:0;color:var(--ink)}
+.session-head .dur{font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+  letter-spacing:.06em;flex:none}
+
+/* progress bar */
+.prog{height:3px;background:var(--panel-2)}
+.prog .fill{height:100%;background:var(--done);width:0;transition:width .25s}
+
+/* ---- run brief ---- */
+.runbrief{padding:18px}
+.runbrief .headline{font-family:var(--mono);font-size:17px;color:var(--run);
+  letter-spacing:.02em;margin:0 0 4px}
+.runbrief .sub{font-size:13.5px;color:var(--ink-dim);margin:0 0 16px}
+.runrows{display:flex;flex-direction:column;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.runrow{display:flex;justify-content:space-between;gap:12px;padding:11px 14px;
+  background:var(--panel);font-size:13.5px}
+.runrow .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+  color:var(--ink-faint);text-transform:uppercase}
+.runrow .v{color:var(--ink);text-align:right}
+
+/* ---- rest brief ---- */
+.restbrief{padding:22px 18px}
+.restbrief .big{font-family:var(--mono);font-size:16px;color:var(--rest);
+  letter-spacing:.05em;margin:0 0 10px}
+.restbrief ul{margin:0;padding-left:18px;color:var(--ink-dim);font-size:13.5px}
+.restbrief li{margin:4px 0}
+
+/* ---- exercise rows ---- */
+.exlist{display:flex;flex-direction:column}
+.ex{border-bottom:1px solid var(--line);padding:14px 18px;transition:background .12s}
+.ex:last-child{border-bottom:none}
+.ex.done{background:rgba(127,174,74,.06)}
+.ex-head{display:flex;align-items:flex-start;gap:13px}
+.check{flex:none;width:26px;height:26px;border:1.5px solid var(--line-bright);
+  border-radius:5px;margin-top:1px;display:flex;align-items:center;justify-content:center;
+  transition:all .14s;background:var(--panel-2)}
+.check svg{width:14px;height:14px;opacity:0;transform:scale(.6);transition:all .14s}
+.ex.done .check{background:var(--done);border-color:var(--done)}
+.ex.done .check svg{opacity:1;transform:scale(1)}
+.ex-body{flex:1;min-width:0}
+.ex-name{font-size:15.5px;font-weight:600;color:var(--ink);letter-spacing:.01em;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ex.done .ex-name{color:var(--ink-dim)}
+.kb-flag{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;
+  background:rgba(216,176,74,.15);color:var(--amber);padding:2px 6px;border-radius:3px;
+  text-transform:uppercase;font-weight:600;flex:none}
+.ex-scheme{font-family:var(--mono);font-size:12px;color:var(--amber);
+  letter-spacing:.05em;margin-top:3px}
+.ex-note{font-size:12.5px;color:var(--ink-faint);margin-top:3px;line-height:1.4}
+.ex-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.demo-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--line-bright);
+  border-radius:3px;padding:7px 11px;display:inline-flex;align-items:center;gap:6px;
+  text-decoration:none;transition:all .12s}
+.demo-btn:hover{color:var(--run);border-color:var(--run)}
+.demo-btn svg{width:11px;height:11px}
+.cue-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--line-bright);
+  border-radius:3px;padding:7px 11px;display:inline-flex;align-items:center;gap:6px}
+.cue-btn:hover{color:var(--lime);border-color:var(--lime)}
+.cues{margin-top:11px;padding:12px 14px;background:var(--panel-2);
+  border:1px solid var(--line);border-left:2px solid var(--lime);border-radius:3px;
+  display:none}
+.cues.open{display:block}
+.cues .ct{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+  color:var(--ink-faint);text-transform:uppercase;margin:0 0 8px}
+.cues ul{margin:0;padding:0;list-style:none}
+.cues li{font-size:13px;color:var(--ink);padding:3px 0 3px 18px;position:relative;
+  line-height:1.45}
+.cues li::before{content:"\203A";position:absolute;left:2px;color:var(--lime);font-weight:600}
+
+/* section subheader inside session */
+.exgroup-label{font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  color:var(--ink-faint);text-transform:uppercase;padding:14px 18px 4px;
+  background:var(--panel);border-bottom:1px solid var(--line)}
+
+/* ---- footer note ---- */
+.footnote{margin-top:18px;padding:14px 16px;background:var(--panel);
+  border:1px solid var(--line);border-left:2px solid var(--amber-dim);border-radius:3px;
+  font-size:12.5px;color:var(--ink-dim);line-height:1.5}
+.footnote b{color:var(--amber);font-weight:600}
+.reset-line{margin-top:18px;text-align:center}
+.reset-btn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  color:var(--ink-faint);text-transform:uppercase;padding:8px 14px;
+  border:1px solid var(--line);border-radius:3px}
+.reset-btn:hover{color:var(--danger);border-color:var(--danger)}
+
+.hidden{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>TRAINING OPS</h1>
+    </div>
+    <div class="clock mono" id="clock">&mdash; &middot; &mdash;</div>
+  </div>
+
+  <div id="roster-view">
+    <p class="eyebrow">Select operator</p>
+    <div class="roster" id="roster"></div>
+    <div class="footnote" style="margin-top:20px">
+      <b>Same gym, two missions.</b> Tap in to pull today's session. Your checkmarks
+      save on this device &mdash; close it, come back mid-workout, everything's where you left it.
+    </div>
+  </div>
+
+  <div id="session-view" class="hidden">
+    <div class="session-top">
+      <button class="backbtn" id="back">&#9664; Roster</button>
+      <div class="who" id="who"></div>
+    </div>
+    <div id="weekstrip-slot"></div>
+    <div class="days" id="days"></div>
+    <div id="session-slot"></div>
+    <div id="foot-slot"></div>
+    <div class="reset-line">
+      <button class="reset-btn" id="reset-day">&#8634; Reset today's checkmarks</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ==================================================================
+   PLAN DATA - EDIT HERE
+   ================================================================== */
+var ATHLETES = {
+
+  anthony: {
+    meta:{ name:"ANTHONY", tag:"Operator 01", goal:"Half marathon \u00b7 13.1 \u00b7 strength base" },
+    mode:"week",
+    weeks:12,
+    runTable:{
+      1:{tue:"6\u00d7 (1 min hard / 2 min easy)", thu:"2\u20133 mi easy", sat:"4 mi", phase:""},
+      2:{tue:"6\u00d7 (1 min / 2 min)", thu:"3 mi easy", sat:"5 mi", phase:""},
+      3:{tue:"8\u00d7 (1 min / 90s)", thu:"3 mi w/ 1 mi tempo", sat:"6 mi", phase:""},
+      4:{tue:"6\u00d7 (1 min / 2 min)", thu:"2 mi easy", sat:"5 mi", phase:"Down week"},
+      5:{tue:"5\u00d7 (2 min hard / 2 min easy)", thu:"3 mi w/ 1.5 mi tempo", sat:"7 mi", phase:""},
+      6:{tue:"5\u00d7 (2 min / 2 min)", thu:"4 mi easy", sat:"8 mi", phase:""},
+      7:{tue:"6\u00d7 (2 min / 90s)", thu:"4 mi w/ 2 mi tempo", sat:"9 mi", phase:""},
+      8:{tue:"4\u00d7 (2 min / 2 min)", thu:"3 mi easy", sat:"7 mi", phase:"Down week"},
+      9:{tue:"4\u00d7 (3 min hard / 2 min easy)", thu:"4 mi w/ 2 mi tempo", sat:"10 mi", phase:""},
+      10:{tue:"4\u00d7 (3 min / 2 min)", thu:"5 mi easy", sat:"11 mi", phase:""},
+      11:{tue:"3\u00d7 (3 min / 2 min)", thu:"3 mi easy", sat:"12 mi", phase:"Taper"},
+      12:{tue:"Strides \u00b7 4\u00d7 (1 min / 2 min)", thu:"2 mi easy", sat:"RACE \u2014 13.1", phase:"Race week"}
+    },
+    days:[
+      { key:"mon", label:"Mon", type:"strength", title:"Lower + Core", dur:"60 min",
+        groups:[
+          { label:"Warm-up \u00b7 8 min", items:[
+            { name:"Treadmill walk", scheme:"3 min", note:"Then leg swings, hip openers", cues:["Ease in, get blood moving","Loosen hips before you load them"] }
+          ]},
+          { label:"Strength", items:[
+            { name:"Goblet Squat", scheme:"4 \u00d7 8", kb:true, note:"Use the 53 lb bell when it lands; sub 35 until then" },
+            { name:"Single-Leg Romanian Deadlift", scheme:"3 \u00d7 8 / side", note:"35 lb KB" },
+            { name:"KB Swings", scheme:"4 \u00d7 12", kb:true, note:"35 lb now, 53 lb when ready" },
+            { name:"ATG Split Squat", scheme:"3 \u00d7 6 / side", note:"Bodyweight \u2192 10\u201325 lb" },
+            { name:"Slant Board Squat", scheme:"3 \u00d7 10" },
+            { name:"Banded Lateral Walk", scheme:"3 \u00d7 12 steps", note:"Booty band, each direction" }
+          ]},
+          { label:"Core \u00b7 circuit \u00d72", items:[
+            { name:"Ab Wheel Rollout", scheme:"\u00d7 8" },
+            { name:"Suitcase Carry", scheme:"40 steps / side", note:"35 lb" },
+            { name:"Side Plank", scheme:"30s / side" }
+          ]}
+        ]},
+      { key:"tue", label:"Tue", type:"run", title:"Speed Intervals", dur:"45\u201355 min",
+        run:{ kind:"speed", warm:"10 min easy jog + 4\u00d7 20s strides",
+              cool:"5\u201310 min easy jog/walk, calf stretch + downward dog" } },
+      { key:"wed", label:"Wed", type:"strength", title:"Upper + Core", dur:"60 min",
+        groups:[
+          { label:"Warm-up \u00b7 8 min", items:[
+            { name:"Band pull-aparts", scheme:"\u00d7 20", note:"Then scap pull-ups \u00d7 8, thoracic rotation", cues:["Squeeze shoulder blades","Prime the pulling muscles"] }
+          ]},
+          { label:"Strength", items:[
+            { name:"Pull-ups", scheme:"4 \u00d7 max", note:"Band-assist if needed; add 10 lb at 4\u00d710" },
+            { name:"Push-ups", scheme:"4 \u00d7 15\u201320", note:"Elevate feet or med ball to progress" },
+            { name:"Single-Arm KB Press", scheme:"3 \u00d7 8 / side", note:"35 lb" },
+            { name:"Bent-Over KB Row", scheme:"3 \u00d7 10 / side", note:"35 lb" },
+            { name:"Band Face Pulls", scheme:"3 \u00d7 15" },
+            { name:"Pike Push-ups", scheme:"3 \u00d7 8\u201310" },
+            { name:"Renegade Rows", scheme:"3 \u00d7 8 / side", note:"25\u201335 lb KBs" }
+          ]},
+          { label:"Core \u00b7 circuit \u00d72", items:[
+            { name:"Ab Wheel Rollout", scheme:"\u00d7 8" },
+            { name:"Plank Shoulder Taps", scheme:"\u00d7 20" },
+            { name:"Med Ball Russian Twist", scheme:"\u00d7 20" }
+          ]}
+        ]},
+      { key:"thu", label:"Thu", type:"run", title:"Tempo / Easy Run", dur:"45\u201360 min",
+        run:{ kind:"tempo", warm:"5\u201310 min easy jog",
+              cool:"Walk 5 min, seated hamstring stretch, hip openers" } },
+      { key:"fri", label:"Fri", type:"strength", title:"Knees Over Toes + Hips", dur:"45\u201360 min",
+        groups:[
+          { label:"Runner's insurance policy", items:[
+            { name:"Tibialis Raise (wall)", scheme:"3 \u00d7 20" },
+            { name:"Slant Board FHL Calf Raise", scheme:"3 \u00d7 25" },
+            { name:"KOT Calf Raise", scheme:"3 \u00d7 25", note:"Full ankle bend \u2192 single leg" },
+            { name:"ATG Split Squat", scheme:"3 \u00d7 8 / side", note:"Light" },
+            { name:"Slant Board Reverse Step-Down", scheme:"3 \u00d7 10 / side" },
+            { name:"Banded Hip Flexion", scheme:"3 \u00d7 12 / side" },
+            { name:"Standing Anti-Rotation Press", scheme:"3 \u00d7 12 / side", note:"Anchored band" },
+            { name:"Clamshell + Donkey Kicks", scheme:"2 \u00d7 15 each", note:"Booty band" },
+            { name:"Bird Dog", scheme:"2 \u00d7 10 / side" }
+          ]}
+        ]},
+      { key:"sat", label:"Sat", type:"run", title:"Long Run", dur:"the 2-hour day",
+        run:{ kind:"long", warm:"5 min walk + dynamic leg swings",
+              cool:"10 min walk, full stretch \u2014 quads, hamstrings, calves, hips",
+              extra:"Week 7+: practice race fueling \u2014 water + carbs every 40\u201345 min" } },
+      { key:"sun", label:"Sun", type:"rest", title:"Rest / Active Recovery",
+        rest:["Treadmill walk 20\u201330 min, easy",
+              "Pick 3\u20134 stretches: hamstrings, hip openers, doorway, downward dog, cat-cow",
+              "Optional: foam-roll or lacrosse-ball calves and quads"] }
+    ],
+    foot:"<b>Runs beat lifts.</b> If a day gets crunched, do the run and cut strength to the first 3 exercises. Down weeks (4 &amp; 8) are mandatory \u2014 skipping them is how runners get hurt in week 9."
+  },
+
+  her: {
+    meta:{ name:"OPERATOR", tag:"Operator 02", goal:"5K strong \u00b7 12 mo to top 10" },
+    mode:"phase",
+    phases:[
+      { key:"p1", label:"Phase 1", range:"Weeks 1\u20136", name:"Build the habit" },
+      { key:"p2", label:"Phase 2", range:"Months 2\u20135", name:"Run continuously" },
+      { key:"p3", label:"Phase 3", range:"Months 6\u20139", name:"Become a runner" },
+      { key:"p4", label:"Phase 4", range:"Months 10\u201312", name:"Get fast" }
+    ],
+    phaseDays:{
+      p1:[
+        { key:"mon", label:"Mon", type:"run", title:"Walk / Run", dur:"20\u201325 min",
+          run:{ kind:"walkrun", warm:"Stroller totally fine", cool:"Easy cooldown walk",
+            extra:"Wk 1\u20132: walk 3 / jog 1 \u00b7 Wk 3+: walk 2 / jog 2 \u00b7 Wk 5+: walk 1 / jog 3" } },
+        { key:"tue", label:"Tue", type:"strength", title:"Booty Bands + Core", dur:"20 min",
+          groups:[{ label:"2 rounds \u00b7 12 reps each", items:[
+            { name:"Squat Side Step", scheme:"\u00d7 12", note:"Booty band" },
+            { name:"Glute Bridge Spread", scheme:"\u00d7 12" },
+            { name:"Donkey Kicks", scheme:"\u00d7 12 / side" },
+            { name:"Kickbacks", scheme:"\u00d7 12 / side" },
+            { name:"Lying Leg Abduction", scheme:"\u00d7 12" },
+            { name:"Bird Dog", scheme:"\u00d7 10 / side" },
+            { name:"Dead Bug", scheme:"\u00d7 10 / side" }
+          ]}]},
+        { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
+          rest:["Full rest, or an easy stroller walk","Nothing to prove today"] },
+        { key:"thu", label:"Thu", type:"run", title:"Walk / Run", dur:"20\u201325 min",
+          run:{ kind:"walkrun", warm:"Same as Monday", cool:"Easy walk to finish",
+            extra:"Match Monday's walk/jog ratio for the week" } },
+        { key:"fri", label:"Fri", type:"strength", title:"Simple Strength", dur:"20\u201325 min",
+          groups:[{ label:"2\u20133 rounds", items:[
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"10\u201325 lb KB", kb:true },
+            { name:"Glute Bridge", scheme:"\u00d7 12", note:"Band above knees" },
+            { name:"Kneeling Push-up", scheme:"\u00d7 8\u201310" },
+            { name:"Bent-Over Band Row", scheme:"\u00d7 12" },
+            { name:"Side Plank", scheme:"20s / side" }
+          ]}]},
+        { key:"sat", label:"Sat/Sun", type:"mixed", title:"One Session", dur:"30 min",
+          groups:[{ label:"Pick one \u2014 other day fully off", items:[
+            { name:"30 min walk / run", scheme:"easy", cues:["Conversational pace","Stroller counts"] },
+            { name:"\u2014 or repeat Tuesday's band circuit", scheme:"2 rounds" }
+          ]}]}
+      ],
+      p2:[
+        { key:"mon", label:"Mon", type:"run", title:"Run", dur:"~30 min",
+          run:{ kind:"walkrun", warm:"Light warm-up walk", cool:"Easy walk down",
+            extra:"Jog 5 min / walk 1 min \u00d73\u20134 \u00b7 stretch the jog blocks weekly until walking disappears" } },
+        { key:"tue", label:"Tue", type:"strength", title:"Booty Bands + Core", dur:"25 min",
+          groups:[{ label:"3 rounds of the Phase 1 circuit, plus:", items:[
+            { name:"Squat Side Step", scheme:"\u00d7 12", note:"Booty band" },
+            { name:"Glute Bridge Spread", scheme:"\u00d7 12" },
+            { name:"Donkey Kicks", scheme:"\u00d7 12 / side" },
+            { name:"Kickbacks", scheme:"\u00d7 12 / side" },
+            { name:"Isolated Hip Thrust", scheme:"\u00d7 12", note:"Band" },
+            { name:"Double Pulse Squat", scheme:"\u00d7 10" },
+            { name:"Ab Wheel from knees", scheme:"\u00d7 5\u20138" }
+          ]}]},
+        { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
+          rest:["Rest or easy stroller walk"] },
+        { key:"thu", label:"Thu", type:"run", title:"Run", dur:"~30 min",
+          run:{ kind:"walkrun", warm:"Same as Monday", cool:"Easy walk",
+            extra:"Match Monday's jog/walk progression" } },
+        { key:"fri", label:"Fri", type:"strength", title:"Strength", dur:"30 min",
+          groups:[{ label:"3 rounds", items:[
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb", kb:true },
+            { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
+            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB", kb:true },
+            { name:"Push-up", scheme:"\u00d7 8\u201310", note:"Full or kneeling" },
+            { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" },
+            { name:"Suitcase Carry", scheme:"30 steps / side", note:"25\u201335 lb" }
+          ]}]},
+        { key:"sat", label:"Sat", type:"run", title:"Longer Easy Run/Walk", dur:"35\u201345 min",
+          run:{ kind:"long", warm:"Easy start", cool:"Walk it in",
+            extra:"Conversational the whole way" } }
+      ],
+      p3:[
+        { key:"mon", label:"Mon", type:"run", title:"Easy Run", dur:"2\u20133 mi",
+          run:{ kind:"walkrun", warm:"5 min easy", cool:"Walk 5 min", extra:"Conversational pace" } },
+        { key:"tue", label:"Tue", type:"strength", title:"Strength + Bands", dur:"~35 min",
+          groups:[{ label:"2 rounds band circuit + 3 rounds lifts", items:[
+            { name:"Booty band circuit", scheme:"2 rounds", note:"Phase 1 movements" },
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb", kb:true },
+            { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
+            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB", kb:true },
+            { name:"Push-up", scheme:"\u00d7 8\u201310" },
+            { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" }
+          ]}]},
+        { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
+          rest:["Rest or easy stroller walk"] },
+        { key:"thu", label:"Thu", type:"run", title:"Intervals", dur:"~30 min",
+          run:{ kind:"speed", warm:"5\u201310 min easy jog", cool:"Easy jog / walk down",
+            extra:"6\u00d7 (1 min faster / 2 min easy jog)" } },
+        { key:"fri", label:"Fri", type:"strength", title:"Strength", dur:"30 min",
+          groups:[{ label:"3 rounds \u00b7 add weight/reps when easy", items:[
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb", kb:true },
+            { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
+            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB", kb:true },
+            { name:"Push-up", scheme:"\u00d7 8\u201310" },
+            { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" },
+            { name:"Suitcase Carry", scheme:"30 steps / side", note:"25\u201335 lb" }
+          ]}]},
+        { key:"sat", label:"Sat", type:"run", title:"Long Run", dur:"build 3 \u2192 5 mi",
+          run:{ kind:"long", warm:"Easy start", cool:"Walk + stretch",
+            extra:"Month 7\u20138: enter a low-key local 5K. Note your time + the 10th-place woman's time \u2014 that's the gap." } },
+        { key:"sun", label:"Sun", type:"rest", title:"Off", rest:["Full rest day"] }
+      ],
+      p4:[
+        { key:"mon", label:"Mon", type:"run", title:"Easy Run", dur:"3 mi",
+          run:{ kind:"walkrun", warm:"5 min easy", cool:"Walk down", extra:"Conversational" } },
+        { key:"tue", label:"Tue", type:"run", title:"Speed", dur:"~35 min",
+          run:{ kind:"speed", warm:"10 min easy + strides", cool:"Easy jog down",
+            extra:"6\u20138\u00d7 400m hard (~90s) w/ 2 min recovery \u2014 OR 5\u00d7 (2 min hard / 2 min easy)" } },
+        { key:"wed", label:"Wed", type:"strength", title:"Strength + Bands", dur:"~30 min",
+          groups:[{ label:"Maintain \u2014 don't chase progress, running's the priority", items:[
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"Keep it moderate", kb:true },
+            { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
+            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB", kb:true },
+            { name:"Push-up", scheme:"\u00d7 8\u201310" },
+            { name:"Booty band circuit", scheme:"2 rounds" }
+          ]}]},
+        { key:"thu", label:"Thu", type:"run", title:"Tempo", dur:"~4 mi",
+          run:{ kind:"tempo", warm:"Easy mile", cool:"Easy mile down",
+            extra:"2 mi at comfortably hard, easy mile before + after" } },
+        { key:"fri", label:"Fri", type:"rest", title:"Rest", rest:["Full rest \u2014 you've earned the speed"] },
+        { key:"sat", label:"Sat", type:"run", title:"Long Run", dur:"4\u20135 mi easy",
+          run:{ kind:"long", warm:"Easy start", cool:"Walk + stretch", extra:"Keep it easy" } },
+        { key:"sun", label:"Sun", type:"rest", title:"Off", rest:["Full rest day"] }
+      ]
+    },
+    foot:"<b>The 10-minute rule.</b> On any day you don't feel like it, do just 10 minutes \u2014 you're allowed to stop after, and it still counts as a \u2705. Never miss twice. Baby counts as equipment."
+  }
+};
+
+var CUE_LIB = {
+  "goblet squat":["Bell tight to your chest, elbows in","Sit down between your knees","Knees track over toes","Drive up through mid-foot"],
+  "single-leg romanian deadlift":["Hinge at the hip, soft standing knee","Back stays flat, hips square","Reach the bell toward the floor","Squeeze the glute to stand tall"],
+  "romanian deadlift":["Soft knees, push hips back","Bell drags down the thighs","Feel the hamstring stretch","Stand tall, squeeze glutes"],
+  "kb swing":["Hinge, don't squat the swing","Snap the hips forward hard","Arms are just ropes","Bell floats to chest height"],
+  "swing":["Hinge, don't squat","Snap hips to drive the bell","Let the arms stay loose","Chest height, not overhead"],
+  "atg split squat":["Front foot flat, drop straight down","Let the back knee kiss the floor","Keep the torso tall","Push through the front heel"],
+  "split squat":["Drop straight down, tall torso","Back knee toward the floor","Front knee over the ankle","Drive up through the front heel"],
+  "slant board squat":["Heels elevated, chest up","Sink deep, knees forward","Control the descent","Stand through mid-foot"],
+  "banded lateral walk":["Band tension the whole time","Small controlled side steps","Stay low in a quarter squat","Don't let knees cave in"],
+  "ab wheel rollout":["Brace your abs before you roll","Roll only as far as you control","Don't let your hips sag","Pull back with your core, not arms"],
+  "suitcase carry":["Stand tall, don't lean","Brace the opposite side","Slow controlled steps","Grip hard, ribs down"],
+  "side plank":["Elbow under shoulder","Stack the hips, lift high","Straight line head to heel","Don't let the hip drop"],
+  "pull-up":["Start from a dead hang","Pull elbows down to your sides","Chin clears the bar","Lower all the way, controlled"],
+  "push-up":["Hands under shoulders","Body in one straight line","Lower chest to the floor","Push all the way up"],
+  "kneeling push-up":["Knees down, straight line knee to head","Hands under shoulders","Lower chest with control","Full press to lockout"],
+  "single-arm kb press":["Brace the core, ribs down","Press straight overhead","Don't lean away from the bell","Lower to the shoulder controlled"],
+  "bent-over kb row":["Hinge forward, flat back","Pull the bell to your hip","Squeeze the shoulder blade","Lower with control"],
+  "bent-over band row":["Hinge forward, flat back","Pull the band to your ribs","Squeeze shoulder blades","Control the return"],
+  "kb row":["Flat back, hinge at hips","Row to the hip, elbow tight","Squeeze at the top","Lower slow, no swing"],
+  "band face pull":["Pull toward your forehead","Elbows high and wide","Squeeze the rear delts","Slow return, stay tall"],
+  "pike push-up":["Hips high, head between hands","Lower the crown toward the floor","Elbows track back","Press back up to the pike"],
+  "renegade row":["Wide feet for a stable base","Row one bell, hips stay square","Don't rotate or pike","Set it down soft, alternate"],
+  "plank shoulder tap":["Wide feet, locked plank","Tap opposite shoulder","Fight the hip rotation","Slow and controlled"],
+  "med ball russian twist":["Sit tall, lean back slightly","Rotate from the torso","Tap the ball side to side","Keep the chest open"],
+  "tibialis raise":["Heels planted, back to the wall","Pull the toes up toward shins","Squeeze the front of the shin","Lower slow and controlled"],
+  "slant board fhl calf raise":["Full stretch at the bottom","Rise onto the balls of your feet","Pause at the top","Slow controlled descent"],
+  "kot calf raise":["Full ankle bend at the bottom","Rise all the way up","Pause and squeeze","Lower slow through full range"],
+  "calf raise":["Full stretch at the bottom","Rise onto the balls of the feet","Pause and squeeze at the top","Slow descent"],
+  "slant board reverse step-down":["Stand on the elevated leg","Lower the other heel slowly","Keep the knee tracking forward","Drive back up controlled"],
+  "banded hip flexion":["Stand tall, band on the foot","Drive the knee up against tension","Keep the standing leg strong","Lower with control"],
+  "standing anti-rotation press":["Band anchored to the side","Press straight out from the chest","Resist the pull to rotate","Return slow, stay square"],
+  "clamshell":["Lie on your side, knees bent","Open the top knee against the band","Keep the hips stacked","Lower with control"],
+  "donkey kick":["On all fours, band in place","Drive the heel toward the ceiling","Squeeze the glute at the top","Keep the back flat"],
+  "bird dog":["Opposite arm and leg extend","Keep the hips level","Reach long, don't arch","Return under control"],
+  "glute bridge":["Feet flat, drive through heels","Squeeze glutes at the top","Ribs down, don't overarch","Lower with control"],
+  "single-leg glute bridge":["One foot planted, drive through the heel","Lift the hips level","Squeeze the working glute","Lower slow, stay square"],
+  "isolated hip thrust":["Shoulders elevated, band on knees","Drive hips up, push knees out","Squeeze hard at the top","Lower controlled"],
+  "squat side step":["Stay low in a squat","Step wide against the band","Keep tension, knees out","Controlled steps both ways"],
+  "double pulse squat":["Sink to depth","Two small pulses at the bottom","Chest up throughout","Drive up on the second pulse"],
+  "dead bug":["Lower back pressed to the floor","Opposite arm and leg extend","Move slow, brace the core","Don't let the back arch"],
+  "kickback":["On all fours, flat back","Extend the leg straight back","Squeeze the glute","Control the return"],
+  "lying leg abduction":["Lie on your side, legs stacked","Lift the top leg up","Keep the toe pointed forward","Lower slow, controlled"],
+  "glute bridge spread":["Bridge up, feet flat","Spread the knees against the band","Hold the top, squeeze","Lower under control"]
+};
+var DEFAULT_CUES=["Warm up before your working sets","Control the weight through full range","Keep your core braced","Stop a rep or two before failure"];
+
+function autoCues(name){
+  var n=name.toLowerCase();
+  var keys=Object.keys(CUE_LIB).sort(function(a,b){return b.length-a.length;});
+  for(var i=0;i<keys.length;i++){ if(n.indexOf(keys[i])!==-1) return CUE_LIB[keys[i]]; }
+  return DEFAULT_CUES;
+}
+
+var CHECK = document.createElement('template');
+CHECK.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#12140f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+var store = {
+  key:function(a,ctx,day){ return "trainops:"+a+":"+ctx+":"+day; },
+  get:function(k){ try{ return JSON.parse(localStorage.getItem(k))||{}; }catch(e){ return {}; } },
+  set:function(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
+  del:function(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+var current = { athlete:null, ctx:null, day:null };
+
+function el(tag,cls,html){ var e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function demoURL(name){ return "https://www.youtube.com/results?search_query="+encodeURIComponent(name+" proper form"); }
+function todayKey(){ return ["sun","mon","tue","wed","thu","fri","sat"][new Date().getDay()]; }
+
+function renderRoster(){
+  var r=document.getElementById('roster'); r.innerHTML='';
+  Object.keys(ATHLETES).forEach(function(id){
+    var a=ATHLETES[id];
+    var card=el('button','op-card');
+    card.innerHTML=
+      '<span class="corner"></span>'+
+      '<div class="tag mono">'+esc(a.meta.tag)+'</div>'+
+      '<div class="name">'+esc(a.meta.name)+'</div>'+
+      '<div class="goal">'+esc(a.meta.goal)+'</div>'+
+      '<div class="enter mono">ENTER \u25b8</div>';
+    card.addEventListener('click',function(){ openAthlete(id); });
+    r.appendChild(card);
+  });
+}
+
+function openAthlete(id){
+  current.athlete=id;
+  var a=ATHLETES[id];
+  document.getElementById('roster-view').classList.add('hidden');
+  document.getElementById('session-view').classList.remove('hidden');
+  window.scrollTo(0,0);
+
+  var who=document.getElementById('who');
+  who.innerHTML='<span class="n mono">'+esc(a.meta.name)+'</span>'+
+    '<span class="div">/</span><span class="g">'+esc(a.meta.goal)+'</span>';
+
+  var slot=document.getElementById('weekstrip-slot'); slot.innerHTML='';
+  if(a.mode==="week"){
+    var saved=parseInt(localStorage.getItem('trainops:'+id+':week'))||1;
+    current.ctx="w"+saved;
+    var strip=el('div','weekstrip');
+    var sel='<label>WEEK</label><select id="ctx-sel">';
+    for(var w=1;w<=a.weeks;w++){
+      var ph=a.runTable[w].phase;
+      sel+='<option value="'+w+'"'+(w===saved?' selected':'')+'>Week '+w+(ph?' \u2014 '+ph:'')+'</option>';
+    }
+    sel+='</select>';
+    var phLabel=a.runTable[saved].phase;
+    sel+='<span class="phase" id="ph-label">'+(phLabel||'')+'</span>';
+    strip.innerHTML=sel;
+    slot.appendChild(strip);
+    document.getElementById('ctx-sel').addEventListener('change',function(){
+      var wk=parseInt(this.value);
+      localStorage.setItem('trainops:'+id+':week',wk);
+      current.ctx="w"+wk;
+      document.getElementById('ph-label').textContent=a.runTable[wk].phase||'';
+      renderDay();
+    });
+  } else {
+    var savedP=localStorage.getItem('trainops:'+id+':phase')||a.phases[0].key;
+    current.ctx=savedP;
+    var strip2=el('div','weekstrip');
+    var sel2='<label>PHASE</label><select id="ctx-sel">';
+    a.phases.forEach(function(p){
+      sel2+='<option value="'+p.key+'"'+(p.key===savedP?' selected':'')+'>'+esc(p.label+' \u00b7 '+p.name)+'</option>';
+    });
+    sel2+='</select>';
+    var curP=a.phases.filter(function(p){return p.key===savedP;})[0];
+    sel2+='<span class="phase" id="ph-label">'+esc(curP.range)+'</span>';
+    strip2.innerHTML=sel2;
+    slot.appendChild(strip2);
+    document.getElementById('ctx-sel').addEventListener('change',function(){
+      var pk=this.value;
+      localStorage.setItem('trainops:'+id+':phase',pk);
+      current.ctx=pk;
+      var cp=a.phases.filter(function(p){return p.key===pk;})[0];
+      document.getElementById('ph-label').textContent=cp.range;
+      current.day=null;
+      renderTabs(); renderDay();
+    });
+  }
+
+  current.day=null;
+  renderTabs();
+  renderDay();
+  document.getElementById('foot-slot').innerHTML='<div class="footnote">'+a.foot+'</div>';
+}
+
+function activeDays(){
+  var a=ATHLETES[current.athlete];
+  if(a.mode==="week") return a.days;
+  return a.phaseDays[current.ctx];
+}
+
+function renderTabs(){
+  var days=activeDays();
+  var box=document.getElementById('days'); box.innerHTML='';
+  var tk=todayKey();
+  if(!current.day){
+    var match=days.filter(function(d){return d.key===tk;})[0];
+    current.day = match ? match.key : days[0].key;
+  }
+  days.forEach(function(d){
+    var t=el('button','day-tab '+d.type+(d.key===current.day?' active':''));
+    t.style.position='relative';
+    if(d.key===tk) t.classList.add('istoday');
+    t.innerHTML='<span class="dtype"></span>'+esc(d.label);
+    t.addEventListener('click',function(){ current.day=d.key; renderTabs(); renderDay(); window.scrollTo({top:0,behavior:'smooth'}); });
+    box.appendChild(t);
+  });
+}
+
+function renderDay(){
+  var a=ATHLETES[current.athlete];
+  var days=activeDays();
+  var d=days.filter(function(x){return x.key===current.day;})[0];
+  if(!d) d=days[0];
+  var slot=document.getElementById('session-slot'); slot.innerHTML='';
+
+  var sess=el('div','session');
+  var head=el('div','session-head');
+  head.innerHTML=
+    '<div class="st"><span class="badge '+d.type+'">'+d.type+'</span>'+
+    '<h2>'+esc(d.title)+'</h2></div>'+
+    (d.dur?'<span class="dur mono">'+esc(d.dur)+'</span>':'');
+  sess.appendChild(head);
+
+  var progFill=null;
+  if(d.groups){
+    var progWrap=el('div','prog'); progFill=el('div','fill'); progWrap.appendChild(progFill);
+    sess.appendChild(progWrap);
+  }
+
+  if(d.type==="run"){
+    sess.appendChild(runBrief(d,a));
+  } else if(d.type==="rest"){
+    var rb=el('div','restbrief');
+    rb.innerHTML='<div class="big mono">STAND DOWN</div><ul>'+
+      d.rest.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+    sess.appendChild(rb);
+  }
+
+  if(d.groups){
+    var storeKey=store.key(current.athlete,current.ctx,d.key);
+    var state=store.get(storeKey);
+    var list=el('div','exlist');
+    var total=0;
+    d.groups.forEach(function(g,gi){
+      if(g.label){ list.appendChild(el('div','exgroup-label',esc(g.label))); }
+      g.items.forEach(function(ex,xi){
+        total++;
+        var id=gi+"_"+xi;
+        var isDone=!!state[id];
+        var row=el('div','ex'+(isDone?' done':''));
+        var cues=ex.cues||autoCues(ex.name);
+        var actions='<a class="demo-btn" href="'+demoURL(ex.name)+'" target="_blank" rel="noopener">'+
+          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>DEMO</a>'+
+          '<button class="cue-btn" data-cue="'+id+'">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/><circle cx="12" cy="12" r="4"/></svg>CUES</button>';
+        row.innerHTML=
+          '<div class="ex-head">'+
+            '<button class="check" data-check="'+id+'" aria-label="Mark done">'+CHECK.innerHTML+'</button>'+
+            '<div class="ex-body">'+
+              '<div class="ex-name">'+esc(ex.name)+(ex.kb?'<span class="kb-flag">53KB</span>':'')+'</div>'+
+              '<div class="ex-scheme mono">'+esc(ex.scheme)+'</div>'+
+              (ex.note?'<div class="ex-note">'+esc(ex.note)+'</div>':'')+
+              '<div class="ex-actions">'+actions+'</div>'+
+              '<div class="cues" id="cues_'+id+'"><div class="ct">Form check</div><ul>'+
+                cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
+            '</div>'+
+          '</div>';
+        list.appendChild(row);
+        row.querySelector('[data-check]').addEventListener('click',function(){
+          state[id]=!state[id];
+          store.set(storeKey,state);
+          row.classList.toggle('done',state[id]);
+          updateProg();
+        });
+        row.querySelector('[data-cue]').addEventListener('click',function(){
+          document.getElementById('cues_'+id).classList.toggle('open');
+        });
+      });
+    });
+    sess.appendChild(list);
+    function updateProg(){
+      var s=store.get(storeKey); var c=0;
+      Object.keys(s).forEach(function(k){ if(s[k]) c++; });
+      if(progFill) progFill.style.width=(total?(c/total*100):0)+'%';
+    }
+    slot.appendChild(sess);
+    updateProg();
+  } else {
+    slot.appendChild(sess);
+  }
+}
+
+function runBrief(d,a){
+  var wrap=el('div','runbrief');
+  var r=d.run;
+  var headline='', sub='';
+  if(a.mode==="week"){
+    var wk=parseInt(current.ctx.slice(1));
+    var row=a.runTable[wk];
+    if(d.key==="tue"){ headline=row.tue; sub="Speed session \u00b7 week "+wk; }
+    else if(d.key==="thu"){ headline=row.thu; sub="Tempo / easy \u00b7 week "+wk; }
+    else if(d.key==="sat"){ headline=row.sat; sub="Long run \u00b7 week "+wk; }
+  } else {
+    headline = d.title;
+  }
+  wrap.innerHTML='<div class="headline mono">'+esc(headline||d.title)+'</div>'+
+    (sub?'<div class="sub">'+esc(sub)+'</div>':'')+
+    '<div class="runrows">'+
+      (r.extra?'<div class="runrow"><span class="k">Session</span><span class="v">'+esc(r.extra)+'</span></div>':'')+
+      '<div class="runrow"><span class="k">Warm-up</span><span class="v">'+esc(r.warm)+'</span></div>'+
+      '<div class="runrow"><span class="k">Cool-down</span><span class="v">'+esc(r.cool)+'</span></div>'+
+    '</div>';
+  return wrap;
+}
+
+document.getElementById('back').addEventListener('click',function(){
+  document.getElementById('session-view').classList.add('hidden');
+  document.getElementById('roster-view').classList.remove('hidden');
+  window.scrollTo(0,0);
+});
+document.getElementById('reset-day').addEventListener('click',function(){
+  var k=store.key(current.athlete,current.ctx,current.day);
+  store.del(k);
+  renderDay();
+});
+
+function tick(){
+  var d=new Date();
+  var days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
+  var h=d.getHours(), m=d.getMinutes();
+  var hh=((h%12)||12);
+  var mm=(m<10?"0":"")+m;
+  var ap=h<12?"AM":"PM";
+  document.getElementById('clock').textContent=days[d.getDay()]+" \u00b7 "+hh+":"+mm+" "+ap;
+}
+tick(); setInterval(tick,10000);
+
+renderRoster();
+</script>
+</body>
+</html>
