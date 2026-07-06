@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#12140f">
+<meta name="theme-color" content="#f6f5f1">
 <title>TRAINING OPS</title>
 <style>
 /* ============================================================
@@ -15,11 +15,13 @@
    ATHLETES object. Nothing else needs touching.
    ============================================================ */
 
+/* Neutral shell (roster / default) */
 :root{
-  --bg:#12140f; --panel:#1b1e16; --panel-2:#232720; --line:#333a2c;
-  --line-bright:#4a5539; --ink:#e8ead9; --ink-dim:#9aa383; --ink-faint:#6b7358;
-  --amber:#d8b04a; --amber-dim:#8a7530; --lime:#a3c14a; --run:#5aa9c4;
-  --strength:#c98a4a; --rest:#7d8a6a; --done:#7fae4a; --danger:#c46a5a;
+  --bg:#f6f5f1; --panel:#ffffff; --panel-2:#efede7; --line:#e4e1d8;
+  --line-bright:#cec9ba; --ink:#34322b; --ink-dim:#7c7768; --ink-faint:#a5a091;
+  --amber:#9c7c3c; --amber-dim:#b09a6a; --lime:#7c9a4a; --run:#4f8ba3;
+  --strength:#b07a4a; --rest:#8a8a76; --done:#6f9e4a; --danger:#c05a4a;
+  --serif:Georgia,"Times New Roman",serif;
   --mono:"SFMono-Regular",ui-monospace,"Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
@@ -28,11 +30,25 @@ html,body{margin:0;padding:0}
 body{
   background:var(--bg); color:var(--ink); font-family:var(--sans);
   line-height:1.5; min-height:100vh;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+/* Tactical theme — Anthony's session */
+body.theme-tactical{
+  --bg:#12140f; --panel:#1b1e16; --panel-2:#232720; --line:#333a2c;
+  --line-bright:#4a5539; --ink:#e8ead9; --ink-dim:#9aa383; --ink-faint:#6b7358;
+  --amber:#d8b04a; --amber-dim:#8a7530; --lime:#a3c14a; --run:#5aa9c4;
+  --strength:#c98a4a; --rest:#7d8a6a; --done:#7fae4a; --danger:#c46a5a;
   background-image:
     linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),
     linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);
   background-size:26px 26px;
-  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+/* Warm theme — Celina's session (Claude-app cream + terracotta) */
+body.theme-celina{
+  --bg:#faf5ef; --panel:#fffdf9; --panel-2:#f6ece1; --line:#eddfd1;
+  --line-bright:#dcc4ae; --ink:#3d3929; --ink-dim:#8a7f6d; --ink-faint:#b3a692;
+  --amber:#c96442; --amber-dim:#da7756; --lime:#8fac6a; --run:#b56a86;
+  --strength:#c98a4a; --rest:#a89a83; --done:#8fac6a; --danger:#bf4d32;
 }
 .wrap{max-width:640px;margin:0 auto;padding:20px 16px 64px}
 .mono{font-family:var(--mono)}
@@ -72,6 +88,27 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .op-card .enter{margin-top:16px;font-family:var(--mono);font-size:11px;
   letter-spacing:.14em;color:var(--ink-faint);display:flex;align-items:center;gap:6px}
 .op-card:hover .enter{color:var(--amber)}
+
+/* Anthony's card stays tactical even on the neutral roster */
+.op-card.op-tact{background:#1b1e16;border-color:#333a2c}
+.op-card.op-tact:hover{border-color:#4a5539}
+.op-card.op-tact .tag{color:#8a7530}
+.op-card.op-tact .name{color:#e8ead9}
+.op-card.op-tact .goal{color:#9aa383}
+.op-card.op-tact .enter{color:#6b7358}
+.op-card.op-tact:hover .enter{color:#d8b04a}
+.op-card.op-tact .corner{border-top-color:#4a5539;border-right-color:#4a5539}
+
+/* Celina's card — warm, soft, Claude-style */
+.op-card.op-fem{background:linear-gradient(150deg,#fffaf5,#f8e8dd);
+  border-color:#eed8c8;border-radius:18px}
+.op-card.op-fem:hover{border-color:#da7756}
+.op-card.op-fem .corner{display:none}
+.op-card.op-fem .tag{color:#c96442}
+.op-card.op-fem .name{font-family:var(--serif);color:#3d3929;letter-spacing:.01em}
+.op-card.op-fem .goal{color:#8a7f6d}
+.op-card.op-fem .enter{color:#c9b8a4}
+.op-card.op-fem:hover .enter{color:#c96442}
 
 /* ---- session header ---- */
 .session-top{margin-bottom:18px}
@@ -215,6 +252,27 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   border:1px solid var(--line);border-radius:3px}
 .reset-btn:hover{color:var(--danger);border-color:var(--danger)}
 
+/* ---- Celina theme: softer shapes + serif headings ---- */
+body.theme-celina .who .n{font-family:var(--serif);letter-spacing:.01em}
+body.theme-celina .session-head h2{font-family:var(--serif);font-size:17px;letter-spacing:0}
+body.theme-celina .runbrief .headline{font-family:var(--serif)}
+body.theme-celina .restbrief .big{font-family:var(--serif);letter-spacing:.02em}
+body.theme-celina .session,body.theme-celina .weekstrip,body.theme-celina .footnote{
+  border-radius:16px;box-shadow:0 10px 26px rgba(190,110,80,.07)}
+body.theme-celina .footnote{border-left-width:3px}
+body.theme-celina .day-tab,body.theme-celina .weekstrip select,
+body.theme-celina .demo-btn,body.theme-celina .cue-btn,
+body.theme-celina .reset-btn,body.theme-celina .badge{border-radius:999px}
+body.theme-celina .check{border-radius:50%}
+body.theme-celina .runrows,body.theme-celina .cues{border-radius:10px}
+body.theme-celina .ex.done{background:rgba(143,172,106,.10)}
+body.theme-celina .ex.done .check svg{stroke:#fffdf9}
+body.theme-celina .badge.run{background:rgba(181,106,134,.14)}
+body.theme-celina .badge.strength{background:rgba(201,138,74,.14)}
+body.theme-celina .badge.rest{background:rgba(168,154,131,.18)}
+body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
+body.theme-celina .kb-flag{background:rgba(201,100,66,.12)}
+
 .hidden{display:none!important}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
 </style>
@@ -263,6 +321,7 @@ var ATHLETES = {
 
   anthony: {
     meta:{ name:"ANTHONY", tag:"Operator 01", goal:"Half marathon \u00b7 13.1 \u00b7 strength base" },
+    theme:"tactical",
     mode:"week",
     weeks:12,
     runTable:{
@@ -353,6 +412,7 @@ var ATHLETES = {
 
   her: {
     meta:{ name:"CELINA", tag:"Operator 02", goal:"5K strong \u00b7 12 mo to top 10" },
+    theme:"fem",
     mode:"phase",
     phases:[
       { key:"p1", label:"Phase 1", range:"Weeks 1\u20136", name:"Build the habit" },
@@ -555,11 +615,20 @@ function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.
 function demoURL(name){ return "https://www.youtube.com/results?search_query="+encodeURIComponent(name+" proper form"); }
 function todayKey(){ return ["sun","mon","tue","wed","thu","fri","sat"][new Date().getDay()]; }
 
+function setTheme(theme){
+  document.body.classList.remove('theme-tactical','theme-celina');
+  var color="#f6f5f1";
+  if(theme==="tactical"){ document.body.classList.add('theme-tactical'); color="#12140f"; }
+  else if(theme==="fem"){ document.body.classList.add('theme-celina'); color="#faf5ef"; }
+  var m=document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute('content',color);
+}
+
 function renderRoster(){
   var r=document.getElementById('roster'); r.innerHTML='';
   Object.keys(ATHLETES).forEach(function(id){
     var a=ATHLETES[id];
-    var card=el('button','op-card');
+    var card=el('button','op-card '+(a.theme==="fem"?"op-fem":"op-tact"));
     card.innerHTML=
       '<span class="corner"></span>'+
       '<div class="tag mono">'+esc(a.meta.tag)+'</div>'+
@@ -574,6 +643,7 @@ function renderRoster(){
 function openAthlete(id){
   current.athlete=id;
   var a=ATHLETES[id];
+  setTheme(a.theme);
   document.getElementById('roster-view').classList.add('hidden');
   document.getElementById('session-view').classList.remove('hidden');
   window.scrollTo(0,0);
@@ -766,6 +836,7 @@ function runBrief(d,a){
 }
 
 document.getElementById('back').addEventListener('click',function(){
+  setTheme(null);
   document.getElementById('session-view').classList.add('hidden');
   document.getElementById('roster-view').classList.remove('hidden');
   window.scrollTo(0,0);
