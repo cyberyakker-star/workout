@@ -64,14 +64,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---- header ---- */
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid var(--line)}
-.brand{display:none;align-items:center;gap:10px}
-body.theme-tactical .brand{display:flex}
-.brand .dot{width:9px;height:9px;background:var(--amber);border-radius:50%;
-  box-shadow:0 0 10px var(--amber);flex:none}
-.brand h1{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.16em;
-  margin:0;color:var(--ink)}
+.topline{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--amber);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .top .clock{font-family:var(--mono);font-size:11px;color:var(--ink-faint);
-  letter-spacing:.1em;text-align:right;text-transform:uppercase}
+  letter-spacing:.1em;text-align:right;text-transform:uppercase;flex:none}
 
 /* ---- eyebrow labels ---- */
 .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
@@ -124,10 +120,10 @@ body.theme-tactical .brand{display:flex}
   color:var(--ink-dim);text-transform:uppercase;display:inline-flex;
   align-items:center;gap:7px;padding:8px 0;margin-bottom:14px}
 .backbtn:hover{color:var(--amber)}
-.who{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.who{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 .who .n{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:.04em}
-.who .div{color:var(--line-bright)}
-.who .g{font-size:13px;color:var(--ink-dim)}
+.who .wstat{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase}
+.who .wstat b{color:var(--ink);font-size:13px;margin:0 2px;font-weight:700}
 
 /* ---- week strip (borderless control band) ---- */
 #weekstrip-slot{padding-bottom:12px;border-bottom:1px solid var(--line)}
@@ -428,10 +424,7 @@ body.theme-celina .sess-done .check{border-radius:50%}
 <div class="wrap">
 
   <div class="top">
-    <div class="brand">
-      <span class="dot"></span>
-      <h1>TRAINING OPS</h1>
-    </div>
+    <div class="topline mono" id="topline"></div>
     <div class="clock mono" id="clock">&mdash; &middot; &mdash;</div>
   </div>
 
@@ -906,7 +899,7 @@ function openAthlete(id){
 
   var who=document.getElementById('who');
   who.innerHTML='<span class="n mono">'+esc(a.meta.name)+'</span>'+
-    '<span class="div">/</span><span class="g">'+esc(a.meta.goal)+'</span>';
+    '<span class="wstat mono" id="who-stats"></span>';
 
   var slot=document.getElementById('weekstrip-slot'); slot.innerHTML='';
   var cfg=cfgGet(id);
@@ -957,6 +950,7 @@ function openAthlete(id){
   }
 
   slot.appendChild(raceLine(id,a));
+  document.getElementById('topline').textContent=headerStatusText(id);
 
   current.day=null;
   renderTabs();
@@ -1006,25 +1000,31 @@ function weeksSince(startStr){
   var t=new Date(); t.setHours(0,0,0,0);
   return Math.max(1,Math.floor((t-s)/(7*864e5))+1);
 }
+// short status shown in the top bar: race countdown (week mode) or plan week (phase mode)
+function headerStatusText(id){
+  var a=ATHLETES[id], cfg=cfgGet(id);
+  if(a.mode==="week"){
+    if(!cfg.race) return "Set race date ↓";
+    var race=parseDate(cfg.race);
+    var today=new Date(); today.setHours(0,0,0,0);
+    var days=Math.round((race-today)/864e5);
+    if(isNaN(days)) return "Set race date ↓";
+    if(days<0) return "Race day passed";
+    if(days===0) return "Race day — send it";
+    return "Race in "+(days<14 ? days+" day"+(days===1?"":"s") : Math.ceil(days/7)+" wk")+" · "+fmtDate(race);
+  }
+  var wkN=cfg.start?Math.min(weeksSince(cfg.start),52):1;
+  return "Week "+wkN+" of 52";
+}
 function raceLine(id,a){
   var box=el('div');
   function draw(){
-    var cfg=cfgGet(id), html='';
+    var cfg=cfgGet(id), html;
     if(a.mode==="week"){
-      if(cfg.race){
-        var race=parseDate(cfg.race);
-        var today=new Date(); today.setHours(0,0,0,0);
-        var days=Math.round((race-today)/864e5);
-        var lbl = days<0 ? 'Race day passed'
-          : days===0 ? '<b>Race day — send it.</b>'
-          : 'Race in <b>'+(days<14 ? days+' day'+(days===1?'':'s') : Math.ceil(days/7)+' wk')+'</b> · '+fmtDate(race);
-        html='<div class="race-line"><span>'+lbl+'</span><button id="date-edit">✎ edit</button></div>';
-      } else {
-        html='<div class="race-line"><span></span><button id="date-edit">＋ set race date</button></div>';
-      }
+      html='<div class="race-line"><span></span><button id="date-edit">'+
+        (cfg.race?'✎ edit race date':'＋ set race date')+'</button></div>';
     } else {
-      var wkN=cfg.start?Math.min(weeksSince(cfg.start),52):1;
-      html='<div class="race-line"><span>Week <b>'+wkN+'</b> of 52</span><button id="date-edit">✎ edit</button></div>';
+      html='<div class="race-line"><span></span><button id="date-edit">✎ edit start date</button></div>';
     }
     box.innerHTML=html;
     box.querySelector('#date-edit').addEventListener('click',edit);
@@ -1310,11 +1310,13 @@ function renderStats(){
     }
   }
 
+  var streak=calcStreak(log);
+  var ws=document.getElementById('who-stats');
+  if(ws) ws.innerHTML='THIS WK <b>'+thisWeek+'</b> · STREAK <b>'+streak+'</b>';
+
   slot.innerHTML=
     '<div class="statsbar mono">'+
-      '<span>WEEK <b>'+thisWeek+'</b></span>'+
-      '<span>STREAK <b>'+calcStreak(log)+'</b></span>'+
-      '<span>TOTAL <b>'+dates.length+'</b></span>'+
+      '<span>TOTAL <b>'+dates.length+'</b> SESSIONS</span>'+
       '<button id="cal-btn">'+(calOpen?'HIDE ▴':'HISTORY ▾')+'</button>'+
     '</div>'+
     adviceHTML+
@@ -1775,6 +1777,7 @@ document.getElementById('board-exit').addEventListener('click',function(){
 
 document.getElementById('back').addEventListener('click',function(){
   setTheme(null);
+  document.getElementById('topline').textContent='';
   document.getElementById('session-view').classList.add('hidden');
   document.getElementById('roster-view').classList.remove('hidden');
   window.scrollTo(0,0);
