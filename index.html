@@ -129,13 +129,13 @@ body.theme-tactical .brand{display:flex}
 .who .div{color:var(--line-bright)}
 .who .g{font-size:13px;color:var(--ink-dim)}
 
-/* ---- week strip ---- */
-.weekstrip{display:flex;align-items:center;gap:10px;margin:18px 0 6px;
-  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:4px}
+/* ---- week strip (borderless control band) ---- */
+#weekstrip-slot{padding-bottom:12px;border-bottom:1px solid var(--line)}
+.weekstrip{display:flex;align-items:center;gap:10px;margin:16px 0 0;padding:0}
 .weekstrip label{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
   color:var(--ink-faint);text-transform:uppercase;flex:none}
 .weekstrip select{flex:1;min-width:0;background:var(--panel-2);color:var(--ink);
-  border:1px solid var(--line-bright);border-radius:3px;padding:7px 10px;
+  border:1px solid var(--line);border-radius:6px;padding:8px 10px;
   font-family:var(--mono);font-size:13px;letter-spacing:.03em}
 .weekstrip .phase{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
   color:var(--amber);text-transform:uppercase;flex:none}
@@ -145,16 +145,16 @@ body.theme-tactical .brand{display:flex}
   scrollbar-width:none}
 .days::-webkit-scrollbar{display:none}
 .day-tab{flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.08em;
-  padding:9px 13px;border:1px solid var(--line);border-radius:3px;
-  background:var(--panel);color:var(--ink-dim);text-transform:uppercase;
-  display:flex;flex-direction:column;align-items:center;gap:3px;min-width:52px;
-  transition:border-color .12s}
+  padding:8px 12px;border:1px solid transparent;border-radius:8px;
+  background:transparent;color:var(--ink-faint);text-transform:uppercase;
+  display:flex;flex-direction:column;align-items:center;gap:4px;min-width:50px;
+  transition:color .12s,background .12s}
 .day-tab .dtype{width:5px;height:5px;border-radius:50%;background:var(--ink-faint)}
 .day-tab.run .dtype{background:var(--run)}
 .day-tab.strength .dtype{background:var(--strength)}
 .day-tab.rest .dtype{background:var(--rest)}
 .day-tab.mixed .dtype{background:var(--lime)}
-.day-tab.active{border-color:var(--amber);color:var(--ink);background:var(--panel-2)}
+.day-tab.active{color:var(--ink);background:var(--panel-2);border-color:var(--line)}
 .day-tab.active .dtype{box-shadow:0 0 7px currentColor}
 .day-tab.istoday::after{content:"\2022";font-size:6px;color:var(--amber);
   position:absolute;margin-top:-3px}
@@ -183,8 +183,7 @@ body.theme-tactical .brand{display:flex}
 /* ---- run brief ---- */
 .runbrief{padding:18px}
 .runbrief .headline{font-family:var(--mono);font-size:17px;color:var(--run);
-  letter-spacing:.02em;margin:0 0 4px}
-.runbrief .sub{font-size:13.5px;color:var(--ink-dim);margin:0 0 16px}
+  letter-spacing:.02em;margin:0 0 14px}
 .runrows{display:flex;flex-direction:column;gap:1px;background:var(--line);
   border:1px solid var(--line);border-radius:4px;overflow:hidden}
 .runrow{display:flex;justify-content:space-between;gap:12px;padding:11px 14px;
@@ -278,16 +277,20 @@ body.theme-celina .badge.rest{background:rgba(168,154,131,.18)}
 body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 
 /* ---- start bar / session done ---- */
-.startbar{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px}
+.startbar{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.startbar-sub{display:flex;gap:8px}
 .start-btn{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
-  padding:13px;border:1px solid var(--amber);border-radius:5px;color:var(--amber);
-  display:flex;align-items:center;justify-content:center;gap:8px}
-.start-btn:active{background:var(--panel-2)}
-.sess-done{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
-  padding:13px;border:1px solid var(--line-bright);border-radius:5px;color:var(--ink-dim);
-  display:flex;align-items:center;justify-content:center;gap:10px}
-.sess-done .check{width:22px;height:22px;border-radius:5px}
-.sess-done .check svg{width:12px;height:12px}
+  padding:14px;border:1px solid var(--amber);border-radius:6px;background:var(--amber);color:var(--bg);
+  font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.start-btn:active{opacity:.85}
+.start-btn.alt{flex:0 0 auto;background:transparent;border:1px solid var(--line-bright);color:var(--ink-dim);
+  font-weight:400;padding:10px 14px;font-size:11px}
+.start-btn.alt:hover{border-color:var(--amber);color:var(--amber)}
+.sess-done{flex:1;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  padding:11px;border:1px solid var(--line-bright);border-radius:6px;color:var(--ink-dim);
+  display:flex;align-items:center;justify-content:center;gap:9px}
+.sess-done .check{width:20px;height:20px;border-radius:5px}
+.sess-done .check svg{width:11px;height:11px}
 .sess-done.on{border-color:var(--done);color:var(--done)}
 .sess-done.on .check{background:var(--done);border-color:var(--done)}
 .sess-done.on .check svg{opacity:1;transform:scale(1)}
@@ -296,13 +299,12 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
   background:rgba(127,174,74,.16);color:var(--done);font-weight:700}
 
 /* ---- stats / history ---- */
-.statsbar{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding:10px 14px;background:var(--panel);
-  border:1px solid var(--line);border-radius:4px;font-size:10.5px;letter-spacing:.1em;color:var(--ink-faint);
+.statsbar{display:flex;align-items:center;gap:14px;margin:14px 0 14px;padding:0 2px 12px;
+  border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.1em;color:var(--ink-faint);
   text-transform:uppercase}
 .statsbar b{color:var(--ink);font-size:13px;margin-left:4px}
 .statsbar button{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--amber)}
-.cal{margin:-6px 0 14px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);
-  border-radius:4px;overflow-x:auto}
+.cal{margin:-6px 0 16px;padding:6px 2px 14px;border-bottom:1px solid var(--line);overflow-x:auto}
 .calgrid{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:12px;gap:3px}
 .calgrid .c{width:12px;height:12px;border-radius:3px;background:var(--panel-2)}
 .calgrid .c.on{background:var(--done)}
@@ -312,11 +314,12 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
 
 /* ---- race / plan date line ---- */
-.race-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 2px 0;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--ink-faint);text-transform:uppercase}
+.race-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 2px 0;
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-faint);text-transform:uppercase}
 .race-line b{color:var(--amber)}
-.race-line button{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink-dim);
-  border:1px solid var(--line);border-radius:3px;padding:5px 9px}
+.race-line button{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-dim);
+  border:none;padding:3px 4px}
+.race-line button:hover{color:var(--amber)}
 .race-edit{display:flex;align-items:center;gap:8px;margin-top:8px;padding:10px 12px;background:var(--panel);
   border:1px solid var(--line);border-radius:4px}
 .race-edit input[type=date]{flex:1;min-width:0;background:var(--panel-2);color:var(--ink);
@@ -360,17 +363,14 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
   font-size:18px;color:var(--ink-dim);flex:none}
 .stepper button:active{background:var(--panel-2)}
 
-.start-btn.alt{border-color:var(--line-bright);color:var(--ink-dim);flex:0 0 auto;padding-left:16px;padding-right:16px}
-.start-btn.alt:hover{border-color:var(--amber);color:var(--amber)}
-
 /* ---- missed-day adviser ---- */
-.advice{display:flex;gap:10px;align-items:flex-start;margin:-6px 0 14px;padding:12px 14px;background:var(--panel);
-  border:1px solid var(--line);border-left:2px solid var(--danger);border-radius:4px;
+.advice{display:flex;gap:10px;align-items:flex-start;margin:-2px 0 16px;padding:11px 13px;background:var(--panel);
+  border:1px solid var(--line);border-left:2px solid var(--amber-dim);border-radius:6px;
   font-size:12.5px;color:var(--ink-dim);line-height:1.5}
-.advice .adv-t{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--danger);
-  margin-bottom:4px;text-transform:uppercase}
+.advice .adv-t{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--amber-dim);
+  margin-bottom:3px;text-transform:uppercase}
 .advice button{margin-left:auto;color:var(--ink-faint);font-size:14px;padding:2px 6px;flex:none}
-.advice button:hover{color:var(--danger)}
+.advice button:hover{color:var(--ink)}
 
 /* ---- gym wall-board ---- */
 .wrap:has(#board-view:not(.hidden)){max-width:1100px}
@@ -412,8 +412,7 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .bcol-fem .b-sch{color:#c96442}
 
 /* Celina theme rounding for the new pieces */
-body.theme-celina .statsbar,body.theme-celina .cal,body.theme-celina .race-edit,
-body.theme-celina .advice{border-radius:14px}
+body.theme-celina .race-edit,body.theme-celina .advice{border-radius:14px}
 body.theme-celina .advice{border-left-width:3px}
 body.theme-celina .start-btn,body.theme-celina .sess-done,body.theme-celina .chip-done,
 body.theme-celina .ov-btn,body.theme-celina .ov-x,body.theme-celina .race-line button,
@@ -1016,16 +1015,16 @@ function raceLine(id,a){
         var race=parseDate(cfg.race);
         var today=new Date(); today.setHours(0,0,0,0);
         var days=Math.round((race-today)/864e5);
-        var lbl = days<0 ? 'RACE DAY PASSED — SET A NEW ONE'
-          : days===0 ? '<b>RACE DAY. SEND IT.</b>'
-          : 'RACE IN <b>'+(days<14 ? days+' DAY'+(days===1?'':'S') : Math.ceil(days/7)+' WEEKS')+'</b> · '+fmtDate(race);
-        html='<div class="race-line"><span>'+lbl+'</span><button id="date-edit">RACE DATE</button></div>';
+        var lbl = days<0 ? 'Race day passed'
+          : days===0 ? '<b>Race day — send it.</b>'
+          : 'Race in <b>'+(days<14 ? days+' day'+(days===1?'':'s') : Math.ceil(days/7)+' wk')+'</b> · '+fmtDate(race);
+        html='<div class="race-line"><span>'+lbl+'</span><button id="date-edit">✎ edit</button></div>';
       } else {
-        html='<div class="race-line"><span>SET RACE DATE → WEEK AUTO-SELECTS</span><button id="date-edit">RACE DATE</button></div>';
+        html='<div class="race-line"><span></span><button id="date-edit">＋ set race date</button></div>';
       }
     } else {
       var wkN=cfg.start?Math.min(weeksSince(cfg.start),52):1;
-      html='<div class="race-line"><span>WEEK <b>'+wkN+'</b> OF 52</span><button id="date-edit">START DATE</button></div>';
+      html='<div class="race-line"><span>Week <b>'+wkN+'</b> of 52</span><button id="date-edit">✎ edit</button></div>';
     }
     box.innerHTML=html;
     box.querySelector('#date-edit').addEventListener('click',edit);
@@ -1157,7 +1156,7 @@ function renderDay(){
     var bar=el('div','startbar');
     bar.innerHTML='<button class="start-btn" id="start-player">'+
       '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START WORKOUT</button>'+
-      '<button class="start-btn alt" id="start-mini">⏱ 10-MIN</button>';
+      '<div class="startbar-sub"><button class="start-btn alt" id="start-mini">⏱ 10-min version</button></div>';
     sess.appendChild(bar);
     var list=el('div','exlist');
     d.groups.forEach(function(g,gi){
@@ -1217,14 +1216,16 @@ function renderDay(){
     });
   } else {
     var bar2=el('div','startbar');
-    var btns='';
-    if(d.type==="run") btns+='<button class="start-btn" id="start-timer">'+
-      '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START TIMER</button>'+
-      '<button class="start-btn alt" id="start-mini10">⏱ 10-MIN</button>';
-    btns+='<button class="sess-done'+(state.session?' on':'')+'" id="sess-done">'+
+    var doneBtn='<button class="sess-done'+(state.session?' on':'')+'" id="sess-done">'+
       '<span class="check">'+CHECK.innerHTML+'</span><span class="sd-label">'+
-      (state.session?'SESSION DONE':'MARK SESSION DONE')+'</span></button>';
-    bar2.innerHTML=btns;
+      (state.session?'SESSION DONE':'MARK DONE')+'</span></button>';
+    if(d.type==="run"){
+      bar2.innerHTML='<button class="start-btn" id="start-timer">'+
+        '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START TIMER</button>'+
+        '<div class="startbar-sub"><button class="start-btn alt" id="start-mini10">⏱ 10-min</button>'+doneBtn+'</div>';
+    } else {
+      bar2.innerHTML='<div class="startbar-sub">'+doneBtn+'</div>';
+    }
     sess.appendChild(bar2);
     slot.appendChild(sess);
     bar2.querySelector('#sess-done').addEventListener('click',function(){
@@ -1262,19 +1263,18 @@ function miniItems(d,state){
 function runBrief(d,a){
   var wrap=el('div','runbrief');
   var r=d.run;
-  var headline='', sub='';
+  var headline='';
   if(a.mode==="week"){
     var wk=parseInt(current.ctx.slice(1));
     var row=a.runTable[wk];
-    if(d.key==="tue"){ headline=row.tue; sub="Speed session \u00b7 week "+wk; }
-    else if(d.key==="thu"){ headline=row.thu; sub="Tempo / easy \u00b7 week "+wk; }
-    else if(d.key==="sat"){ headline=row.sat; sub="Long run \u00b7 week "+wk; }
+    if(d.key==="tue") headline=row.tue;
+    else if(d.key==="thu") headline=row.thu;
+    else if(d.key==="sat") headline=row.sat;
   } else {
     headline = r.extra || d.title;
   }
   var showExtraRow = r.extra && headline!==r.extra;
   wrap.innerHTML='<div class="headline mono">'+esc(headline||d.title)+'</div>'+
-    (sub?'<div class="sub">'+esc(sub)+'</div>':'')+
     '<div class="runrows">'+
       (showExtraRow?'<div class="runrow"><span class="k">Session</span><span class="v">'+esc(r.extra)+'</span></div>':'')+
       '<div class="runrow"><span class="k">Warm-up</span><span class="v">'+esc(r.warm)+'</span></div>'+
