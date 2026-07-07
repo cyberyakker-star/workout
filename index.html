@@ -1684,9 +1684,41 @@ function openTimer(d,a,storeKey,opts){
       }
     },1000);
   }
-  if(opts.countdown) showCountdown(opts.countdown,opts.label||'EASY PACE');
-  else if(cfg) showSetup();
-  else showStopwatch();
+  // "get ready" screen so the timer never starts before you know what you're doing
+  function intro(o){
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">'+esc(o.prog)+'</span>'+
+      '<button class="ov-x" id="tm-x">✕</button></div>'+
+      '<div class="ov-mid">'+
+        (o.eyebrow?'<div class="ov-eyebrow">'+esc(o.eyebrow)+'</div>':'')+
+        '<div class="ov-title">'+esc(o.title)+'</div>'+
+        (o.note?'<div class="ov-scheme">'+esc(o.note)+'</div>':'')+
+        (o.warm?'<div class="ov-note" style="margin-top:8px">Warm-up: '+esc(o.warm)+'</div>':'')+
+        (o.hint?'<div class="ov-rest-hint" style="margin-top:14px">'+esc(o.hint)+'</div>':'')+
+      '</div>'+
+      '<div class="ov-actions">'+
+        '<button class="ov-btn" id="tm-back">✕ BACK</button>'+
+        '<button class="ov-btn primary" id="tm-go">'+esc(o.start)+'</button>'+
+      '</div>';
+    ov.querySelector('#tm-x').addEventListener('click',exit);
+    ov.querySelector('#tm-back').addEventListener('click',exit);
+    ov.querySelector('#tm-go').addEventListener('click',o.go);
+  }
+  var warm=(d.run&&d.run.warm)||'';
+  if(opts.countdown){
+    intro({ prog:'10-MINUTE RULE', eyebrow:opts.label||'EASY PACE', title:d.title,
+      note:text||'Easy 10-minute run or walk', warm:warm,
+      hint:'Ten minutes still counts as a ✅. Keep it easy — stop after, or keep going.',
+      start:'START '+fmtSecs(opts.countdown)+' →',
+      go:function(){ showCountdown(opts.countdown,opts.label||'EASY PACE'); } });
+  } else if(cfg){
+    showSetup();
+  } else {
+    intro({ prog:'RUN TIMER', eyebrow:d.type.toUpperCase(), title:d.title,
+      note:text||'', warm:warm,
+      hint:'Head out when you\'re ready — the timer counts up. Tap Finish when you\'re back.',
+      start:'START →', go:showStopwatch });
+  }
 }
 
 /* ================= gym wall-board ================= */
