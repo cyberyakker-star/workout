@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f6f5f1">
-<title>TRAINING OPS</title>
+<title>Workout</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23f6f5f1'/%3E%3Crect x='14' y='34' width='14' height='32' rx='5' fill='%23c96442'/%3E%3Crect x='72' y='34' width='14' height='32' rx='5' fill='%234a5539'/%3E%3Crect x='28' y='45' width='44' height='10' rx='4' fill='%2334322b'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Workout">
 <style>
 /* ============================================================
    TRAINING OPS — home gym command board
@@ -209,9 +216,6 @@ body.theme-tactical .brand{display:flex}
 .ex-name{font-size:15.5px;font-weight:600;color:var(--ink);letter-spacing:.01em;
   display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ex.done .ex-name{color:var(--ink-dim)}
-.kb-flag{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;
-  background:rgba(216,176,74,.15);color:var(--amber);padding:2px 6px;border-radius:3px;
-  text-transform:uppercase;font-weight:600;flex:none}
 .ex-scheme{font-family:var(--mono);font-size:12px;color:var(--amber);
   letter-spacing:.05em;margin-top:3px}
 .ex-note{font-size:12.5px;color:var(--ink-faint);margin-top:3px;line-height:1.4}
@@ -272,7 +276,97 @@ body.theme-celina .badge.run{background:rgba(181,106,134,.14)}
 body.theme-celina .badge.strength{background:rgba(201,138,74,.14)}
 body.theme-celina .badge.rest{background:rgba(168,154,131,.18)}
 body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
-body.theme-celina .kb-flag{background:rgba(201,100,66,.12)}
+
+/* ---- start bar / session done ---- */
+.startbar{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px}
+.start-btn{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  padding:13px;border:1px solid var(--amber);border-radius:5px;color:var(--amber);
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.start-btn:active{background:var(--panel-2)}
+.sess-done{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  padding:13px;border:1px solid var(--line-bright);border-radius:5px;color:var(--ink-dim);
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.sess-done .check{width:22px;height:22px;border-radius:5px}
+.sess-done .check svg{width:12px;height:12px}
+.sess-done.on{border-color:var(--done);color:var(--done)}
+.sess-done.on .check{background:var(--done);border-color:var(--done)}
+.sess-done.on .check svg{opacity:1;transform:scale(1)}
+.hd-right{display:flex;align-items:center;gap:8px;flex:none}
+.chip-done{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;padding:4px 9px;border-radius:3px;
+  background:rgba(127,174,74,.16);color:var(--done);font-weight:700}
+
+/* ---- stats / history ---- */
+.statsbar{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding:10px 14px;background:var(--panel);
+  border:1px solid var(--line);border-radius:4px;font-size:10.5px;letter-spacing:.1em;color:var(--ink-faint);
+  text-transform:uppercase}
+.statsbar b{color:var(--ink);font-size:13px;margin-left:4px}
+.statsbar button{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--amber)}
+.cal{margin:-6px 0 14px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);
+  border-radius:4px;overflow-x:auto}
+.calgrid{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:12px;gap:3px}
+.calgrid .c{width:12px;height:12px;border-radius:3px;background:var(--panel-2)}
+.calgrid .c.on{background:var(--done)}
+.calgrid .c.td{outline:1.5px solid var(--amber);outline-offset:-1.5px}
+.calgrid .c.fut{opacity:.35}
+.callabel{margin-top:8px;font-size:9px;letter-spacing:.14em;color:var(--ink-faint)}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
+
+/* ---- race / plan date line ---- */
+.race-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 2px 0;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--ink-faint);text-transform:uppercase}
+.race-line b{color:var(--amber)}
+.race-line button{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink-dim);
+  border:1px solid var(--line);border-radius:3px;padding:5px 9px}
+.race-edit{display:flex;align-items:center;gap:8px;margin-top:8px;padding:10px 12px;background:var(--panel);
+  border:1px solid var(--line);border-radius:4px}
+.race-edit input[type=date]{flex:1;min-width:0;background:var(--panel-2);color:var(--ink);
+  border:1px solid var(--line-bright);border-radius:3px;padding:6px 8px;font-family:var(--mono);font-size:12px}
+.race-edit button{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:7px 10px;
+  border:1px solid var(--line-bright);border-radius:3px;color:var(--ink-dim)}
+
+/* ---- overlays (workout player / interval timer) ---- */
+.overlay{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;
+  padding:calc(18px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));overflow-y:auto}
+.ov-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ov-prog{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--ink-faint);text-transform:uppercase}
+.ov-x{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ink-dim);
+  border:1px solid var(--line-bright);border-radius:3px;padding:8px 12px}
+.ov-x:hover{color:var(--danger);border-color:var(--danger)}
+.ov-mid{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:0}
+.ov-eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--amber);text-transform:uppercase}
+.ov-title{font-size:30px;font-weight:700;line-height:1.15;margin:2px 0;color:var(--ink)}
+.ov-scheme{font-family:var(--mono);font-size:17px;color:var(--amber)}
+.ov-note{font-size:14px;color:var(--ink-dim)}
+.ov-cues{margin-top:10px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);
+  border-left:2px solid var(--lime);border-radius:4px}
+.ov-cues ul{margin:0;padding:0}
+.ov-cues li{font-size:13.5px;padding:2px 0 2px 16px;position:relative;list-style:none;color:var(--ink)}
+.ov-cues li::before{content:"\203A";position:absolute;left:0;color:var(--lime)}
+.ov-actions{display:flex;gap:10px;margin-top:18px}
+.ov-btn{flex:1;font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+  padding:16px;border-radius:6px;border:1px solid var(--line-bright);color:var(--ink-dim);text-align:center}
+.ov-btn.primary{background:var(--amber);border-color:var(--amber);color:var(--bg);font-weight:700}
+.ov-clock{font-family:var(--mono);font-size:64px;font-weight:600;text-align:center;letter-spacing:.02em;color:var(--ink)}
+.ov-phase{font-family:var(--mono);font-size:15px;letter-spacing:.3em;text-align:center;text-transform:uppercase;margin-bottom:6px}
+.ov-phase.work{color:var(--danger)}
+.ov-phase.easy{color:var(--run)}
+.ov-round{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--ink-faint);text-align:center;margin-top:6px}
+.ov-rest-hint{text-align:center;color:var(--ink-faint);font-size:12.5px;margin-top:10px}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-top:10px}
+.stepper .lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);text-transform:uppercase}
+.stepper .val{font-family:var(--mono);font-size:16px;color:var(--ink)}
+.stepper button{width:40px;height:40px;border:1px solid var(--line-bright);border-radius:6px;
+  font-size:18px;color:var(--ink-dim);flex:none}
+.stepper button:active{background:var(--panel-2)}
+
+/* Celina theme rounding for the new pieces */
+body.theme-celina .statsbar,body.theme-celina .cal,body.theme-celina .race-edit{border-radius:14px}
+body.theme-celina .start-btn,body.theme-celina .sess-done,body.theme-celina .chip-done,
+body.theme-celina .ov-btn,body.theme-celina .ov-x,body.theme-celina .race-line button,
+body.theme-celina .race-edit button,body.theme-celina .race-edit input[type=date]{border-radius:999px}
+body.theme-celina .ov-title{font-family:var(--serif)}
+body.theme-celina .sess-done .check{border-radius:50%}
 
 .hidden{display:none!important}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -305,10 +399,11 @@ body.theme-celina .kb-flag{background:rgba(201,100,66,.12)}
     </div>
     <div id="weekstrip-slot"></div>
     <div class="days" id="days"></div>
+    <div id="stats-slot"></div>
     <div id="session-slot"></div>
     <div id="foot-slot"></div>
     <div class="reset-line">
-      <button class="reset-btn" id="reset-day">&#8634; Reset today's checkmarks</button>
+      <button class="reset-btn" id="reset-day">&#8634; Reset this day's checkmarks</button>
     </div>
   </div>
 
@@ -341,7 +436,7 @@ function p1Days(ratio){
         extra:ratio } },
     { key:"fri", label:"Fri", type:"strength", title:"Simple Strength", dur:"20–25 min",
       groups:[{ label:"2–3 rounds", items:[
-        { name:"Goblet Squat", scheme:"× 10", note:"10–25 lb KB", kb:true },
+        { name:"Goblet Squat", scheme:"× 10", note:"10–25 lb KB" },
         { name:"Glute Bridge", scheme:"× 12", note:"Band above knees" },
         { name:"Kneeling Push-up", scheme:"× 8–10" },
         { name:"Bent-Over Band Row", scheme:"× 12" },
@@ -383,9 +478,9 @@ var ATHLETES = {
             { name:"Treadmill walk", scheme:"3 min", note:"Then leg swings, hip openers", cues:["Ease in, get blood moving","Loosen hips before you load them"] }
           ]},
           { label:"Strength", items:[
-            { name:"Goblet Squat", scheme:"4 \u00d7 8", kb:true, note:"Use the 53 lb bell when it lands; sub 35 until then" },
+            { name:"Goblet Squat", scheme:"4 \u00d7 8", note:"Use the 53 lb bell when it lands; sub 35 until then" },
             { name:"Single-Leg Romanian Deadlift", scheme:"3 \u00d7 8 / side", note:"35 lb KB" },
-            { name:"KB Swings", scheme:"4 \u00d7 12", kb:true, note:"35 lb now, 53 lb when ready" },
+            { name:"KB Swings", scheme:"4 \u00d7 12", note:"35 lb now, 53 lb when ready" },
             { name:"ATG Split Squat", scheme:"3 \u00d7 6 / side", note:"Bodyweight \u2192 10\u201325 lb" },
             { name:"Slant Board Squat", scheme:"3 \u00d7 10" },
             { name:"Banded Lateral Walk", scheme:"3 \u00d7 12 steps", note:"Booty band, each direction" }
@@ -453,12 +548,12 @@ var ATHLETES = {
     theme:"fem",
     mode:"phase",
     phases:[
-      { key:"p1a", label:"Weeks 1\u20132", range:"Phase 1", name:"Build the habit" },
-      { key:"p1b", label:"Weeks 3\u20134", range:"Phase 1", name:"Build the habit" },
-      { key:"p1c", label:"Weeks 5\u20136", range:"Phase 1", name:"Build the habit" },
-      { key:"p2", label:"Months 2\u20135", range:"Phase 2", name:"Run continuously" },
-      { key:"p3", label:"Months 6\u20139", range:"Phase 3", name:"Become a runner" },
-      { key:"p4", label:"Months 10\u201312", range:"Phase 4", name:"Get fast" }
+      { key:"p1a", label:"Weeks 1\u20132", range:"Phase 1", name:"Build the habit", from:1, to:2 },
+      { key:"p1b", label:"Weeks 3\u20134", range:"Phase 1", name:"Build the habit", from:3, to:4 },
+      { key:"p1c", label:"Weeks 5\u20136", range:"Phase 1", name:"Build the habit", from:5, to:6 },
+      { key:"p2", label:"Weeks 7\u201320", range:"Phase 2", name:"Run continuously", from:7, to:20 },
+      { key:"p3", label:"Weeks 21\u201339", range:"Phase 3", name:"Become a runner", from:21, to:39 },
+      { key:"p4", label:"Weeks 40\u201352", range:"Phase 4", name:"Get fast", from:40, to:99 }
     ],
     phaseDays:{
       p1a:p1Days("Walk 3 min / jog 1 min \u2014 repeat 5\u20136\u00d7"),
@@ -485,9 +580,9 @@ var ATHLETES = {
             extra:"Match Monday's jog/walk progression" } },
         { key:"fri", label:"Fri", type:"strength", title:"Strength", dur:"30 min",
           groups:[{ label:"3 rounds", items:[
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb", kb:true },
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb" },
             { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB", kb:true },
+            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
             { name:"Push-up", scheme:"\u00d7 8\u201310", note:"Full or kneeling" },
             { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" },
             { name:"Suitcase Carry", scheme:"30 steps / side", note:"25\u201335 lb" }
@@ -502,9 +597,9 @@ var ATHLETES = {
         { key:"tue", label:"Tue", type:"strength", title:"Strength + Bands", dur:"~35 min",
           groups:[{ label:"2 rounds band circuit + 3 rounds lifts", items:[
             { name:"Booty band circuit", scheme:"2 rounds", note:"Phase 1 movements" },
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb", kb:true },
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb" },
             { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB", kb:true },
+            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
             { name:"Push-up", scheme:"\u00d7 8\u201310" },
             { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" }
           ]}]},
@@ -515,16 +610,16 @@ var ATHLETES = {
             extra:"6\u00d7 (1 min faster / 2 min easy jog)" } },
         { key:"fri", label:"Fri", type:"strength", title:"Strength", dur:"30 min",
           groups:[{ label:"3 rounds \u00b7 add weight/reps when easy", items:[
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb", kb:true },
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb" },
             { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB", kb:true },
+            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
             { name:"Push-up", scheme:"\u00d7 8\u201310" },
             { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" },
             { name:"Suitcase Carry", scheme:"30 steps / side", note:"25\u201335 lb" }
           ]}]},
         { key:"sat", label:"Sat", type:"run", title:"Long Run", dur:"build 3 \u2192 5 mi",
           run:{ kind:"long", warm:"Easy start", cool:"Walk + stretch",
-            extra:"Month 7\u20138: enter a low-key local 5K. Note your time + the 10th-place woman's time \u2014 that's the gap." } },
+            extra:"Around week 26\u201330: enter a low-key local 5K. Note your time + the 10th-place woman's time \u2014 that's the gap." } },
         { key:"sun", label:"Sun", type:"rest", title:"Off", rest:["Full rest day"] }
       ],
       p4:[
@@ -535,9 +630,9 @@ var ATHLETES = {
             extra:"6\u20138\u00d7 400m hard (~90s) w/ 2 min recovery \u2014 OR 5\u00d7 (2 min hard / 2 min easy)" } },
         { key:"wed", label:"Wed", type:"strength", title:"Strength + Bands", dur:"~30 min",
           groups:[{ label:"Maintain \u2014 don't chase progress, running's the priority", items:[
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"Keep it moderate", kb:true },
+            { name:"Goblet Squat", scheme:"\u00d7 10", note:"Keep it moderate" },
             { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB", kb:true },
+            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
             { name:"Push-up", scheme:"\u00d7 8\u201310" },
             { name:"Booty band circuit", scheme:"2 rounds" }
           ]}]},
@@ -612,7 +707,12 @@ var CHECK = document.createElement('template');
 CHECK.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#12140f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
 
 var store = {
-  key:function(a,ctx,day){ return "trainops:"+a+":"+ctx+":"+day; },
+  // phase entries span many calendar weeks, so their checkmarks are scoped
+  // to the current ISO week; history (trainops:log:*) is the permanent record
+  key:function(a,ctx,day){
+    var wk = ATHLETES[a].mode==="phase" ? ":"+isoWeek(new Date()) : "";
+    return "trainops:"+a+":"+ctx+wk+":"+day;
+  },
   get:function(k){ try{ return JSON.parse(localStorage.getItem(k))||{}; }catch(e){ return {}; } },
   set:function(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
   del:function(k){ try{ localStorage.removeItem(k); }catch(e){} }
@@ -624,6 +724,43 @@ function el(tag,cls,html){ var e=document.createElement(tag); if(cls)e.className
 function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 function demoURL(name){ return "https://www.youtube.com/results?search_query="+encodeURIComponent(name+" proper form"); }
 function todayKey(){ return ["sun","mon","tue","wed","thu","fri","sat"][new Date().getDay()]; }
+function pad2(n){ return (n<10?"0":"")+n; }
+function dateISO(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function parseDate(s){ var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
+function fmtDate(d){ var m=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]; return m[d.getMonth()]+" "+d.getDate(); }
+function fmtSecs(s){ var m=Math.floor(s/60); return m+":"+pad2(s%60); }
+function isoWeek(d){
+  var t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  var day=(t.getUTCDay()+6)%7;
+  t.setUTCDate(t.getUTCDate()-day+3);
+  var firstThu=new Date(Date.UTC(t.getUTCFullYear(),0,4));
+  var fday=(firstThu.getUTCDay()+6)%7;
+  firstThu.setUTCDate(firstThu.getUTCDate()-fday+3);
+  var wk=1+Math.round((t-firstThu)/(7*864e5));
+  return t.getUTCFullYear()+"-W"+pad2(wk);
+}
+
+function cfgGet(a){ try{ return JSON.parse(localStorage.getItem('trainops:cfg:'+a))||{}; }catch(e){ return {}; } }
+function cfgSet(a,v){ try{ localStorage.setItem('trainops:cfg:'+a,JSON.stringify(v)); }catch(e){} }
+function logGet(a){ try{ return JSON.parse(localStorage.getItem('trainops:log:'+a))||{}; }catch(e){ return {}; } }
+function logSet(a,v){ try{ localStorage.setItem('trainops:log:'+a,JSON.stringify(v)); }catch(e){} }
+
+var AC=null;
+function beep(freq,ms){
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended') AC.resume();
+    var o=AC.createOscillator(), g=AC.createGain();
+    o.frequency.value=freq||880; o.type='sine';
+    var t=AC.currentTime, dur=(ms||180)/1000;
+    g.gain.setValueAtTime(0.001,t);
+    g.gain.exponentialRampToValueAtTime(0.4,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    o.connect(g); g.connect(AC.destination);
+    o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+function buzz(p){ try{ if(navigator.vibrate) navigator.vibrate(p||150); }catch(e){} }
 
 function setTheme(theme){
   document.body.classList.remove('theme-tactical','theme-celina');
@@ -663,8 +800,13 @@ function openAthlete(id){
     '<span class="div">/</span><span class="g">'+esc(a.meta.goal)+'</span>';
 
   var slot=document.getElementById('weekstrip-slot'); slot.innerHTML='';
+  var cfg=cfgGet(id);
   if(a.mode==="week"){
     var saved=parseInt(localStorage.getItem('trainops:'+id+':week'))||1;
+    if(cfg.race){
+      var autoWk=autoWeekFromRace(cfg.race,a.weeks);
+      if(autoWk) saved=autoWk;
+    }
     current.ctx="w"+saved;
     var strip=el('div','weekstrip');
     var sel='<label>WEEK</label><select id="ctx-sel">';
@@ -685,8 +827,14 @@ function openAthlete(id){
       renderDay();
     });
   } else {
+    if(!cfg.start){ cfg.start=dateISO(new Date()); cfgSet(id,cfg); }
     var savedP=localStorage.getItem('trainops:'+id+':phase')||a.phases[0].key;
     if(!a.phases.filter(function(p){return p.key===savedP;}).length) savedP=a.phases[0].key;
+    if(cfg.start){
+      var wkN=weeksSince(cfg.start);
+      var autoP=a.phases.filter(function(p){return wkN>=p.from&&wkN<=p.to;})[0];
+      if(autoP) savedP=autoP.key;
+    }
     current.ctx=savedP;
     var strip2=el('div','weekstrip');
     var sel2='<label>PLAN</label><select id="ctx-sel">';
@@ -709,10 +857,69 @@ function openAthlete(id){
     });
   }
 
+  slot.appendChild(raceLine(id,a));
+
   current.day=null;
   renderTabs();
   renderDay();
   document.getElementById('foot-slot').innerHTML='<div class="footnote">'+a.foot+'</div>';
+}
+
+function autoWeekFromRace(raceStr,weeks){
+  var race=parseDate(raceStr);
+  var today=new Date(); today.setHours(0,0,0,0);
+  var days=Math.round((race-today)/864e5);
+  if(isNaN(days)) return null;
+  var weeksLeft=Math.max(1,Math.ceil(days/7));
+  return Math.max(1,Math.min(weeks,weeks-weeksLeft+1));
+}
+function weeksSince(startStr){
+  var s=parseDate(startStr);
+  var t=new Date(); t.setHours(0,0,0,0);
+  return Math.max(1,Math.floor((t-s)/(7*864e5))+1);
+}
+function raceLine(id,a){
+  var box=el('div');
+  function draw(){
+    var cfg=cfgGet(id), html='';
+    if(a.mode==="week"){
+      if(cfg.race){
+        var race=parseDate(cfg.race);
+        var today=new Date(); today.setHours(0,0,0,0);
+        var days=Math.round((race-today)/864e5);
+        var lbl = days<0 ? 'RACE DAY PASSED — SET A NEW ONE'
+          : days===0 ? '<b>RACE DAY. SEND IT.</b>'
+          : 'RACE IN <b>'+(days<14 ? days+' DAY'+(days===1?'':'S') : Math.ceil(days/7)+' WEEKS')+'</b> · '+fmtDate(race);
+        html='<div class="race-line"><span>'+lbl+'</span><button id="date-edit">RACE DATE</button></div>';
+      } else {
+        html='<div class="race-line"><span>SET RACE DATE → WEEK AUTO-SELECTS</span><button id="date-edit">RACE DATE</button></div>';
+      }
+    } else {
+      var wkN=cfg.start?Math.min(weeksSince(cfg.start),52):1;
+      html='<div class="race-line"><span>WEEK <b>'+wkN+'</b> OF 52</span><button id="date-edit">START DATE</button></div>';
+    }
+    box.innerHTML=html;
+    box.querySelector('#date-edit').addEventListener('click',edit);
+  }
+  function edit(){
+    var cfg=cfgGet(id);
+    var isWeek=a.mode==="week";
+    box.innerHTML='<div class="race-edit">'+
+      '<span class="mono" style="font-size:10px;letter-spacing:.12em;color:var(--ink-faint)">'+(isWeek?'RACE':'STARTED')+'</span>'+
+      '<input type="date" id="date-in" value="'+((isWeek?cfg.race:cfg.start)||'')+'">'+
+      '<button id="date-save">SAVE</button><button id="date-cancel">✕</button></div>';
+    box.querySelector('#date-save').addEventListener('click',function(){
+      var v=box.querySelector('#date-in').value;
+      var c2=cfgGet(id);
+      if(isWeek){ if(v) c2.race=v; else delete c2.race; }
+      else { if(v) c2.start=v; else delete c2.start; }
+      cfgSet(id,c2);
+      openAthlete(id);
+    });
+    box.querySelector('#date-cancel').addEventListener('click',draw);
+  }
+  draw();
+  return box;
 }
 
 function activeDays(){
@@ -725,6 +932,8 @@ function renderTabs(){
   var days=activeDays();
   var box=document.getElementById('days'); box.innerHTML='';
   var tk=todayKey();
+  // some schedules fold Sunday into a "Sat/Sun" tab
+  if(!days.filter(function(d){return d.key===tk;}).length && tk==="sun") tk="sat";
   if(!current.day){
     var match=days.filter(function(d){return d.key===tk;})[0];
     current.day = match ? match.key : days[0].key;
@@ -739,6 +948,36 @@ function renderTabs(){
   });
 }
 
+function dayTotal(d){
+  if(!d.groups) return 1;
+  var t=0; d.groups.forEach(function(g){ t+=g.items.length; });
+  return t;
+}
+function dayDone(d,state){
+  if(!d.groups) return state.session?1:0;
+  var c=0;
+  d.groups.forEach(function(g,gi){ g.items.forEach(function(ex,xi){ if(state[gi+"_"+xi]) c++; }); });
+  return c;
+}
+function logSession(d){
+  var log=logGet(current.athlete);
+  var t=dateISO(new Date());
+  var isNew=!log[t];
+  log[t]={t:d.type,title:d.title};
+  logSet(current.athlete,log);
+  renderStats();
+  if(isNew) confetti();
+}
+function unlogSession(d){
+  var log=logGet(current.athlete);
+  var t=dateISO(new Date());
+  if(log[t] && log[t].title===d.title){
+    delete log[t];
+    logSet(current.athlete,log);
+    renderStats();
+  }
+}
+
 function renderDay(){
   var a=ATHLETES[current.athlete];
   var days=activeDays();
@@ -746,18 +985,33 @@ function renderDay(){
   if(!d) d=days[0];
   var slot=document.getElementById('session-slot'); slot.innerHTML='';
 
+  var storeKey=store.key(current.athlete,current.ctx,d.key);
+  var state=store.get(storeKey);
+  var total=dayTotal(d);
+
   var sess=el('div','session');
   var head=el('div','session-head');
   head.innerHTML=
     '<div class="st"><span class="badge '+d.type+'">'+d.type+'</span>'+
     '<h2>'+esc(d.title)+'</h2></div>'+
-    (d.dur?'<span class="dur mono">'+esc(d.dur)+'</span>':'');
+    '<span class="hd-right"><span class="chip-done hidden">COMPLETE</span>'+
+    (d.dur?'<span class="dur mono">'+esc(d.dur)+'</span>':'')+'</span>';
   sess.appendChild(head);
 
-  var progFill=null;
-  if(d.groups){
-    var progWrap=el('div','prog'); progFill=el('div','fill'); progWrap.appendChild(progFill);
-    sess.appendChild(progWrap);
+  var progWrap=el('div','prog'), progFill=el('div','fill');
+  progWrap.appendChild(progFill);
+  sess.appendChild(progWrap);
+
+  function refresh(user){
+    var s=store.get(storeKey);
+    var c=dayDone(d,s);
+    progFill.style.width=(total?(c/total*100):0)+'%';
+    var complete = total>0 && c>=total;
+    head.querySelector('.chip-done').classList.toggle('hidden',!complete);
+    if(user){
+      if(complete) logSession(d);
+      else unlogSession(d);
+    }
   }
 
   if(d.type==="run"){
@@ -770,14 +1024,14 @@ function renderDay(){
   }
 
   if(d.groups){
-    var storeKey=store.key(current.athlete,current.ctx,d.key);
-    var state=store.get(storeKey);
+    var bar=el('div','startbar');
+    bar.innerHTML='<button class="start-btn" id="start-player">'+
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START WORKOUT</button>';
+    sess.appendChild(bar);
     var list=el('div','exlist');
-    var total=0;
     d.groups.forEach(function(g,gi){
       if(g.label){ list.appendChild(el('div','exgroup-label',esc(g.label))); }
       g.items.forEach(function(ex,xi){
-        total++;
         var id=gi+"_"+xi;
         var isDone=!!state[id];
         var row=el('div','ex'+(isDone?' done':''));
@@ -790,7 +1044,7 @@ function renderDay(){
           '<div class="ex-head">'+
             '<button class="check" data-check="'+id+'" aria-label="Mark done">'+CHECK.innerHTML+'</button>'+
             '<div class="ex-body">'+
-              '<div class="ex-name">'+esc(ex.name)+(ex.kb?'<span class="kb-flag">53KB</span>':'')+'</div>'+
+              '<div class="ex-name">'+esc(ex.name)+'</div>'+
               '<div class="ex-scheme mono">'+esc(ex.scheme)+'</div>'+
               (ex.note?'<div class="ex-note">'+esc(ex.note)+'</div>':'')+
               '<div class="ex-actions">'+actions+'</div>'+
@@ -800,10 +1054,11 @@ function renderDay(){
           '</div>';
         list.appendChild(row);
         row.querySelector('[data-check]').addEventListener('click',function(){
-          state[id]=!state[id];
-          store.set(storeKey,state);
-          row.classList.toggle('done',state[id]);
-          updateProg();
+          var s=store.get(storeKey);
+          s[id]=!s[id];
+          store.set(storeKey,s);
+          row.classList.toggle('done',!!s[id]);
+          refresh(true);
         });
         row.querySelector('[data-cue]').addEventListener('click',function(){
           document.getElementById('cues_'+id).classList.toggle('open');
@@ -811,16 +1066,32 @@ function renderDay(){
       });
     });
     sess.appendChild(list);
-    function updateProg(){
-      var s=store.get(storeKey); var c=0;
-      Object.keys(s).forEach(function(k){ if(s[k]) c++; });
-      if(progFill) progFill.style.width=(total?(c/total*100):0)+'%';
-    }
     slot.appendChild(sess);
-    updateProg();
+    bar.querySelector('#start-player').addEventListener('click',function(){ openPlayer(d,storeKey); });
   } else {
+    var bar2=el('div','startbar');
+    var btns='';
+    if(d.type==="run") btns+='<button class="start-btn" id="start-timer">'+
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START TIMER</button>';
+    btns+='<button class="sess-done'+(state.session?' on':'')+'" id="sess-done">'+
+      '<span class="check">'+CHECK.innerHTML+'</span><span class="sd-label">'+
+      (state.session?'SESSION DONE':'MARK SESSION DONE')+'</span></button>';
+    bar2.innerHTML=btns;
+    sess.appendChild(bar2);
     slot.appendChild(sess);
+    bar2.querySelector('#sess-done').addEventListener('click',function(){
+      var s=store.get(storeKey);
+      s.session=!s.session;
+      store.set(storeKey,s);
+      this.classList.toggle('on',!!s.session);
+      this.querySelector('.sd-label').textContent=s.session?'SESSION DONE':'MARK SESSION DONE';
+      refresh(true);
+    });
+    var st=bar2.querySelector('#start-timer');
+    if(st) st.addEventListener('click',function(){ openTimer(d,a,storeKey); });
   }
+  refresh(false);
+  renderStats();
 }
 
 function runBrief(d,a){
@@ -834,16 +1105,339 @@ function runBrief(d,a){
     else if(d.key==="thu"){ headline=row.thu; sub="Tempo / easy \u00b7 week "+wk; }
     else if(d.key==="sat"){ headline=row.sat; sub="Long run \u00b7 week "+wk; }
   } else {
-    headline = d.title;
+    headline = r.extra || d.title;
   }
+  var showExtraRow = r.extra && headline!==r.extra;
   wrap.innerHTML='<div class="headline mono">'+esc(headline||d.title)+'</div>'+
     (sub?'<div class="sub">'+esc(sub)+'</div>':'')+
     '<div class="runrows">'+
-      (r.extra?'<div class="runrow"><span class="k">Session</span><span class="v">'+esc(r.extra)+'</span></div>':'')+
+      (showExtraRow?'<div class="runrow"><span class="k">Session</span><span class="v">'+esc(r.extra)+'</span></div>':'')+
       '<div class="runrow"><span class="k">Warm-up</span><span class="v">'+esc(r.warm)+'</span></div>'+
       '<div class="runrow"><span class="k">Cool-down</span><span class="v">'+esc(r.cool)+'</span></div>'+
     '</div>';
   return wrap;
+}
+
+/* ================= history / streaks ================= */
+var calOpen=false;
+function renderStats(){
+  var slot=document.getElementById('stats-slot');
+  if(!slot || !current.athlete){ if(slot) slot.innerHTML=''; return; }
+  var log=logGet(current.athlete);
+  var dates=Object.keys(log);
+  var wk=isoWeek(new Date());
+  var thisWeek=dates.filter(function(x){ return isoWeek(parseDate(x))===wk; }).length;
+  slot.innerHTML=
+    '<div class="statsbar mono">'+
+      '<span>WEEK <b>'+thisWeek+'</b></span>'+
+      '<span>STREAK <b>'+calcStreak(log)+'</b></span>'+
+      '<span>TOTAL <b>'+dates.length+'</b></span>'+
+      '<button id="cal-btn">'+(calOpen?'HIDE ▴':'HISTORY ▾')+'</button>'+
+    '</div>'+
+    (calOpen?calendarHTML(log):'');
+  document.getElementById('cal-btn').addEventListener('click',function(){
+    calOpen=!calOpen; renderStats();
+  });
+}
+// streak = consecutive completed sessions walking back from today;
+// scheduled rest days and days not on the plan don't break it
+function calcStreak(log){
+  var req={};
+  activeDays().forEach(function(d){ if(d.type!=="rest") req[d.key]=1; });
+  var names=["sun","mon","tue","wed","thu","fri","sat"];
+  var d=new Date(), streak=0, first=true;
+  for(var i=0;i<400;i++){
+    var iso=dateISO(d);
+    if(log[iso]) streak++;
+    else if(req[names[d.getDay()]] && !first) break;
+    first=false;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+function calendarHTML(log){
+  var today=new Date();
+  var start=new Date(today);
+  start.setDate(start.getDate()-((today.getDay()+6)%7)-77); // Monday, 11 weeks back
+  var cell=new Date(start), todayIso=dateISO(today), cells='';
+  for(var c=0;c<12;c++){
+    for(var r=0;r<7;r++){
+      var iso=dateISO(cell);
+      var cls='c'+(log[iso]?' on':'')+(iso===todayIso?' td':'')+(cell>today?' fut':'');
+      cells+='<span class="'+cls+'" title="'+iso+(log[iso]?' · '+log[iso].title:'')+'"></span>';
+      cell.setDate(cell.getDate()+1);
+    }
+  }
+  return '<div class="cal"><div class="calgrid">'+cells+'</div>'+
+    '<div class="callabel mono">LAST 12 WEEKS · EACH COLUMN = 1 WEEK, MON–SUN</div></div>';
+}
+
+/* ================= celebration ================= */
+function confetti(){
+  var cv=document.createElement('canvas');
+  cv.className='confetti';
+  cv.width=window.innerWidth; cv.height=window.innerHeight;
+  document.body.appendChild(cv);
+  var ctx=cv.getContext('2d');
+  var cs=getComputedStyle(document.body);
+  var colors=['--amber','--lime','--run','--done'].map(function(v){ return cs.getPropertyValue(v).trim(); });
+  var ps=[];
+  for(var i=0;i<90;i++){
+    ps.push({ x:cv.width/2+(Math.random()-0.5)*160, y:cv.height*0.35,
+      vx:(Math.random()-0.5)*9, vy:-Math.random()*9-3,
+      s:4+Math.random()*5, r:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.3,
+      c:colors[i%colors.length] });
+  }
+  var t0=null;
+  function step(ts){
+    if(!t0) t0=ts;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(function(p){
+      p.vy+=0.25; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r);
+      ctx.fillStyle=p.c; ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.6); ctx.restore();
+    });
+    if(ts-t0<1800) requestAnimationFrame(step); else cv.remove();
+  }
+  requestAnimationFrame(step);
+}
+
+/* ================= overlays (shared) ================= */
+var overlayEl=null, ovInt=null, wakeLock=null;
+function openOverlay(){
+  closeOverlay();
+  overlayEl=el('div','overlay');
+  document.body.appendChild(overlayEl);
+  try{
+    if(navigator.wakeLock && navigator.wakeLock.request)
+      navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){});
+  }catch(e){}
+  return overlayEl;
+}
+function closeOverlay(){
+  if(ovInt){ clearInterval(ovInt); ovInt=null; }
+  if(overlayEl){ overlayEl.remove(); overlayEl=null; }
+  try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){}
+}
+
+/* ================= workout player ================= */
+function openPlayer(d,storeKey){
+  var flat=[];
+  d.groups.forEach(function(g,gi){
+    g.items.forEach(function(ex,xi){ flat.push({ id:gi+"_"+xi, gi:gi, label:g.label||"", ex:ex }); });
+  });
+  var startState=store.get(storeKey);
+  var idx=0;
+  while(idx<flat.length && startState[flat[idx].id]) idx++;
+  if(idx>=flat.length) idx=0;
+  var ov=openOverlay();
+
+  function stopInt(){ if(ovInt){ clearInterval(ovInt); ovInt=null; } }
+  function exit(){ stopInt(); closeOverlay(); renderDay(); }
+  function finish(){
+    stopInt(); closeOverlay(); renderDay();
+    var s=store.get(storeKey);
+    if(dayDone(d,s)>=dayTotal(d)) logSession(d);
+  }
+  function showExercise(){
+    if(idx>=flat.length){ finish(); return; }
+    var it=flat[idx], ex=it.ex;
+    var cues=ex.cues||autoCues(ex.name);
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
+      '<button class="ov-x" id="pl-x">✕ EXIT</button></div>'+
+      '<div class="ov-mid">'+
+        (it.label?'<div class="ov-eyebrow">'+esc(it.label)+'</div>':'')+
+        '<div class="ov-title">'+esc(ex.name)+'</div>'+
+        '<div class="ov-scheme">'+esc(ex.scheme)+'</div>'+
+        (ex.note?'<div class="ov-note">'+esc(ex.note)+'</div>':'')+
+        '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
+      '</div>'+
+      '<div class="ov-actions">'+
+        '<button class="ov-btn" id="pl-skip">SKIP</button>'+
+        '<button class="ov-btn primary" id="pl-done">DONE →</button>'+
+      '</div>';
+    ov.querySelector('#pl-x').addEventListener('click',exit);
+    ov.querySelector('#pl-skip').addEventListener('click',function(){ idx++; showExercise(); });
+    ov.querySelector('#pl-done').addEventListener('click',function(){
+      var s=store.get(storeKey);
+      s[flat[idx].id]=true;
+      store.set(storeKey,s);
+      idx++;
+      if(idx>=flat.length){ finish(); return; }
+      showRest(flat[idx].gi!==flat[idx-1].gi?90:60);
+    });
+  }
+  function showRest(secs){
+    var left=secs;
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
+      '<button class="ov-x" id="pl-x">✕ EXIT</button></div>'+
+      '<div class="ov-mid">'+
+        '<div class="ov-phase easy">REST</div>'+
+        '<div class="ov-clock" id="pl-clock">'+fmtSecs(left)+'</div>'+
+        '<div class="ov-rest-hint">Next: '+esc(flat[idx].ex.name)+'</div>'+
+      '</div>'+
+      '<div class="ov-actions"><button class="ov-btn primary" id="pl-go">SKIP REST →</button></div>';
+    ov.querySelector('#pl-x').addEventListener('click',exit);
+    ov.querySelector('#pl-go').addEventListener('click',function(){ stopInt(); showExercise(); });
+    ovInt=setInterval(function(){
+      left--;
+      if(left<=0){ stopInt(); beep(880,200); buzz(200); showExercise(); return; }
+      var c=document.getElementById('pl-clock'); if(c) c.textContent=fmtSecs(left);
+    },1000);
+  }
+  showExercise();
+}
+
+/* ================= run interval timer ================= */
+function toSecs(n,unit){ return /min/i.test(unit) ? Math.round(+n*60) : Math.round(+n); }
+function parseIntervals(text){
+  if(!text) return null;
+  var m=text.match(/(\d+)(?:\s*[–-]\s*\d+)?\s*[×x]\s*\(?\s*(\d+(?:\.\d+)?)\s*(min|s)\b[^\/]*\/\s*(\d+(?:\.\d+)?)\s*(min|s)\b/i);
+  if(m) return { rounds:+m[1], work:toSecs(m[2],m[3]), easy:toSecs(m[4],m[5]),
+                 workLab:"HARD", easyLab:"EASY", startEasy:false };
+  var w=text.match(/walk\s*(\d+)\s*min\s*\/\s*jog\s*(\d+)\s*min/i);
+  if(w){
+    var reps=text.match(/(\d+)(?:\s*[–-]\s*(\d+))?\s*[×x]/);
+    return { rounds:reps?+(reps[2]||reps[1]):5, work:+w[2]*60, easy:+w[1]*60,
+             workLab:"JOG", easyLab:"WALK", startEasy:true };
+  }
+  var j=text.match(/jog\s*(\d+)\s*min\s*\/\s*walk\s*(\d+)\s*min(?:\s*[×x]\s*(\d+)(?:\s*[–-]\s*(\d+))?)?/i);
+  if(j) return { rounds:+(j[4]||j[3]||4), work:+j[1]*60, easy:+j[2]*60,
+                 workLab:"JOG", easyLab:"WALK", startEasy:false };
+  return null;
+}
+function openTimer(d,a,storeKey){
+  var text = a.mode==="week"
+    ? (a.runTable[parseInt(current.ctx.slice(1))]||{})[d.key]
+    : (d.run && d.run.extra);
+  var cfg=parseIntervals(text||"");
+  var ov=openOverlay();
+
+  function stopInt(){ if(ovInt){ clearInterval(ovInt); ovInt=null; } }
+  function exit(){ stopInt(); closeOverlay(); renderDay(); }
+  function markDone(){
+    var s=store.get(storeKey);
+    s.session=true;
+    store.set(storeKey,s);
+    closeOverlay(); renderDay(); logSession(d);
+  }
+  function doneScreen(msg){
+    stopInt();
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">'+esc(d.title)+'</span>'+
+      '<button class="ov-x" id="tm-x">✕</button></div>'+
+      '<div class="ov-mid" style="text-align:center">'+
+        '<div class="ov-phase easy">'+msg+'</div>'+
+        (d.run&&d.run.cool?'<div class="ov-note">Cool-down: '+esc(d.run.cool)+'</div>':'')+
+      '</div>'+
+      '<div class="ov-actions">'+
+        '<button class="ov-btn" id="tm-close">CLOSE</button>'+
+        '<button class="ov-btn primary" id="tm-done">MARK SESSION DONE ✓</button>'+
+      '</div>';
+    ov.querySelector('#tm-x').addEventListener('click',exit);
+    ov.querySelector('#tm-close').addEventListener('click',exit);
+    ov.querySelector('#tm-done').addEventListener('click',markDone);
+  }
+  function showStopwatch(){
+    var secs=0;
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">RUN TIMER</span>'+
+      '<button class="ov-x" id="tm-x">✕</button></div>'+
+      '<div class="ov-mid">'+
+        '<div class="ov-eyebrow">'+esc(d.title)+'</div>'+
+        (text?'<div class="ov-note">'+esc(text)+'</div>':'')+
+        '<div class="ov-clock" id="tm-clock" style="margin-top:14px">0:00</div>'+
+      '</div>'+
+      '<div class="ov-actions"><button class="ov-btn primary" id="tm-fin">FINISH →</button></div>';
+    ov.querySelector('#tm-x').addEventListener('click',exit);
+    ov.querySelector('#tm-fin').addEventListener('click',function(){ doneScreen('RUN DONE'); });
+    ovInt=setInterval(function(){
+      secs++;
+      var c=document.getElementById('tm-clock'); if(c) c.textContent=fmtSecs(secs);
+    },1000);
+  }
+  function stepRow(id,lab){
+    return '<div class="stepper"><span class="lab">'+lab+'</span>'+
+      '<button data-dn="'+id+'">−</button><span class="val" id="v-'+id+'"></span>'+
+      '<button data-up="'+id+'">+</button></div>';
+  }
+  function fmtVal(id){ return id==='rounds' ? cfg.rounds+'×' : fmtSecs(cfg[id]); }
+  function paintVals(){
+    ['work','easy','rounds'].forEach(function(id){
+      var e=document.getElementById('v-'+id); if(e) e.textContent=fmtVal(id);
+    });
+  }
+  function showSetup(){
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">INTERVAL TIMER</span>'+
+      '<button class="ov-x" id="tm-x">✕</button></div>'+
+      '<div class="ov-mid">'+
+        '<div class="ov-eyebrow">'+esc(d.title)+'</div>'+
+        (text?'<div class="ov-note">'+esc(text)+'</div>':'')+
+        stepRow('work',cfg.workLab)+stepRow('easy',cfg.easyLab)+stepRow('rounds','ROUNDS')+
+      '</div>'+
+      '<div class="ov-actions"><button class="ov-btn primary" id="tm-go">START</button></div>';
+    paintVals();
+    ov.querySelector('#tm-x').addEventListener('click',exit);
+    ov.querySelector('#tm-go').addEventListener('click',startRun);
+    ov.querySelectorAll('[data-up],[data-dn]').forEach(function(b){
+      b.addEventListener('click',function(){
+        var up=this.hasAttribute('data-up');
+        var id=this.getAttribute(up?'data-up':'data-dn');
+        if(id==='rounds') cfg.rounds=Math.max(1,cfg.rounds+(up?1:-1));
+        else cfg[id]=Math.max(15,cfg[id]+(up?15:-15));
+        paintVals();
+      });
+    });
+  }
+  function startRun(){
+    var seq=[];
+    for(var r=0;r<cfg.rounds;r++){
+      var pair=cfg.startEasy
+        ? [{lab:cfg.easyLab,cls:'easy',secs:cfg.easy},{lab:cfg.workLab,cls:'work',secs:cfg.work}]
+        : [{lab:cfg.workLab,cls:'work',secs:cfg.work},{lab:cfg.easyLab,cls:'easy',secs:cfg.easy}];
+      seq.push(pair[0],pair[1]);
+    }
+    var si=0, left=seq[0].secs, paused=false;
+    function paint(){
+      var s=seq[si];
+      ov.innerHTML=
+        '<div class="ov-top"><span class="ov-prog">ROUND '+(Math.floor(si/2)+1)+' / '+cfg.rounds+'</span>'+
+        '<button class="ov-x" id="tm-x">✕ END</button></div>'+
+        '<div class="ov-mid">'+
+          '<div class="ov-phase '+s.cls+'">'+esc(s.lab)+'</div>'+
+          '<div class="ov-clock" id="tm-clock">'+fmtSecs(left)+'</div>'+
+          '<div class="ov-round">NEXT: '+(si+1<seq.length?esc(seq[si+1].lab):'DONE')+'</div>'+
+        '</div>'+
+        '<div class="ov-actions"><button class="ov-btn" id="tm-pause">'+(paused?'RESUME':'PAUSE')+'</button></div>';
+      ov.querySelector('#tm-x').addEventListener('click',function(){ doneScreen('INTERVALS STOPPED'); });
+      ov.querySelector('#tm-pause').addEventListener('click',function(){
+        paused=!paused; this.textContent=paused?'RESUME':'PAUSE';
+      });
+    }
+    paint();
+    beep(988,250); buzz([150,80,150]);
+    ovInt=setInterval(function(){
+      if(paused) return;
+      left--;
+      if(left<=0){
+        si++;
+        if(si>=seq.length){
+          stopInt(); beep(660,500); buzz([200,100,200,100,400]);
+          doneScreen('INTERVALS DONE'); return;
+        }
+        left=seq[si].secs;
+        beep(seq[si].cls==='work'?988:660,250);
+        buzz(seq[si].cls==='work'?[150,80,150]:250);
+        paint();
+      } else {
+        var c=document.getElementById('tm-clock'); if(c) c.textContent=fmtSecs(left);
+      }
+    },1000);
+  }
+  if(cfg) showSetup(); else showStopwatch();
 }
 
 document.getElementById('back').addEventListener('click',function(){
@@ -855,6 +1449,8 @@ document.getElementById('back').addEventListener('click',function(){
 document.getElementById('reset-day').addEventListener('click',function(){
   var k=store.key(current.athlete,current.ctx,current.day);
   store.del(k);
+  var d=activeDays().filter(function(x){return x.key===current.day;})[0];
+  if(d) unlogSession(d);
   renderDay();
 });
 
@@ -870,6 +1466,10 @@ function tick(){
 tick(); setInterval(tick,10000);
 
 renderRoster();
+
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
 </script>
 </body>
 </html>
