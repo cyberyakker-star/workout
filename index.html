@@ -1252,6 +1252,8 @@ function openPlayer(d,storeKey){
         '<div class="ov-scheme">'+esc(ex.scheme)+'</div>'+
         (ex.note?'<div class="ov-note">'+esc(ex.note)+'</div>':'')+
         '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
+        '<a class="demo-btn" style="align-self:flex-start;margin-top:12px" href="'+demoURL(ex.name)+'" target="_blank" rel="noopener">'+
+          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>WATCH DEMO</a>'+
       '</div>'+
       '<div class="ov-actions">'+
         '<button class="ov-btn" id="pl-skip">SKIP</button>'+
