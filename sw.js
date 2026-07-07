@@ -1,4 +1,4 @@
-var CACHE = 'workout-v1';
+var CACHE = 'workout-v2';
 var ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
@@ -13,15 +13,36 @@ self.addEventListener('activate', function (e) {
   self.clients.claim();
 });
 
-// cache-first with background refresh: instant offline loads,
-// updates picked up on the next visit
 self.addEventListener('fetch', function (e) {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
-  e.respondWith(caches.match(e.request).then(function (hit) {
-    var net = fetch(e.request).then(function (res) {
+  var req = e.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+
+  var isDoc = req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').indexOf('text/html') !== -1;
+
+  if (isDoc) {
+    // network-first for the app HTML so new deploys show up on the next open;
+    // fall back to the cached shell when offline
+    e.respondWith(
+      fetch(req).then(function (res) {
+        if (res && res.ok) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        }
+        return res;
+      }).catch(function () {
+        return caches.match(req).then(function (hit) { return hit || caches.match('./'); });
+      })
+    );
+    return;
+  }
+
+  // cache-first with background refresh for static assets (icons, manifest)
+  e.respondWith(caches.match(req).then(function (hit) {
+    var net = fetch(req).then(function (res) {
       if (res && res.ok) {
         var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+        caches.open(CACHE).then(function (c) { c.put(req, copy); });
       }
       return res;
     }).catch(function () { return hit; });

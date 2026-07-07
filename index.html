@@ -1251,8 +1251,12 @@ function miniItems(d,state){
     var ex=gs[gi].items[xi], id=gi+"_"+xi;
     out.push({ id:id, gi:gi, label:gs[gi].label||"", ex:ex, nm:state["swap_"+id]||ex.name });
   }
-  var main = gs.length>1 ? 1 : 0;
-  if(main===1 && gs[0].items.length) push(0,0);
+  // 10-min = the top movements of the main working block, no warm-up filler
+  var main=0, best=-1;
+  for(var g=0;g<gs.length;g++){
+    if(/warm/i.test(gs[g].label||'')) continue;
+    if(gs[g].items.length>best){ best=gs[g].items.length; main=g; }
+  }
   for(var i=0;i<gs[main].items.length && out.length<4;i++) push(main,i);
   return out;
 }
@@ -1703,9 +1707,10 @@ function openTimer(d,a,storeKey,opts){
   }
   var warm=(d.run&&d.run.warm)||'';
   if(opts.countdown){
+    // the 10-min version is its own thing — no full warm-up, no full-distance target
     intro({ prog:'10-MINUTE RULE', eyebrow:opts.label||'EASY PACE', title:d.title,
-      note:text||'Easy 10-minute run or walk', warm:warm,
-      hint:'Ten minutes still counts as a ✅. Keep it easy — stop after, or keep going.',
+      note:'Easy 10 minutes at a conversational pace — just get moving.', warm:'',
+      hint:'Ten minutes still counts as a ✅. Stop after, or keep going.',
       start:'START '+fmtSecs(opts.countdown)+' →',
       go:function(){ showCountdown(opts.countdown,opts.label||'EASY PACE'); } });
   } else if(cfg){
