@@ -330,6 +330,19 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
   border:1px solid var(--line-bright);border-radius:3px;padding:8px 12px}
 .ov-x:hover{color:var(--danger);border-color:var(--danger)}
 .ov-mid{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:0}
+.ov-mid.ex{justify-content:flex-start;padding-top:6px}
+.ov-video{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;margin:8px 0}
+.ov-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ov-video-facade{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:#000;cursor:pointer;display:block}
+.ov-video-facade .ov-thumb{width:100%;height:100%;object-fit:cover;display:block;opacity:.9}
+.ov-video-facade .pbtn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:58px;height:40px;background:#f00;border-radius:11px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.ov-video-facade .pbtn svg{width:24px;height:24px}
+.ov-video-facade:active .pbtn{transform:translate(-50%,-50%) scale(.94)}
+.ov-yt-link{align-self:flex-start;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  color:var(--ink-dim);margin:-2px 0 2px;text-decoration:none}
+.ov-yt-link:hover{color:var(--amber)}
 .ov-eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--amber);text-transform:uppercase}
 .ov-title{font-size:30px;font-weight:700;line-height:1.15;margin:2px 0;color:var(--ink)}
 .ov-scheme{font-family:var(--mono);font-size:17px;color:var(--amber)}
@@ -800,6 +813,50 @@ function swapOptions(name){
   var n=name.toLowerCase();
   var keys=Object.keys(SWAP_LIB).sort(function(a,b){return b.length-a.length;});
   for(var i=0;i<keys.length;i++){ if(n.indexOf(keys[i])!==-1) return SWAP_LIB[keys[i]]; }
+  return null;
+}
+
+/* curated form-check videos (YouTube IDs). Longest-substring match, like autoCues.
+   Unmatched exercises fall back to a YouTube search link. */
+var VIDEO_LIB = {
+  "single-leg romanian deadlift":"Nenu2LI9_dw",
+  "romanian deadlift":"aa57T45iFSE",
+  "goblet squat":"gm4ln6PO4rc",
+  "atg split squat":"qfpkwZlG-cs",
+  "split squat":"qfpkwZlG-cs",
+  "kb swing":"pAWaNCsncZA",
+  "swing":"pAWaNCsncZA",
+  "banded lateral walk":"y_bqFDQZSHQ",
+  "ab wheel":"NbudTqiwguk",
+  "suitcase carry":"y-hn_Ha1-RE",
+  "carry":"y-hn_Ha1-RE",
+  "side plank":"44ND4bOB-T0",
+  "pull-up":"MhokcbRLP5w",
+  "pike push-up":"pHR5yG6xBps",
+  "kneeling push-up":"WDIpL0pjun0",
+  "push-up":"WDIpL0pjun0",
+  "single-arm kb press":"bqDq1RXrTGg",
+  "renegade row":"F68p7cJFtOI",
+  "bent-over kb row":"IyQAMOV0WAc",
+  "kb row":"IyQAMOV0WAc",
+  "band row":"IyQAMOV0WAc",
+  "band face pull":"AlTGQrDOd98",
+  "tibialis raise":"O8ZcXfwFuqs",
+  "calf raise":"97NbelB5yvQ",
+  "bird dog":"ZdAHe9_HeEw",
+  "dead bug":"bxn9FBrt4-A",
+  "single-leg glute bridge":"VUl8R0kn6v4",
+  "glute bridge":"nbjJjSa0cKo",
+  "isolated hip thrust":"z8WwUC_UA4w",
+  "hip thrust":"z8WwUC_UA4w",
+  "donkey kick":"KgghFOMKnkE",
+  "kickback":"KgghFOMKnkE",
+  "clamshell":"aQVApsdOLSI"
+};
+function videoId(name){
+  var n=name.toLowerCase();
+  var keys=Object.keys(VIDEO_LIB).sort(function(a,b){return b.length-a.length;});
+  for(var i=0;i<keys.length;i++){ if(n.indexOf(keys[i])!==-1) return VIDEO_LIB[keys[i]]; }
   return null;
 }
 
@@ -1466,22 +1523,47 @@ function openPlayer(d,storeKey,opts){
     if(idx>=flat.length){ finish(); return; }
     var it=flat[idx], ex=it.ex, nm=it.nm||ex.name;
     var cues=(nm===ex.name&&ex.cues)?ex.cues:autoCues(nm);
+    var vid=videoId(nm), search=demoURL(nm);
+    var demoBtn='<a class="demo-btn" style="align-self:flex-start;margin-top:4px" href="'+search+'" target="_blank" rel="noopener">'+
+      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>WATCH DEMO</a>';
+    var videoHTML = vid
+      ? '<div class="ov-video" id="ov-video" data-vid="'+vid+'">'+
+          '<button class="ov-video-facade" id="ov-play" aria-label="Play form video">'+
+            '<img class="ov-thumb" alt="" src="https://i.ytimg.com/vi/'+vid+'/hqdefault.jpg">'+
+            '<span class="pbtn"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span>'+
+          '</button>'+
+        '</div>'+
+        '<a class="ov-yt-link" id="ov-yt" href="'+search+'" target="_blank" rel="noopener">Open on YouTube ↗</a>'
+      : demoBtn;
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
       '<button class="ov-x" id="pl-x">✕ EXIT</button></div>'+
-      '<div class="ov-mid">'+
+      '<div class="ov-mid ex">'+
         (it.label?'<div class="ov-eyebrow">'+esc(it.label)+'</div>':'')+
         '<div class="ov-title">'+esc(nm)+'</div>'+
+        videoHTML+
         '<div class="ov-scheme">'+esc(ex.scheme)+'</div>'+
         (ex.note?'<div class="ov-note">'+esc(ex.note)+'</div>':'')+
         '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
-        '<a class="demo-btn" style="align-self:flex-start;margin-top:12px" href="'+demoURL(nm)+'" target="_blank" rel="noopener">'+
-          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>WATCH DEMO</a>'+
       '</div>'+
       '<div class="ov-actions">'+
         '<button class="ov-btn" id="pl-skip">SKIP</button>'+
         '<button class="ov-btn primary" id="pl-done">DONE →</button>'+
       '</div>';
+    var play=ov.querySelector('#ov-play');
+    if(play){
+      // if the thumbnail (hence the video) is unavailable, fall back to a search link
+      play.querySelector('.ov-thumb').addEventListener('error',function(){
+        var v=ov.querySelector('#ov-video'), y=ov.querySelector('#ov-yt');
+        if(y) y.remove();
+        if(v){ var a=document.createElement('div'); a.innerHTML=demoBtn; v.replaceWith(a.firstChild); }
+      });
+      play.addEventListener('click',function(){
+        var wrap=ov.querySelector('#ov-video');
+        wrap.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+vid+
+          '?autoplay=1&rel=0&playsinline=1&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+      });
+    }
     ov.querySelector('#pl-x').addEventListener('click',exit);
     ov.querySelector('#pl-skip').addEventListener('click',function(){ idx++; showExercise(); });
     ov.querySelector('#pl-done').addEventListener('click',function(){
