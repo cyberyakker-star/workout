@@ -354,7 +354,8 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .ov-x{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ink-dim);
   border:1px solid var(--line-bright);border-radius:3px;padding:8px 12px}
 .ov-x:hover{color:var(--danger);border-color:var(--danger)}
-.ov-mid{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:0}
+.ov-mid{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 .ov-mid.ex{justify-content:flex-start;padding-top:6px}
 .ov-video{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;margin:8px 0}
 .ov-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -377,7 +378,7 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .ov-cues ul{margin:0;padding:0}
 .ov-cues li{font-size:13.5px;padding:2px 0 2px 16px;position:relative;list-style:none;color:var(--ink)}
 .ov-cues li::before{content:"\203A";position:absolute;left:0;color:var(--lime)}
-.ov-actions{display:flex;gap:10px;margin-top:18px}
+.ov-actions{display:flex;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .ov-btn{flex:1;font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;
   padding:16px;border-radius:6px;border:1px solid var(--line-bright);color:var(--ink-dim);text-align:center}
 .ov-btn.primary{background:var(--amber);border-color:var(--amber);color:var(--bg);font-weight:700}
@@ -545,7 +546,7 @@ function p1Days(ratio){
 var ATHLETES = {
 
   anthony: {
-    meta:{ name:"ANTHONY", tag:"Operator 01", goal:"Half marathon \u00b7 13.1 \u00b7 strength base" },
+    meta:{ name:"ANTHONY", tag:"", goal:"Half marathon \u00b7 13.1 \u00b7 strength base" },
     theme:"tactical",
     mode:"week",
     weeks:12,
@@ -636,7 +637,7 @@ var ATHLETES = {
   },
 
   her: {
-    meta:{ name:"CELINA", tag:"Operator 02", goal:"5K strong \u00b7 12 mo to top 10" },
+    meta:{ name:"CELINA", tag:"", goal:"5K strong \u00b7 12 mo to top 10" },
     theme:"fem",
     mode:"phase",
     phases:[
@@ -1185,7 +1186,7 @@ function renderRoster(){
     card.innerHTML=
       '<span class="corner"></span>'+
       (a.custom?'<button class="op-del" aria-label="Delete plan">\u2715</button>':'')+
-      '<div class="tag mono">'+esc(a.meta.tag)+'</div>'+
+      (a.meta.tag?'<div class="tag mono">'+esc(a.meta.tag)+'</div>':'')+
       '<div class="name">'+esc(a.meta.name)+'</div>'+
       '<div class="goal">'+esc(a.meta.goal)+'</div>'+
       '<div class="enter mono">'+(a.theme==="fem"?"OPEN":"ENTER")+' \u25b8</div>';
@@ -1228,7 +1229,7 @@ function openBuilder(){
     '<button class="ov-x" id="bx">\u2715</button></div>'+
     '<div class="ov-mid ex" style="gap:2px">'+
       '<div class="brow"><div class="blabel mono">NAME</div>'+
-        '<input id="bname" class="binput" placeholder="Their name" maxlength="18"></div>'+
+        '<input id="bname" class="binput" placeholder="Your name" maxlength="18"></div>'+
       row('SEX','sex')+row('GOAL','goal')+row('EXPERIENCE','exp')+
       row('PROGRAM LENGTH','weeks')+row('DAYS / WEEK','freq')+row('EQUIPMENT','equip')+
       row('LIMITATIONS (optional)','limits',true)+
