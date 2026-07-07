@@ -64,8 +64,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---- header ---- */
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid var(--line)}
-.topline{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--amber);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topline{display:flex;align-items:baseline;gap:8px;min-width:0;font-family:var(--mono);font-size:12px;
+  font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.topline .tl-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tl-edit{flex:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-dim);
+  text-transform:none;font-weight:400;padding:2px 4px}
+.tl-edit:hover{color:var(--amber)}
 .top .clock{font-family:var(--mono);font-size:11px;color:var(--ink-faint);
   letter-spacing:.1em;text-align:right;text-transform:uppercase;flex:none}
 
@@ -310,13 +314,7 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
 
 /* ---- race / plan date line ---- */
-.race-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 2px 0;
-  font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-faint);text-transform:uppercase}
-.race-line b{color:var(--amber)}
-.race-line button{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-dim);
-  border:none;padding:3px 4px}
-.race-line button:hover{color:var(--amber)}
-.race-edit{display:flex;align-items:center;gap:8px;margin-top:8px;padding:10px 12px;background:var(--panel);
+.race-edit{margin-top:10px;display:flex;align-items:center;gap:8px;margin-top:8px;padding:10px 12px;background:var(--panel);
   border:1px solid var(--line);border-radius:4px}
 .race-edit input[type=date]{flex:1;min-width:0;background:var(--panel-2);color:var(--ink);
   border:1px solid var(--line-bright);border-radius:3px;padding:6px 8px;font-family:var(--mono);font-size:12px}
@@ -949,8 +947,14 @@ function openAthlete(id){
     });
   }
 
-  slot.appendChild(raceLine(id,a));
-  document.getElementById('topline').textContent=headerStatusText(id);
+  var rl=raceLine(id,a);
+  slot.appendChild(rl);
+  var top=document.getElementById('topline');
+  var editLabel = (a.mode==="week" && !cfg.race) ? '＋ set race date' : 'edit';
+  var showText = !(a.mode==="week" && !cfg.race);
+  top.innerHTML=(showText?'<span class="tl-text">'+esc(headerStatusText(id))+'</span>':'')+
+    '<button class="tl-edit" id="topline-edit">'+editLabel+'</button>';
+  top.querySelector('#topline-edit').addEventListener('click',function(){ rl._edit(); });
 
   current.day=null;
   renderTabs();
@@ -1019,15 +1023,7 @@ function headerStatusText(id){
 function raceLine(id,a){
   var box=el('div');
   function draw(){
-    var cfg=cfgGet(id), html;
-    if(a.mode==="week"){
-      html='<div class="race-line"><span></span><button id="date-edit">'+
-        (cfg.race?'✎ edit race date':'＋ set race date')+'</button></div>';
-    } else {
-      html='<div class="race-line"><span></span><button id="date-edit">✎ edit start date</button></div>';
-    }
-    box.innerHTML=html;
-    box.querySelector('#date-edit').addEventListener('click',edit);
+    box.innerHTML=''; // date picker opens on demand from the top-bar edit link
   }
   function edit(){
     var cfg=cfgGet(id);
@@ -1047,6 +1043,7 @@ function raceLine(id,a){
     box.querySelector('#date-cancel').addEventListener('click',draw);
   }
   draw();
+  box._edit=edit;
   return box;
 }
 
