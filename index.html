@@ -118,6 +118,31 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .op-card.op-fem .enter{color:#c9b8a4}
 .op-card.op-fem:hover .enter{color:#c96442}
 
+/* add-custom card + delete */
+.op-card.op-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  background:transparent;border:1.5px dashed var(--line-bright);min-height:96px;color:var(--ink-faint)}
+.op-card.op-add:hover{border-color:var(--amber);color:var(--amber)}
+.op-add .add-plus{font-size:26px;line-height:1}
+.op-add .add-label{font-size:11px;letter-spacing:.16em}
+@media(max-width:460px){.op-card.op-add{min-height:64px;flex-direction:row}}
+.op-card.op-custom{cursor:pointer}
+.op-del{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:12px;z-index:2;
+  background:rgba(0,0,0,.25);color:#fff;opacity:.55}
+.op-card.op-fem .op-del{background:rgba(201,100,66,.18);color:#c96442}
+.op-del:hover{opacity:1}
+
+/* builder chips */
+.brow{margin:10px 0 4px}
+.blabel{font-size:10px;letter-spacing:.16em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:7px}
+.optgrid{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-family:var(--sans);font-size:13px;padding:9px 13px;border-radius:999px;
+  border:1px solid var(--line-bright);color:var(--ink-dim);background:var(--panel)}
+.chip.on{border-color:var(--amber);background:var(--amber);color:var(--bg);font-weight:600}
+.binput{width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--line-bright);
+  border-radius:8px;padding:11px 12px;font-family:var(--sans);font-size:15px}
+.plan-static{flex:1;min-width:0;font-size:13px;color:var(--ink);letter-spacing:.02em}
+
 /* ---- session header ---- */
 .session-top{margin-bottom:18px}
 .backbtn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;
@@ -716,6 +741,218 @@ var ATHLETES = {
   }
 };
 
+/* ==================================================================
+   CUSTOM PLAN GENERATOR
+   Builds an ATHLETES-shaped object (phase mode, one weekly template)
+   from the builder selections. Reuses the whole session/player engine.
+   ================================================================== */
+var EX_DB = [
+  // squat
+  {name:"Bodyweight Squat",pat:"squat",eq:"bw",flags:[]},
+  {name:"Slant Board Squat",pat:"squat",eq:"bw",flags:[]},
+  {name:"Wall Sit",pat:"squat",eq:"bw",flags:[]},
+  {name:"Goblet Squat",pat:"squat",eq:"db",flags:["knee"]},
+  {name:"Barbell Back Squat",pat:"squat",eq:"barbell",flags:["knee"]},
+  {name:"Leg Press",pat:"squat",eq:"machine",flags:[]},
+  // hinge
+  {name:"Single-Leg Romanian Deadlift",pat:"hinge",eq:"db",flags:[]},
+  {name:"Romanian Deadlift",pat:"hinge",eq:"db",flags:["spinal"]},
+  {name:"KB Swing",pat:"hinge",eq:"kb",flags:["spinal","impact"]},
+  {name:"Glute Bridge",pat:"hinge",eq:"bw",flags:["floor"]},
+  {name:"Barbell Deadlift",pat:"hinge",eq:"barbell",flags:["spinal"]},
+  {name:"Back Extension",pat:"hinge",eq:"machine",flags:[]},
+  // lunge
+  {name:"Reverse Lunge",pat:"lunge",eq:"bw",flags:["knee"]},
+  {name:"Split Squat",pat:"lunge",eq:"bw",flags:["knee"]},
+  {name:"ATG Split Squat",pat:"lunge",eq:"bw",flags:["knee"]},
+  {name:"Lateral Lunge",pat:"lunge",eq:"bw",flags:["knee"]},
+  {name:"Step-Up",pat:"lunge",eq:"db",flags:[]},
+  // horizontal push
+  {name:"Push-up",pat:"pushH",eq:"bw",flags:[]},
+  {name:"Incline Push-up",pat:"pushH",eq:"bw",flags:[]},
+  {name:"Kneeling Push-up",pat:"pushH",eq:"bw",flags:[]},
+  {name:"DB Bench Press",pat:"pushH",eq:"db",flags:[]},
+  {name:"Band Chest Press",pat:"pushH",eq:"band",flags:[]},
+  {name:"Barbell Bench Press",pat:"pushH",eq:"barbell",flags:[]},
+  {name:"Machine Chest Press",pat:"pushH",eq:"machine",flags:[]},
+  // vertical push (all overhead)
+  {name:"Pike Push-up",pat:"pushV",eq:"bw",flags:["overhead"]},
+  {name:"Single-Arm KB Press",pat:"pushV",eq:"kb",flags:["overhead"]},
+  {name:"DB Overhead Press",pat:"pushV",eq:"db",flags:["overhead"]},
+  {name:"Band Overhead Press",pat:"pushV",eq:"band",flags:["overhead"]},
+  {name:"Barbell Overhead Press",pat:"pushV",eq:"barbell",flags:["overhead"]},
+  {name:"Machine Shoulder Press",pat:"pushV",eq:"machine",flags:["overhead"]},
+  // horizontal pull (row)
+  {name:"Table Row",pat:"pullH",eq:"bw",flags:[]},
+  {name:"Inverted Row",pat:"pullH",eq:"bar",flags:[]},
+  {name:"DB Row",pat:"pullH",eq:"db",flags:[]},
+  {name:"Bent-Over KB Row",pat:"pullH",eq:"kb",flags:["spinal"]},
+  {name:"Bent-Over Band Row",pat:"pullH",eq:"band",flags:["spinal"]},
+  {name:"Renegade Row",pat:"pullH",eq:"db",flags:["floor"]},
+  {name:"Seated Cable Row",pat:"pullH",eq:"cable",flags:[]},
+  {name:"Machine Row",pat:"pullH",eq:"machine",flags:[]},
+  // vertical pull
+  {name:"Doorway Row",pat:"pullV",eq:"bw",flags:[]},
+  {name:"Pull-up",pat:"pullV",eq:"bar",flags:["overhead"]},
+  {name:"Band Lat Pulldown",pat:"pullV",eq:"band",flags:["overhead"]},
+  {name:"Lat Pulldown",pat:"pullV",eq:"machine",flags:["overhead"]},
+  // hip
+  {name:"Single-Leg Glute Bridge",pat:"hip",eq:"bw",flags:["floor"]},
+  {name:"Isolated Hip Thrust",pat:"hip",eq:"bw",flags:["floor"]},
+  {name:"Clamshell",pat:"hip",eq:"bw",flags:["floor"]},
+  {name:"Standing Hip Abduction",pat:"hip",eq:"bw",flags:[]},
+  {name:"Banded Lateral Walk",pat:"hip",eq:"band",flags:[]},
+  {name:"Cable Kickback",pat:"hip",eq:"cable",flags:[]},
+  // core
+  {name:"Plank",pat:"core",eq:"bw",flags:["floor"]},
+  {name:"Side Plank",pat:"core",eq:"bw",flags:["floor"]},
+  {name:"Dead Bug",pat:"core",eq:"bw",flags:["floor"]},
+  {name:"Bird Dog",pat:"core",eq:"bw",flags:["floor"]},
+  {name:"Ab Wheel Rollout",pat:"core",eq:"bw",flags:["floor"]},
+  {name:"Standing Knee Raise",pat:"core",eq:"bw",flags:[]},
+  {name:"Suitcase Carry",pat:"core",eq:"db",flags:[]},
+  {name:"Standing Anti-Rotation Press",pat:"core",eq:"band",flags:[]},
+  // calf
+  {name:"Calf Raise",pat:"calf",eq:"bw",flags:[]},
+  {name:"KOT Calf Raise",pat:"calf",eq:"bw",flags:[]},
+  // conditioning finishers
+  {name:"Fast Step-Up",pat:"cond",eq:"bw",flags:[]},
+  {name:"Squat-to-Stand Pulse",pat:"cond",eq:"bw",flags:[]},
+  {name:"Mountain Climber",pat:"cond",eq:"bw",flags:["floor"]},
+  {name:"High Knees",pat:"cond",eq:"bw",flags:["impact"]},
+  {name:"Jump Squat",pat:"cond",eq:"bw",flags:["impact","knee"]},
+  {name:"Burpee",pat:"cond",eq:"bw",flags:["impact","floor"]},
+  {name:"KB Swing (finisher)",pat:"cond",eq:"kb",flags:["spinal","impact"]}
+];
+var WARMUPS=["Leg Swings","Arm Circles","Hip Circles","World's Greatest Stretch","Torso Twists","Bodyweight Squat"];
+var EQ_TIERS={bodyweight:["bw"],dumbbells:["bw","db"],home:["bw","db","kb","band","bar"],full:["bw","db","kb","band","bar","barbell","machine","cable"]};
+var LIMIT_FLAGS={impact:["impact"],knee:["knee"],shoulder:["overhead"],floor:["floor","spinal"]};
+var DAY_LABEL={mon:"Mon",tue:"Tue",wed:"Wed",thu:"Thu",fri:"Fri",sat:"Sat",sun:"Sun"};
+var GOAL_LABEL={stronger:"Get stronger",muscle:"Build muscle",general:"General fitness",fatloss:"Lose fat",endurance:"Endurance"};
+var EQUIP_LABEL={bodyweight:"Bodyweight",dumbbells:"Dumbbells",home:"Home gym",full:"Full gym"};
+var MAIN_PATS={squat:1,hinge:1,pushH:1,pushV:1,pullH:1,pullV:1};
+
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function hashStr(s){ var h=2166136261; for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+function shuffle(arr,rand){ var a=arr.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(rand()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+
+function allowedPool(cfg){
+  var tiers=EQ_TIERS[cfg.equip]||EQ_TIERS.full;
+  var excl={}; (cfg.limits||[]).forEach(function(l){ (LIMIT_FLAGS[l]||[]).forEach(function(f){ excl[f]=1; }); });
+  return EX_DB.filter(function(x){
+    if(tiers.indexOf(x.eq)===-1) return false;
+    for(var i=0;i<x.flags.length;i++){ if(excl[x.flags[i]]) return false; }
+    return true;
+  });
+}
+function schemeFor(goal,exp,main){
+  var s;
+  if(goal==='stronger') s=main?{sets:{beginner:3,intermediate:4,advanced:5}[exp],reps:'4\u20136'}:{sets:3,reps:'8\u201310'};
+  else if(goal==='muscle') s=main?{sets:{beginner:3,intermediate:3,advanced:4}[exp],reps:'8\u201312'}:{sets:3,reps:'10\u201315'};
+  else if(goal==='fatloss') s={sets:3,reps:'12\u201315'};
+  else s=main?{sets:3,reps:'10\u201312'}:{sets:{beginner:2,intermediate:3,advanced:3}[exp],reps:'12'};
+  return s.sets+' \u00d7 '+s.reps;
+}
+function noteFor(ex){ return (ex.eq==='bw') ? '' : 'Weight where the last 1\u20132 reps are tough'; }
+
+var SPLITS={
+  3:[["squat","pushH","pullH","hip","core","calf"],["hinge","pushV","pullV","lunge","core","calf"],["lunge","pushH","pullH","hip","core","calf"]],
+  4:[["pushH","pullH","pushV","pullV","core"],["squat","hinge","lunge","hip","calf"],["pushV","pullV","pushH","pullH","core"],["hinge","squat","lunge","hip","calf"]],
+  5:[["pushH","pushV","pushH","core"],["pullH","pullV","pullH","core"],["squat","hinge","lunge","hip","calf"],["pushH","pullH","pushV","pullV","core"],["hinge","squat","lunge","hip","calf"]],
+  6:[["pushH","pushV","pushH","core"],["pullH","pullV","pullH","core"],["squat","hinge","lunge","hip","calf"],["pushV","pushH","pushH","core"],["pullV","pullH","pullH","core"],["hinge","squat","lunge","hip","calf"]]
+};
+var SPLIT_TITLES={
+  3:["Full Body A","Full Body B","Full Body C"],
+  4:["Upper A","Lower A","Upper B","Lower B"],
+  5:["Push","Pull","Legs","Upper","Lower"],
+  6:["Push A","Pull A","Legs A","Push B","Pull B","Legs B"]
+};
+var TRAIN_DAYS={3:["mon","wed","fri"],4:["mon","tue","thu","fri"],5:["mon","tue","wed","thu","fri"],6:["mon","tue","wed","thu","fri","sat"]};
+
+function buildCustomPlan(cfg){
+  var rand=mulberry32(hashStr(cfg.id||cfg.name||'x'));
+  var exp=cfg.exp, goal=cfg.goal, freq=Math.max(3,Math.min(6,cfg.freq||3));
+  var pool=allowedPool(cfg);
+  var byPat={}; pool.forEach(function(x){ (byPat[x.pat]=byPat[x.pat]||[]).push(x); });
+  Object.keys(byPat).forEach(function(p){ byPat[p]=shuffle(byPat[p],rand); });
+  var cursor={};
+  function pick(pat){ var l=byPat[pat]; if(!l||!l.length) return null; var i=(cursor[pat]||0)%l.length; cursor[pat]++; return l[i]; }
+  var warms=shuffle(WARMUPS,rand);
+  function warmGroup(i){ return { label:"Warm-up \u00b7 5 min", items:[
+    { name:warms[i%warms.length], scheme:"1\u20132 min" },
+    { name:warms[(i+1)%warms.length], scheme:"\u00d7 10 / side" } ]}; }
+  var nMain={beginner:4,intermediate:5,advanced:6}[exp]||5;
+
+  var week={};
+  function restDay(key){ return { key:key, label:DAY_LABEL[key], type:"rest", title:"Rest / Recovery",
+    rest:["Full rest, or an easy walk / light stretch","Mobility for anything tight"] }; }
+
+  if(goal==='endurance'){
+    var runInt = exp==='beginner'?"6\u00d7 (1 min hard / 2 min easy)":exp==='advanced'?"6\u00d7 (2 min hard / 90s easy)":"8\u00d7 (1 min hard / 90s easy)";
+    var runEasy = exp==='advanced'?"30\u201340 min w/ 10 min tempo":"20\u201330 min easy";
+    var runLong = exp==='beginner'?"Long: build 25 \u2192 45 min":"Long: build 35 \u2192 70 min";
+    function runDay(key,kind,title,extra){ return { key:key,label:DAY_LABEL[key],type:"run",title:title,dur:"30\u201360 min",
+      run:{ kind:kind, warm: kind==='speed'?"10 min easy jog + 4\u00d7 20s strides":"5\u201310 min easy jog",
+        cool: kind==='long'?"10 min walk, full stretch":"5 min walk + hamstring/hip stretch", extra:extra } }; }
+    function condDay(key,title){ // light full-body strength support
+      var pats=["squat","pushH","pullH","hip","core"], mains=[], used={};
+      for(var i=0;i<pats.length && mains.length<4;i++){ var ex=pick(pats[i]); if(!ex||used[ex.name])continue; used[ex.name]=1;
+        mains.push({name:ex.name,scheme:schemeFor('general',exp,!!MAIN_PATS[pats[i]]),note:noteFor(ex)}); }
+      return { key:key,label:DAY_LABEL[key],type:"strength",title:title,dur:"30\u201340 min",
+        groups:[ warmGroup(i), { label:"Support strength", items:mains } ] }; }
+    var sched={
+      3:{tue:['run','speed','Intervals',runInt],thu:['run','tempo','Easy / Tempo',runEasy],sat:['run','long','Long Run',runLong]},
+      4:{mon:['cond','Strength Support'],tue:['run','speed','Intervals',runInt],thu:['run','tempo','Easy / Tempo',runEasy],sat:['run','long','Long Run',runLong]},
+      5:{mon:['cond','Strength Support'],tue:['run','speed','Intervals',runInt],thu:['run','tempo','Easy / Tempo',runEasy],fri:['cond','Strength Support'],sat:['run','long','Long Run',runLong]},
+      6:{mon:['cond','Strength Support'],tue:['run','speed','Intervals',runInt],wed:['run','tempo','Easy Run',runEasy],thu:['cond','Strength Support'],fri:['run','tempo','Easy / Tempo',runEasy],sat:['run','long','Long Run',runLong]}
+    }[freq];
+    ["mon","tue","wed","thu","fri","sat","sun"].forEach(function(k){
+      var s=sched[k];
+      if(!s){ week[k]=restDay(k); }
+      else if(s[0]==='run'){ week[k]=runDay(k,s[1],s[2],s[3]); }
+      else { week[k]=condDay(k,s[1]); }
+    });
+  } else {
+    var split=SPLITS[freq], titles=SPLIT_TITLES[freq], trainDays=TRAIN_DAYS[freq];
+    trainDays.forEach(function(key,di){
+      var pats=split[di], mains=[], used={};
+      for(var i=0;i<pats.length && mains.length<nMain;i++){
+        var ex=pick(pats[i]); if(!ex) continue; if(used[ex.name]){ ex=pick(pats[i]); if(!ex||used[ex.name]) continue; }
+        used[ex.name]=1;
+        mains.push({ name:ex.name, scheme:schemeFor(goal,exp,!!MAIN_PATS[pats[i]]), note:noteFor(ex) });
+      }
+      var groups=[ warmGroup(di), { label:"Strength", items:mains } ];
+      var core=pick('core'); var fin=[];
+      if(core) fin.push({ name:core.name, scheme: goal==='fatloss'?'40s':'\u00d7 12' });
+      if(goal==='fatloss'){ var c=pick('cond'); if(c) fin.push({ name:c.name, scheme:'40s on / 20s off \u00d7 4' }); }
+      if(fin.length) groups.push({ label: goal==='fatloss'?"Finisher":"Core", items:fin });
+      week[key]={ key:key, label:DAY_LABEL[key], type: goal==='fatloss'?"mixed":"strength",
+        title: titles[di]||"Strength", dur:"40\u201350 min", groups:groups };
+    });
+    ["mon","tue","wed","thu","fri","sat","sun"].forEach(function(k){ if(!week[k]) week[k]=restDay(k); });
+  }
+
+  var days=["mon","tue","wed","thu","fri","sat","sun"].map(function(k){ return week[k]; });
+  var pw=cfg.weeks||0; // 0 = continuous
+  var gLabel=GOAL_LABEL[goal]||"Custom";
+  return {
+    meta:{ name:(cfg.name||"You").toUpperCase(), tag:"CUSTOM \u00b7 "+freq+"\u00d7/wk",
+      goal: gLabel+" \u00b7 "+(EQUIP_LABEL[cfg.equip]||"")+" \u00b7 "+(pw?pw+" wk":"ongoing") },
+    theme: cfg.sex==='male' ? 'tactical' : 'fem',
+    sex: cfg.sex, custom:true, mode:"phase", programWeeks:pw,
+    phases:[ { key:"prog", label:(pw?"Weeks 1\u2013"+pw:"Ongoing"), range:gLabel, name:gLabel, from:1, to:9999 } ],
+    phaseDays:{ prog:days },
+    foot:"<b>Consistency wins.</b> Add a rep or a little weight when the last set feels easy. Missed a day? Do the next one \u2014 never miss twice."
+  };
+}
+
+/* load / persist custom users */
+function customList(){ try{ return JSON.parse(localStorage.getItem('trainops:custom'))||[]; }catch(e){ return []; } }
+function customSave(list){ try{ localStorage.setItem('trainops:custom',JSON.stringify(list)); }catch(e){} }
+function loadCustomAthletes(){
+  customList().forEach(function(cfg){ try{ ATHLETES[cfg.id]=buildCustomPlan(cfg); }catch(e){} });
+}
+
 var CUE_LIB = {
   "goblet squat":["Bell tight to your chest, elbows in","Sit down between your knees","Knees track over toes","Drive up through mid-foot"],
   "single-leg romanian deadlift":["Hinge at the hip, soft standing knee","Back stays flat, hips square","Reach the bell toward the floor","Squeeze the glute to stand tall"],
@@ -930,19 +1167,98 @@ function setTheme(theme){
   if(m) m.setAttribute('content',color);
 }
 
+function rosterOrder(){
+  var custom=customList().map(function(c){return c.id;}).filter(function(id){return ATHLETES[id];});
+  return custom.concat(['anthony','her']);
+}
 function renderRoster(){
   var r=document.getElementById('roster'); r.innerHTML='';
-  Object.keys(ATHLETES).forEach(function(id){
-    var a=ATHLETES[id];
-    var card=el('button','op-card '+(a.theme==="fem"?"op-fem":"op-tact"));
+
+  var add=el('button','op-card op-add');
+  add.innerHTML='<div class="add-plus">\uff0b</div><div class="add-label mono">ADD CUSTOM PLAN</div>';
+  add.addEventListener('click',openBuilder);
+  r.appendChild(add);
+
+  rosterOrder().forEach(function(id){
+    var a=ATHLETES[id]; if(!a) return;
+    var card=el('div','op-card '+(a.theme==="fem"?"op-fem":"op-tact")+(a.custom?' op-custom':''));
     card.innerHTML=
       '<span class="corner"></span>'+
+      (a.custom?'<button class="op-del" aria-label="Delete plan">\u2715</button>':'')+
       '<div class="tag mono">'+esc(a.meta.tag)+'</div>'+
       '<div class="name">'+esc(a.meta.name)+'</div>'+
       '<div class="goal">'+esc(a.meta.goal)+'</div>'+
       '<div class="enter mono">'+(a.theme==="fem"?"OPEN":"ENTER")+' \u25b8</div>';
     card.addEventListener('click',function(){ openAthlete(id); });
+    var del=card.querySelector('.op-del');
+    if(del) del.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(!confirm('Delete '+a.meta.name+"'s plan? Their history stays saved.")) return;
+      customSave(customList().filter(function(c){return c.id!==id;}));
+      delete ATHLETES[id];
+      try{ localStorage.removeItem('trainops:cfg:'+id); }catch(_){}
+      renderRoster();
+    });
     r.appendChild(card);
+  });
+}
+
+/* ---------- custom plan builder ---------- */
+var BUILDER_OPTS={
+  sex:[["male","Male"],["female","Female"]],
+  goal:[["stronger","Get stronger"],["muscle","Build muscle"],["general","General fitness"],["fatloss","Lose fat"],["endurance","Endurance (run)"]],
+  exp:[["beginner","Beginner"],["intermediate","Intermediate"],["advanced","Advanced"]],
+  weeks:[["4","4 weeks"],["6","6 weeks"],["8","8 weeks"],["0","Continuous"]],
+  freq:[["3","3 days"],["4","4 days"],["5","5 days"],["6","6 days"]],
+  equip:[["bodyweight","Bodyweight"],["dumbbells","Dumbbells"],["home","Home gym"],["full","Full gym"]],
+  limits:[["impact","Low-impact"],["knee","Knee-friendly"],["shoulder","Shoulder-friendly"],["floor","No floor / back"]]
+};
+function openBuilder(){
+  var sel={ name:"", sex:"male", goal:"muscle", exp:"beginner", weeks:"6", freq:"3", equip:"dumbbells", limits:[] };
+  var ov=openOverlay();
+  function chips(field,multi){
+    return '<div class="optgrid" data-field="'+field+'">'+BUILDER_OPTS[field].map(function(o){
+      var on = multi ? sel[field].indexOf(o[0])!==-1 : sel[field]===o[0];
+      return '<button class="chip'+(on?' on':'')+'" data-val="'+o[0]+'">'+esc(o[1])+'</button>';
+    }).join('')+'</div>';
+  }
+  function row(label,field,multi){ return '<div class="brow"><div class="blabel mono">'+label+'</div>'+chips(field,multi)+'</div>'; }
+  ov.innerHTML=
+    '<div class="ov-top"><span class="ov-prog">NEW CUSTOM PLAN</span>'+
+    '<button class="ov-x" id="bx">\u2715</button></div>'+
+    '<div class="ov-mid ex" style="gap:2px">'+
+      '<div class="brow"><div class="blabel mono">NAME</div>'+
+        '<input id="bname" class="binput" placeholder="Their name" maxlength="18"></div>'+
+      row('SEX','sex')+row('GOAL','goal')+row('EXPERIENCE','exp')+
+      row('PROGRAM LENGTH','weeks')+row('DAYS / WEEK','freq')+row('EQUIPMENT','equip')+
+      row('LIMITATIONS (optional)','limits',true)+
+    '</div>'+
+    '<div class="ov-actions">'+
+      '<button class="ov-btn" id="bcancel">CANCEL</button>'+
+      '<button class="ov-btn primary" id="bcreate">CREATE PLAN \u2192</button>'+
+    '</div>';
+  ov.querySelector('#bname').addEventListener('input',function(){ sel.name=this.value; });
+  ov.querySelectorAll('.optgrid').forEach(function(g){
+    var field=g.getAttribute('data-field'), multi=field==='limits';
+    g.querySelectorAll('.chip').forEach(function(b){
+      b.addEventListener('click',function(){
+        var v=b.getAttribute('data-val');
+        if(multi){ var i=sel.limits.indexOf(v); if(i===-1) sel.limits.push(v); else sel.limits.splice(i,1); b.classList.toggle('on'); }
+        else { sel[field]=v; g.querySelectorAll('.chip').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); }
+      });
+    });
+  });
+  ov.querySelector('#bx').addEventListener('click',function(){ closeOverlay(); });
+  ov.querySelector('#bcancel').addEventListener('click',function(){ closeOverlay(); });
+  ov.querySelector('#bcreate').addEventListener('click',function(){
+    var cfg={ id:"custom_"+Date.now(), name:(sel.name||"You").slice(0,18), sex:sel.sex, goal:sel.goal,
+      exp:sel.exp, weeks:parseInt(sel.weeks)||0, freq:parseInt(sel.freq), equip:sel.equip,
+      limits:sel.limits.slice(), start:dateISO(new Date()) };
+    var list=customList(); list.unshift(cfg); customSave(list);
+    ATHLETES[cfg.id]=buildCustomPlan(cfg);
+    renderRoster();
+    closeOverlay();
+    openAthlete(cfg.id);
   });
 }
 
@@ -986,24 +1302,32 @@ function openAthlete(id){
     var savedP=ctxFor(id);
     current.ctx=savedP;
     var strip2=el('div','weekstrip');
-    var sel2='<label>PLAN</label><select id="ctx-sel">';
-    a.phases.forEach(function(p){
-      sel2+='<option value="'+p.key+'"'+(p.key===savedP?' selected':'')+'>'+esc(p.label+' \u00b7 '+p.name)+'</option>';
-    });
-    sel2+='</select>';
-    var curP=a.phases.filter(function(p){return p.key===savedP;})[0];
-    sel2+='<span class="phase" id="ph-label">'+esc(curP.range)+'</span>';
-    strip2.innerHTML=sel2;
-    slot.appendChild(strip2);
-    document.getElementById('ctx-sel').addEventListener('change',function(){
-      var pk=this.value;
-      localStorage.setItem('trainops:'+id+':phase',pk);
-      current.ctx=pk;
-      var cp=a.phases.filter(function(p){return p.key===pk;})[0];
-      document.getElementById('ph-label').textContent=cp.range;
-      current.day=null;
-      renderTabs(); renderDay();
-    });
+    if(a.phases.length===1){
+      // custom plans have one repeating template \u2014 static label, no dropdown
+      var p0=a.phases[0];
+      strip2.innerHTML='<label>PLAN</label><span class="plan-static mono">'+esc(p0.name)+'</span>'+
+        '<span class="phase">'+esc(p0.label)+'</span>';
+      slot.appendChild(strip2);
+    } else {
+      var sel2='<label>PLAN</label><select id="ctx-sel">';
+      a.phases.forEach(function(p){
+        sel2+='<option value="'+p.key+'"'+(p.key===savedP?' selected':'')+'>'+esc(p.label+' \u00b7 '+p.name)+'</option>';
+      });
+      sel2+='</select>';
+      var curP=a.phases.filter(function(p){return p.key===savedP;})[0];
+      sel2+='<span class="phase" id="ph-label">'+esc(curP.range)+'</span>';
+      strip2.innerHTML=sel2;
+      slot.appendChild(strip2);
+      document.getElementById('ctx-sel').addEventListener('change',function(){
+        var pk=this.value;
+        localStorage.setItem('trainops:'+id+':phase',pk);
+        current.ctx=pk;
+        var cp=a.phases.filter(function(p){return p.key===pk;})[0];
+        document.getElementById('ph-label').textContent=cp.range;
+        current.day=null;
+        renderTabs(); renderDay();
+      });
+    }
   }
 
   var rl=raceLine(id,a);
@@ -1076,8 +1400,9 @@ function headerStatusText(id){
     if(days===0) return "Race day — send it";
     return "Race in "+(days<14 ? days+" day"+(days===1?"":"s") : Math.ceil(days/7)+" wk")+" · "+fmtDate(race);
   }
-  var wkN=cfg.start?Math.min(weeksSince(cfg.start),52):1;
-  return "Week "+wkN+" of 52";
+  var total = a.programWeeks!=null ? a.programWeeks : 52; // 0 = continuous
+  var wkN = cfg.start ? (total ? Math.min(weeksSince(cfg.start),total) : weeksSince(cfg.start)) : 1;
+  return total ? ("Week "+wkN+" of "+total) : ("Week "+wkN);
 }
 function raceLine(id,a){
   var box=el('div');
@@ -1926,6 +2251,7 @@ function tick(){
 }
 tick(); setInterval(tick,10000);
 
+loadCustomAthletes();
 renderRoster();
 
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
