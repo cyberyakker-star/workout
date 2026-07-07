@@ -57,7 +57,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---- header ---- */
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:10px}
+.brand{display:none;align-items:center;gap:10px}
+body.theme-tactical .brand{display:flex}
 .brand .dot{width:9px;height:9px;background:var(--amber);border-radius:50%;
   box-shadow:0 0 10px var(--amber);flex:none}
 .brand h1{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.16em;
@@ -126,7 +127,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:4px}
 .weekstrip label{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
   color:var(--ink-faint);text-transform:uppercase;flex:none}
-.weekstrip select{flex:1;background:var(--panel-2);color:var(--ink);
+.weekstrip select{flex:1;min-width:0;background:var(--panel-2);color:var(--ink);
   border:1px solid var(--line-bright);border-radius:3px;padding:7px 10px;
   font-family:var(--mono);font-size:13px;letter-spacing:.03em}
 .weekstrip .phase{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
@@ -289,11 +290,11 @@ body.theme-celina .kb-flag{background:rgba(201,100,66,.12)}
   </div>
 
   <div id="roster-view">
-    <p class="eyebrow">Select operator</p>
+    <p class="eyebrow">Who's training today?</p>
     <div class="roster" id="roster"></div>
     <div class="footnote" style="margin-top:20px">
-      <b>Same gym, two missions.</b> Tap in to pull today's session. Your checkmarks
-      save on this device &mdash; close it, come back mid-workout, everything's where you left it.
+      Tap a card to open today's session. Checkmarks save on this device &mdash;
+      close it, come back mid-workout, everything's where you left it.
     </div>
   </div>
 
@@ -317,6 +318,43 @@ body.theme-celina .kb-flag{background:rgba(201,100,66,.12)}
 /* ==================================================================
    PLAN DATA - EDIT HERE
    ================================================================== */
+/* Phase 1 week template for Celina — same days, one resolved walk/jog ratio */
+function p1Days(ratio){
+  return [
+    { key:"mon", label:"Mon", type:"run", title:"Walk / Run", dur:"20–25 min",
+      run:{ kind:"walkrun", warm:"Stroller totally fine", cool:"Easy cooldown walk",
+        extra:ratio } },
+    { key:"tue", label:"Tue", type:"strength", title:"Booty Bands + Core", dur:"20 min",
+      groups:[{ label:"2 rounds · 12 reps each", items:[
+        { name:"Squat Side Step", scheme:"× 12", note:"Booty band" },
+        { name:"Glute Bridge Spread", scheme:"× 12" },
+        { name:"Donkey Kicks", scheme:"× 12 / side" },
+        { name:"Kickbacks", scheme:"× 12 / side" },
+        { name:"Lying Leg Abduction", scheme:"× 12" },
+        { name:"Bird Dog", scheme:"× 10 / side" },
+        { name:"Dead Bug", scheme:"× 10 / side" }
+      ]}]},
+    { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
+      rest:["Full rest, or an easy stroller walk","Nothing to prove today"] },
+    { key:"thu", label:"Thu", type:"run", title:"Walk / Run", dur:"20–25 min",
+      run:{ kind:"walkrun", warm:"Same as Monday", cool:"Easy walk to finish",
+        extra:ratio } },
+    { key:"fri", label:"Fri", type:"strength", title:"Simple Strength", dur:"20–25 min",
+      groups:[{ label:"2–3 rounds", items:[
+        { name:"Goblet Squat", scheme:"× 10", note:"10–25 lb KB", kb:true },
+        { name:"Glute Bridge", scheme:"× 12", note:"Band above knees" },
+        { name:"Kneeling Push-up", scheme:"× 8–10" },
+        { name:"Bent-Over Band Row", scheme:"× 12" },
+        { name:"Side Plank", scheme:"20s / side" }
+      ]}]},
+    { key:"sat", label:"Sat/Sun", type:"mixed", title:"One Session", dur:"30 min",
+      groups:[{ label:"Pick one — other day fully off", items:[
+        { name:"30 min walk / run", scheme:"easy", cues:["Conversational pace","Stroller counts"] },
+        { name:"— or repeat Tuesday's band circuit", scheme:"2 rounds" }
+      ]}]}
+  ];
+}
+
 var ATHLETES = {
 
   anthony: {
@@ -415,45 +453,17 @@ var ATHLETES = {
     theme:"fem",
     mode:"phase",
     phases:[
-      { key:"p1", label:"Phase 1", range:"Weeks 1\u20136", name:"Build the habit" },
-      { key:"p2", label:"Phase 2", range:"Months 2\u20135", name:"Run continuously" },
-      { key:"p3", label:"Phase 3", range:"Months 6\u20139", name:"Become a runner" },
-      { key:"p4", label:"Phase 4", range:"Months 10\u201312", name:"Get fast" }
+      { key:"p1a", label:"Weeks 1\u20132", range:"Phase 1", name:"Build the habit" },
+      { key:"p1b", label:"Weeks 3\u20134", range:"Phase 1", name:"Build the habit" },
+      { key:"p1c", label:"Weeks 5\u20136", range:"Phase 1", name:"Build the habit" },
+      { key:"p2", label:"Months 2\u20135", range:"Phase 2", name:"Run continuously" },
+      { key:"p3", label:"Months 6\u20139", range:"Phase 3", name:"Become a runner" },
+      { key:"p4", label:"Months 10\u201312", range:"Phase 4", name:"Get fast" }
     ],
     phaseDays:{
-      p1:[
-        { key:"mon", label:"Mon", type:"run", title:"Walk / Run", dur:"20\u201325 min",
-          run:{ kind:"walkrun", warm:"Stroller totally fine", cool:"Easy cooldown walk",
-            extra:"Wk 1\u20132: walk 3 / jog 1 \u00b7 Wk 3+: walk 2 / jog 2 \u00b7 Wk 5+: walk 1 / jog 3" } },
-        { key:"tue", label:"Tue", type:"strength", title:"Booty Bands + Core", dur:"20 min",
-          groups:[{ label:"2 rounds \u00b7 12 reps each", items:[
-            { name:"Squat Side Step", scheme:"\u00d7 12", note:"Booty band" },
-            { name:"Glute Bridge Spread", scheme:"\u00d7 12" },
-            { name:"Donkey Kicks", scheme:"\u00d7 12 / side" },
-            { name:"Kickbacks", scheme:"\u00d7 12 / side" },
-            { name:"Lying Leg Abduction", scheme:"\u00d7 12" },
-            { name:"Bird Dog", scheme:"\u00d7 10 / side" },
-            { name:"Dead Bug", scheme:"\u00d7 10 / side" }
-          ]}]},
-        { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
-          rest:["Full rest, or an easy stroller walk","Nothing to prove today"] },
-        { key:"thu", label:"Thu", type:"run", title:"Walk / Run", dur:"20\u201325 min",
-          run:{ kind:"walkrun", warm:"Same as Monday", cool:"Easy walk to finish",
-            extra:"Match Monday's walk/jog ratio for the week" } },
-        { key:"fri", label:"Fri", type:"strength", title:"Simple Strength", dur:"20\u201325 min",
-          groups:[{ label:"2\u20133 rounds", items:[
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"10\u201325 lb KB", kb:true },
-            { name:"Glute Bridge", scheme:"\u00d7 12", note:"Band above knees" },
-            { name:"Kneeling Push-up", scheme:"\u00d7 8\u201310" },
-            { name:"Bent-Over Band Row", scheme:"\u00d7 12" },
-            { name:"Side Plank", scheme:"20s / side" }
-          ]}]},
-        { key:"sat", label:"Sat/Sun", type:"mixed", title:"One Session", dur:"30 min",
-          groups:[{ label:"Pick one \u2014 other day fully off", items:[
-            { name:"30 min walk / run", scheme:"easy", cues:["Conversational pace","Stroller counts"] },
-            { name:"\u2014 or repeat Tuesday's band circuit", scheme:"2 rounds" }
-          ]}]}
-      ],
+      p1a:p1Days("Walk 3 min / jog 1 min \u2014 repeat 5\u20136\u00d7"),
+      p1b:p1Days("Walk 2 min / jog 2 min \u2014 repeat 5\u20136\u00d7"),
+      p1c:p1Days("Walk 1 min / jog 3 min \u2014 repeat 5\u20136\u00d7"),
       p2:[
         { key:"mon", label:"Mon", type:"run", title:"Run", dur:"~30 min",
           run:{ kind:"walkrun", warm:"Light warm-up walk", cool:"Easy walk down",
@@ -634,7 +644,7 @@ function renderRoster(){
       '<div class="tag mono">'+esc(a.meta.tag)+'</div>'+
       '<div class="name">'+esc(a.meta.name)+'</div>'+
       '<div class="goal">'+esc(a.meta.goal)+'</div>'+
-      '<div class="enter mono">ENTER \u25b8</div>';
+      '<div class="enter mono">'+(a.theme==="fem"?"OPEN":"ENTER")+' \u25b8</div>';
     card.addEventListener('click',function(){ openAthlete(id); });
     r.appendChild(card);
   });
@@ -676,9 +686,10 @@ function openAthlete(id){
     });
   } else {
     var savedP=localStorage.getItem('trainops:'+id+':phase')||a.phases[0].key;
+    if(!a.phases.filter(function(p){return p.key===savedP;}).length) savedP=a.phases[0].key;
     current.ctx=savedP;
     var strip2=el('div','weekstrip');
-    var sel2='<label>PHASE</label><select id="ctx-sel">';
+    var sel2='<label>PLAN</label><select id="ctx-sel">';
     a.phases.forEach(function(p){
       sel2+='<option value="'+p.key+'"'+(p.key===savedP?' selected':'')+'>'+esc(p.label+' \u00b7 '+p.name)+'</option>';
     });
@@ -753,7 +764,7 @@ function renderDay(){
     sess.appendChild(runBrief(d,a));
   } else if(d.type==="rest"){
     var rb=el('div','restbrief');
-    rb.innerHTML='<div class="big mono">STAND DOWN</div><ul>'+
+    rb.innerHTML='<div class="big mono">'+(a.theme==="fem"?"REST DAY":"STAND DOWN")+'</div><ul>'+
       d.rest.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
     sess.appendChild(rb);
   }
