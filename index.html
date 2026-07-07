@@ -340,8 +340,15 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
   box-shadow:0 2px 10px rgba(0,0,0,.4)}
 .ov-video-facade .pbtn svg{width:24px;height:24px}
 .ov-video-facade:active .pbtn{transform:translate(-50%,-50%) scale(.94)}
+.ov-vstrip{display:flex;gap:8px;margin:8px 0 2px}
+.ov-vthumb{flex:1 1 0;min-width:0;aspect-ratio:16/9;border-radius:6px;overflow:hidden;padding:0;
+  border:2px solid transparent;background:#000;cursor:pointer;position:relative}
+.ov-vthumb img{width:100%;height:100%;object-fit:cover;display:block;opacity:.6;transition:opacity .12s}
+.ov-vthumb.active{border-color:var(--amber)}
+.ov-vthumb.active img{opacity:1}
+.ov-vthumb:active img{opacity:.85}
 .ov-yt-link{align-self:flex-start;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
-  color:var(--ink-dim);margin:-2px 0 2px;text-decoration:none}
+  color:var(--ink-dim);margin:6px 0 2px;text-decoration:none}
 .ov-yt-link:hover{color:var(--amber)}
 .ov-eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--amber);text-transform:uppercase}
 .ov-title{font-size:30px;font-weight:700;line-height:1.15;margin:2px 0;color:var(--ink)}
@@ -816,49 +823,51 @@ function swapOptions(name){
   return null;
 }
 
-/* curated form-check videos (YouTube IDs). Longest-substring match, like autoCues.
+/* curated form-check videos (YouTube IDs), 2-3 per movement so the player
+   can offer alternates. Longest-substring match, like autoCues.
    Unmatched exercises fall back to a YouTube search link. */
 var VIDEO_LIB = {
-  "single-leg romanian deadlift":"Nenu2LI9_dw",
-  "romanian deadlift":"aa57T45iFSE",
-  "goblet squat":"gm4ln6PO4rc",
-  "atg split squat":"qfpkwZlG-cs",
-  "split squat":"qfpkwZlG-cs",
-  "kb swing":"pAWaNCsncZA",
-  "swing":"pAWaNCsncZA",
-  "banded lateral walk":"y_bqFDQZSHQ",
-  "ab wheel":"NbudTqiwguk",
-  "suitcase carry":"y-hn_Ha1-RE",
-  "carry":"y-hn_Ha1-RE",
-  "side plank":"44ND4bOB-T0",
-  "pull-up":"MhokcbRLP5w",
-  "pike push-up":"pHR5yG6xBps",
-  "kneeling push-up":"WDIpL0pjun0",
-  "push-up":"WDIpL0pjun0",
-  "single-arm kb press":"bqDq1RXrTGg",
-  "renegade row":"F68p7cJFtOI",
-  "bent-over kb row":"IyQAMOV0WAc",
-  "kb row":"IyQAMOV0WAc",
-  "band row":"IyQAMOV0WAc",
-  "band face pull":"AlTGQrDOd98",
-  "tibialis raise":"O8ZcXfwFuqs",
-  "calf raise":"97NbelB5yvQ",
-  "bird dog":"ZdAHe9_HeEw",
-  "dead bug":"bxn9FBrt4-A",
-  "single-leg glute bridge":"VUl8R0kn6v4",
-  "glute bridge":"nbjJjSa0cKo",
-  "isolated hip thrust":"z8WwUC_UA4w",
-  "hip thrust":"z8WwUC_UA4w",
-  "donkey kick":"KgghFOMKnkE",
-  "kickback":"KgghFOMKnkE",
-  "clamshell":"aQVApsdOLSI"
+  "single-leg romanian deadlift":["Nenu2LI9_dw","Zfr6wizR8rs","iS7atZhcRnw"],
+  "romanian deadlift":["aa57T45iFSE","IJdUtnxAmNo","hQgFixeXdZo"],
+  "goblet squat":["gm4ln6PO4rc","BR4tlEE_A98","6mf0oa2GGUc"],
+  "atg split squat":["qfpkwZlG-cs","4qPJUSczLcM","oVGns3iOxVw"],
+  "split squat":["qfpkwZlG-cs","4qPJUSczLcM","oVGns3iOxVw"],
+  "kb swing":["pAWaNCsncZA","alFXWtV3VcE","1Qi0NQW89Oc"],
+  "swing":["pAWaNCsncZA","alFXWtV3VcE","1Qi0NQW89Oc"],
+  "banded lateral walk":["y_bqFDQZSHQ","9MuZrYJddcQ","cbDudaLroVs"],
+  "ab wheel":["NbudTqiwguk","ikkOq5mHaho","j6lR4u193gE"],
+  "suitcase carry":["y-hn_Ha1-RE","WhxtwWqb2BQ","eM7u45iNOEU"],
+  "carry":["y-hn_Ha1-RE","WhxtwWqb2BQ","eM7u45iNOEU"],
+  "side plank":["44ND4bOB-T0","iNbH7_edNI8","XeN4pEZZJNI"],
+  "pull-up":["MhokcbRLP5w","6zyx46Vpato","yl_owH54iH0"],
+  "pike push-up":["pHR5yG6xBps","paCOGgmLCA0","fXgou2W10ok"],
+  "kneeling push-up":["WDIpL0pjun0","mECzqUIDWfU","IODxDxX7oi4"],
+  "push-up":["WDIpL0pjun0","mECzqUIDWfU","IODxDxX7oi4"],
+  "single-arm kb press":["bqDq1RXrTGg","gjr-QAdsq4o","X-uFqWtjpGI"],
+  "renegade row":["F68p7cJFtOI","0ANhSr-Vk9M","4qEIChzM4ZA"],
+  "bent-over kb row":["IyQAMOV0WAc","vjM-TVScoao","BTSSM1iEhug"],
+  "kb row":["IyQAMOV0WAc","vjM-TVScoao","BTSSM1iEhug"],
+  "band row":["IyQAMOV0WAc","vjM-TVScoao"],
+  "band face pull":["AlTGQrDOd98","OIMUU2Q-upU","DvjmJdEswQ4"],
+  "tibialis raise":["O8ZcXfwFuqs","mmLnKYwdDMM","RXC7tE6IQcc"],
+  "calf raise":["97NbelB5yvQ","KRJIKsY02nE","SVtg-1loH4c"],
+  "bird dog":["ZdAHe9_HeEw","biN8oIV1umA","wGh2fZU20-M"],
+  "dead bug":["bxn9FBrt4-A","3eqodmkpkfA","lqnuY3wiBzA"],
+  "single-leg glute bridge":["VUl8R0kn6v4","18GVqjfHy-M","HkF61M6StlY"],
+  "glute bridge":["nbjJjSa0cKo","Q_Bpj91Yiis","OUgsJ8-Vi0E"],
+  "isolated hip thrust":["z8WwUC_UA4w","pF17m_CXfL0","pBH7pKHn-dI"],
+  "hip thrust":["z8WwUC_UA4w","pF17m_CXfL0","pBH7pKHn-dI"],
+  "donkey kick":["KgghFOMKnkE","pF9eoC4LGIc","sbE6kb7ZtTU"],
+  "kickback":["KgghFOMKnkE","pF9eoC4LGIc","sbE6kb7ZtTU"],
+  "clamshell":["aQVApsdOLSI","Cigb7cbcNxs","09YaaN9hG2I"]
 };
-function videoId(name){
+function videoIds(name){
   var n=name.toLowerCase();
   var keys=Object.keys(VIDEO_LIB).sort(function(a,b){return b.length-a.length;});
   for(var i=0;i<keys.length;i++){ if(n.indexOf(keys[i])!==-1) return VIDEO_LIB[keys[i]]; }
   return null;
 }
+function videoId(name){ var v=videoIds(name); return v?v[0]:null; }
 
 var CHECK = document.createElement('template');
 CHECK.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#12140f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
@@ -1523,16 +1532,19 @@ function openPlayer(d,storeKey,opts){
     if(idx>=flat.length){ finish(); return; }
     var it=flat[idx], ex=it.ex, nm=it.nm||ex.name;
     var cues=(nm===ex.name&&ex.cues)?ex.cues:autoCues(nm);
-    var vid=videoId(nm), search=demoURL(nm);
+    var vids=videoIds(nm)||[], search=demoURL(nm);
     var demoBtn='<a class="demo-btn" style="align-self:flex-start;margin-top:4px" href="'+search+'" target="_blank" rel="noopener">'+
       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>WATCH DEMO</a>';
-    var videoHTML = vid
-      ? '<div class="ov-video" id="ov-video" data-vid="'+vid+'">'+
-          '<button class="ov-video-facade" id="ov-play" aria-label="Play form video">'+
-            '<img class="ov-thumb" alt="" src="https://i.ytimg.com/vi/'+vid+'/hqdefault.jpg">'+
-            '<span class="pbtn"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span>'+
-          '</button>'+
-        '</div>'+
+    function facadeHTML(v){ return '<button class="ov-video-facade" aria-label="Play form video">'+
+      '<img class="ov-thumb" alt="" src="https://i.ytimg.com/vi/'+v+'/hqdefault.jpg">'+
+      '<span class="pbtn"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span></button>'; }
+    var strip = vids.length>1
+      ? '<div class="ov-vstrip" id="ov-vstrip">'+vids.slice(0,3).map(function(v,i){
+          return '<button class="ov-vthumb'+(i===0?' active':'')+'" data-vid="'+v+'">'+
+            '<img alt="" src="https://i.ytimg.com/vi/'+v+'/mqdefault.jpg"></button>'; }).join('')+'</div>'
+      : '';
+    var videoHTML = vids.length
+      ? '<div class="ov-video" id="ov-video">'+facadeHTML(vids[0])+'</div>'+strip+
         '<a class="ov-yt-link" id="ov-yt" href="'+search+'" target="_blank" rel="noopener">Open on YouTube ↗</a>'
       : demoBtn;
     ov.innerHTML=
@@ -1550,18 +1562,33 @@ function openPlayer(d,storeKey,opts){
         '<button class="ov-btn" id="pl-skip">SKIP</button>'+
         '<button class="ov-btn primary" id="pl-done">DONE →</button>'+
       '</div>';
-    var play=ov.querySelector('#ov-play');
-    if(play){
-      // if the thumbnail (hence the video) is unavailable, fall back to a search link
-      play.querySelector('.ov-thumb').addEventListener('error',function(){
-        var v=ov.querySelector('#ov-video'), y=ov.querySelector('#ov-yt');
-        if(y) y.remove();
-        if(v){ var a=document.createElement('div'); a.innerHTML=demoBtn; v.replaceWith(a.firstChild); }
-      });
-      play.addEventListener('click',function(){
+    if(vids.length){
+      var curVid=vids[0];
+      function playCur(){
         var wrap=ov.querySelector('#ov-video');
-        wrap.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+vid+
+        if(wrap) wrap.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+curVid+
           '?autoplay=1&rel=0&playsinline=1&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+      }
+      function wireFacade(){
+        var play=ov.querySelector('.ov-video-facade'); if(!play) return;
+        play.addEventListener('click',playCur);
+        play.querySelector('.ov-thumb').addEventListener('error',function(){
+          // main video's thumbnail failed — switch to a surviving alternate, else fall back
+          var others=vids.filter(function(x){return x!==curVid;});
+          if(others.length){ curVid=others[0]; markActive();
+            var wrap=ov.querySelector('#ov-video'); if(wrap){ wrap.innerHTML=facadeHTML(curVid); wireFacade(); } }
+          else { var v=ov.querySelector('#ov-video'), y=ov.querySelector('#ov-yt'), s=ov.querySelector('#ov-vstrip');
+            if(y)y.remove(); if(s)s.remove();
+            if(v){ var a=document.createElement('div'); a.innerHTML=demoBtn; v.replaceWith(a.firstChild); } }
+        });
+      }
+      function markActive(){
+        ov.querySelectorAll('.ov-vthumb').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-vid')===curVid); });
+      }
+      wireFacade();
+      ov.querySelectorAll('.ov-vthumb').forEach(function(b){
+        b.querySelector('img').addEventListener('error',function(){ b.remove(); });
+        b.addEventListener('click',function(){ curVid=b.getAttribute('data-vid'); markActive(); playCur(); });
       });
     }
     ov.querySelector('#pl-x').addEventListener('click',exit);
