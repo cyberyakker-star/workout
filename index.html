@@ -218,17 +218,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .prog{height:3px;background:var(--panel-2)}
 .prog .fill{height:100%;background:var(--done);width:0;transition:width .25s}
 
-/* ---- run brief ---- */
+/* ---- run brief (chronological: warm-up → main → cool-down) ---- */
 .runbrief{padding:18px}
-.runbrief .headline{font-family:var(--mono);font-size:17px;color:var(--run);
-  letter-spacing:.02em;margin:0 0 14px}
-.runrows{display:flex;flex-direction:column;gap:1px;background:var(--line);
-  border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.runrow{display:flex;justify-content:space-between;gap:12px;padding:11px 14px;
-  background:var(--panel);font-size:13.5px}
-.runrow .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
-  color:var(--ink-faint);text-transform:uppercase}
-.runrow .v{color:var(--ink);text-align:right}
+.runseq{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.rstep{display:flex;gap:12px;padding:13px 14px;border-bottom:1px solid var(--line);align-items:flex-start}
+.rstep:last-child{border-bottom:none}
+.rstep .rnum{flex:none;width:24px;height:24px;border-radius:50%;border:1px solid var(--line-bright);
+  font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;
+  color:var(--ink-faint);margin-top:1px}
+.rstep .rbody{flex:1;min-width:0}
+.rstep .rlab{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.rstep .rtext{font-size:14px;color:var(--ink-dim);margin-top:3px;line-height:1.4}
+.rstep .rnote{font-size:12.5px;color:var(--ink-faint);margin-top:7px;line-height:1.4;
+  padding-left:10px;border-left:2px solid var(--line-bright)}
+.rstep.main{background:rgba(90,169,196,.07)}
+.rstep.main .rnum{border-color:var(--run);color:var(--run)}
+.rstep.main .rlab{color:var(--run)}
+.rstep.main .rtext{font-family:var(--mono);font-size:17px;color:var(--run);letter-spacing:.02em;margin-top:4px}
+body.theme-celina .rstep.main{background:rgba(181,106,134,.09)}
+body.theme-celina .runseq{border-radius:12px}
+.runbrief .headline{font-family:var(--mono);font-size:17px;color:var(--run);letter-spacing:.02em;margin:0 0 14px}
 
 /* ---- rest brief ---- */
 .restbrief{padding:22px 18px}
@@ -640,7 +649,7 @@ var ATHLETES = {
       { key:"sat", label:"Sat", type:"run", title:"Long Run", dur:"the 2-hour day",
         run:{ kind:"long", warm:"5 min walk + dynamic leg swings",
               cool:"10 min walk, full stretch \u2014 quads, hamstrings, calves, hips",
-              extra:"Week 7+: practice race fueling \u2014 water + carbs every 40\u201345 min" } },
+              extra:"Practice race fueling \u2014 water + carbs every 40\u201345 min", extraFrom:7 } },
       { key:"sun", label:"Sun", type:"rest", title:"Rest / Active Recovery",
         rest:["Treadmill walk 20\u201330 min, easy",
               "Pick 3\u20134 stretches: hamstrings, hip openers, doorway, downward dog, cat-cow",
@@ -1143,7 +1152,17 @@ var VIDEO_LIB = {
   "arm circles":["D17eUtUt0zQ","difYoBtZi2s"],
   "hip circles":["D17eUtUt0zQ","difYoBtZi2s"],
   "torso twists":["T6j7BpxeqqU","-CiWQ2IvY34"],
-  "world's greatest stretch":["T6j7BpxeqqU","-CiWQ2IvY34"]
+  "world's greatest stretch":["T6j7BpxeqqU","-CiWQ2IvY34"],
+  // ---- built-in plan (Anthony / Celina) coverage ----
+  "band pull-apart":["smSSXITNpCI","LoBBo1dtY6I"],
+  "plank shoulder tap":["gKA5LBy7WAI","sNmFn1qmT28"],
+  "russian twist":["DLpMtMZnpy0","2_MsoqTpIJ8"],
+  "lying leg abduction":["CTmFNSDJTR8","g9FtnmsIYgI"],
+  "treadmill walk":["8i3Vrd95o2k","TSTrFpCBBNk"],
+  "squat side step":["y_bqFDQZSHQ","9MuZrYJddcQ"],
+  "double pulse squat":["P-yaD24bUE8","R0vJBTrzLac"],
+  "banded hip flexion":["D0GwAezTvtg","lR3cpCVBjPM"],
+  "reverse step-down":["9ZknEYboBOQ","tqECKZxlCKE"]
 };
 function videoIds(name){
   var n=name.toLowerCase();
@@ -1741,23 +1760,29 @@ function miniItems(d,state){
 function runBrief(d,a){
   var wrap=el('div','runbrief');
   var r=d.run;
-  var headline='';
+  var headline='', note='';
   if(a.mode==="week"){
     var wk=parseInt(current.ctx.slice(1));
     var row=a.runTable[wk];
     if(d.key==="tue") headline=row.tue;
     else if(d.key==="thu") headline=row.thu;
     else if(d.key==="sat") headline=row.sat;
+    // in week mode `extra` is a supplementary tip, optionally gated to later weeks
+    if(r.extra && headline!==r.extra && (!r.extraFrom || wk>=r.extraFrom)) note=r.extra;
   } else {
     headline = r.extra || d.title;
   }
-  var showExtraRow = r.extra && headline!==r.extra;
-  wrap.innerHTML='<div class="headline mono">'+esc(headline||d.title)+'</div>'+
-    '<div class="runrows">'+
-      (showExtraRow?'<div class="runrow"><span class="k">Session</span><span class="v">'+esc(r.extra)+'</span></div>':'')+
-      '<div class="runrow"><span class="k">Warm-up</span><span class="v">'+esc(r.warm)+'</span></div>'+
-      '<div class="runrow"><span class="k">Cool-down</span><span class="v">'+esc(r.cool)+'</span></div>'+
-    '</div>';
+  function step(mark,lab,text,cls,sub){
+    if(!text) return '';
+    return '<div class="rstep '+(cls||'')+'"><span class="rnum">'+mark+'</span>'+
+      '<div class="rbody"><div class="rlab mono">'+lab+'</div>'+
+      '<div class="rtext">'+esc(text)+'</div>'+(sub?'<div class="rnote">'+esc(sub)+'</div>':'')+'</div></div>';
+  }
+  wrap.innerHTML='<div class="runseq">'+
+    step('1','Warm-up',r.warm,'warm')+
+    step('▶','Main effort',headline||d.title,'main',note)+
+    step('3','Cool-down',r.cool,'cool')+
+  '</div>';
   return wrap;
 }
 
