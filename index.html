@@ -529,21 +529,24 @@ body.theme-celina .sess-done .check{border-radius:50%}
    PLAN DATA - EDIT HERE
    ================================================================== */
 /* Phase 1 week template for Celina — same days, one resolved walk/jog ratio */
+// the Phase-1 booty-band circuit, as its own set of items so every move
+// gets its own row + demo video (returns fresh objects on each call)
+function bandCircuit(){ return [
+  { name:"Squat Side Step", scheme:"× 12", note:"Booty band" },
+  { name:"Glute Bridge Spread", scheme:"× 12" },
+  { name:"Donkey Kicks", scheme:"× 12 / side" },
+  { name:"Kickbacks", scheme:"× 12 / side" },
+  { name:"Lying Leg Abduction", scheme:"× 12" },
+  { name:"Bird Dog", scheme:"× 10 / side" },
+  { name:"Dead Bug", scheme:"× 10 / side" }
+]; }
 function p1Days(ratio){
   return [
     { key:"mon", label:"Mon", type:"run", title:"Walk / Run", dur:"20–25 min",
       run:{ kind:"walkrun", warm:"Stroller totally fine", cool:"Easy cooldown walk",
         extra:ratio } },
     { key:"tue", label:"Tue", type:"strength", title:"Booty Bands + Core", dur:"20 min",
-      groups:[{ label:"2 rounds · 12 reps each", items:[
-        { name:"Squat Side Step", scheme:"× 12", note:"Booty band" },
-        { name:"Glute Bridge Spread", scheme:"× 12" },
-        { name:"Donkey Kicks", scheme:"× 12 / side" },
-        { name:"Kickbacks", scheme:"× 12 / side" },
-        { name:"Lying Leg Abduction", scheme:"× 12" },
-        { name:"Bird Dog", scheme:"× 10 / side" },
-        { name:"Dead Bug", scheme:"× 10 / side" }
-      ]}]},
+      groups:[{ label:"2 rounds · 12 reps each", items: bandCircuit() }]},
     { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
       rest:["Full rest, or an easy stroller walk","Nothing to prove today"] },
     { key:"thu", label:"Thu", type:"run", title:"Walk / Run", dur:"20–25 min",
@@ -715,14 +718,16 @@ var ATHLETES = {
         { key:"mon", label:"Mon", type:"run", title:"Easy Run", dur:"2\u20133 mi",
           run:{ kind:"walkrun", warm:"5 min easy", cool:"Walk 5 min", extra:"Conversational pace" } },
         { key:"tue", label:"Tue", type:"strength", title:"Strength + Bands", dur:"~35 min",
-          groups:[{ label:"2 rounds band circuit + 3 rounds lifts", items:[
-            { name:"Booty band circuit", scheme:"2 rounds", note:"Phase 1 movements" },
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb" },
-            { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
-            { name:"Push-up", scheme:"\u00d7 8\u201310" },
-            { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" }
-          ]}]},
+          groups:[
+            { label:"Band circuit \u00b7 2 rounds", items: bandCircuit() },
+            { label:"Lifts \u00b7 3 rounds", items:[
+              { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb" },
+              { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
+              { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
+              { name:"Push-up", scheme:"\u00d7 8\u201310" },
+              { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" }
+            ]}
+          ]},
         { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
           rest:["Rest or easy stroller walk"] },
         { key:"thu", label:"Thu", type:"run", title:"Intervals", dur:"~30 min",
@@ -749,13 +754,15 @@ var ATHLETES = {
           run:{ kind:"speed", warm:"10 min easy + strides", cool:"Easy jog down",
             extra:"6\u20138\u00d7 400m hard (~90s) w/ 2 min recovery \u2014 OR 5\u00d7 (2 min hard / 2 min easy)" } },
         { key:"wed", label:"Wed", type:"strength", title:"Strength + Bands", dur:"~30 min",
-          groups:[{ label:"Maintain \u2014 don't chase progress, running's the priority", items:[
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"Keep it moderate" },
-            { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
-            { name:"Push-up", scheme:"\u00d7 8\u201310" },
-            { name:"Booty band circuit", scheme:"2 rounds" }
-          ]}]},
+          groups:[
+            { label:"Maintain \u2014 don't chase progress, running's the priority", items:[
+              { name:"Goblet Squat", scheme:"\u00d7 10", note:"Keep it moderate" },
+              { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
+              { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
+              { name:"Push-up", scheme:"\u00d7 8\u201310" }
+            ]},
+            { label:"Band circuit \u00b7 2 rounds", items: bandCircuit() }
+          ]},
         { key:"thu", label:"Thu", type:"run", title:"Tempo", dur:"~4 mi",
           run:{ kind:"tempo", warm:"Easy mile", cool:"Easy mile down",
             extra:"2 mi at comfortably hard, easy mile before + after" } },
