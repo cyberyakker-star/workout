@@ -590,7 +590,9 @@ var ATHLETES = {
       { key:"mon", label:"Mon", type:"strength", title:"Lower + Core", dur:"60 min",
         groups:[
           { label:"Warm-up \u00b7 8 min", items:[
-            { name:"Treadmill walk", scheme:"3 min", note:"Then leg swings, hip openers", cues:["Ease in, get blood moving","Loosen hips before you load them"] }
+            { name:"Treadmill walk", scheme:"3 min", cues:["Ease in, get blood moving"] },
+            { name:"Leg Swings", scheme:"\u00d7 10 / leg" },
+            { name:"Hip Circles", scheme:"\u00d7 8 / direction" }
           ]},
           { label:"Strength", items:[
             { name:"Goblet Squat", scheme:"4 \u00d7 8", note:"Use the 53 lb bell when it lands; sub 35 until then" },
@@ -612,7 +614,9 @@ var ATHLETES = {
       { key:"wed", label:"Wed", type:"strength", title:"Upper + Core", dur:"60 min",
         groups:[
           { label:"Warm-up \u00b7 8 min", items:[
-            { name:"Band pull-aparts", scheme:"\u00d7 20", note:"Then scap pull-ups \u00d7 8, thoracic rotation", cues:["Squeeze shoulder blades","Prime the pulling muscles"] }
+            { name:"Band Pull-Apart", scheme:"\u00d7 20", cues:["Squeeze shoulder blades","Prime the pulling muscles"] },
+            { name:"Scap Pull-up", scheme:"\u00d7 8" },
+            { name:"Thoracic Rotation", scheme:"\u00d7 8 / side" }
           ]},
           { label:"Strength", items:[
             { name:"Pull-ups", scheme:"4 \u00d7 max", note:"Band-assist if needed; add 10 lb at 4\u00d710" },
@@ -642,7 +646,8 @@ var ATHLETES = {
             { name:"Slant Board Reverse Step-Down", scheme:"3 \u00d7 10 / side" },
             { name:"Banded Hip Flexion", scheme:"3 \u00d7 12 / side" },
             { name:"Standing Anti-Rotation Press", scheme:"3 \u00d7 12 / side", note:"Anchored band" },
-            { name:"Clamshell + Donkey Kicks", scheme:"2 \u00d7 15 each", note:"Booty band" },
+            { name:"Clamshell", scheme:"2 \u00d7 15 / side", note:"Booty band" },
+            { name:"Donkey Kicks", scheme:"2 \u00d7 15 / side", note:"Booty band" },
             { name:"Bird Dog", scheme:"2 \u00d7 10 / side" }
           ]}
         ]},
@@ -1038,6 +1043,8 @@ var CUE_LIB = {
   "hip circles":["Hands on hips, feet planted","Draw big circles with the hips","Both directions","Smooth and controlled"],
   "torso twists":["Feet planted, soft knees","Rotate through the mid-back","Let the arms swing","Easy, rhythmic pace"],
   "world's greatest stretch":["Step into a deep lunge","Drop the same-side elbow inside the foot","Rotate and reach to the ceiling","One or two per side, slow"],
+  "scap pull-up":["Hang from the bar, arms straight","Pull the shoulder blades down and back — no elbow bend","Small range, control the lower","Primes the lats for pulling"],
+  "thoracic rotation":["On all fours, one hand behind your head","Rotate that elbow up to the ceiling","Follow with your eyes, hips still","Open the upper back both sides"],
   "squat-to-stand":["Grab your toes, hips down","Drive hips up keeping the grip","Then sink back into the squat","Feel the hamstrings and hips open"],
   // ---- conditioning ----
   "mountain climber":["Strong plank, hands under shoulders","Drive knees to chest, quick","Hips low and level","Keep a steady rhythm"],
@@ -1155,6 +1162,8 @@ var VIDEO_LIB = {
   "world's greatest stretch":["T6j7BpxeqqU","-CiWQ2IvY34"],
   // ---- built-in plan (Anthony / Celina) coverage ----
   "band pull-apart":["smSSXITNpCI","LoBBo1dtY6I"],
+  "scap pull-up":["-ZIpSoTRsuE","inxW0UX9b5A","AHsmKp5AK6k"],
+  "thoracic rotation":["z2zv526I7M8","AzCghjjWt5k","3ZZpWdpYbTQ"],
   "plank shoulder tap":["gKA5LBy7WAI","sNmFn1qmT28"],
   "russian twist":["DLpMtMZnpy0","2_MsoqTpIJ8"],
   "lying leg abduction":["CTmFNSDJTR8","g9FtnmsIYgI"],
