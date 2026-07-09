@@ -417,25 +417,46 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 
 /* ---- GPS run tracker ---- */
 .gps-banner{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;
-  text-align:center;padding:9px 6px;border-radius:6px;border:1px solid var(--line);color:var(--ink-faint);margin-bottom:8px}
+  text-align:center;padding:9px 6px;border-radius:10px;border:1px solid var(--line);color:var(--ink-faint);margin-bottom:10px}
 .gps-banner.work{color:var(--danger);border-color:var(--danger)}
 .gps-banner.easy{color:var(--run);border-color:var(--run)}
 .gps-banner.paused{color:var(--amber);border-color:var(--amber)}
-.gps-clock{font-family:var(--mono);font-size:58px;font-weight:600;text-align:center;letter-spacing:.02em;color:var(--ink);line-height:1.05}
-.gps-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px}
-.gps-stat .v{font-family:var(--mono);font-size:24px;color:var(--ink)}
-.gps-stat .l{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin-top:2px}
-#gps-map{flex:1;min-height:180px;border-radius:10px;overflow:hidden;background:var(--panel);
+.gps-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--ink-faint);text-align:center;margin-bottom:2px}
+.gps-clock{font-family:var(--mono);font-size:56px;font-weight:700;text-align:center;letter-spacing:-.01em;
+  color:var(--ink);line-height:1.05;font-variant-numeric:tabular-nums}
+.gps-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.gps-grid.two{grid-template-columns:1fr 1fr;margin-top:8px}
+.gps-stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:left}
+.gps-stat .v{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15}
+.gps-stat .v .u{font-size:12px;font-weight:400;color:var(--ink-dim);margin-left:3px}
+.gps-stat .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px}
+.gps-chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.08em;color:var(--ink-faint);background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:5px 11px}
+.gps-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-faint)}
+.gps-chip.ok{color:var(--run)}
+.gps-chip.ok .dot{background:var(--run);animation:gpsPulse 2s ease-in-out infinite}
+@keyframes gpsPulse{0%,100%{opacity:1}50%{opacity:.35}}
+#gps-map{flex:1;min-height:230px;border-radius:16px;overflow:hidden;background:var(--panel);
   border:1px solid var(--line);margin:12px 0 2px;position:relative;z-index:0}
 #gps-map.off{display:none}
+.gps-maptag{position:absolute;top:10px;left:10px;z-index:500;display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:#fff;background:rgba(0,0,0,.65);
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 11px;pointer-events:none}
+.gps-maptag .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:gpsPulse 1.6s ease-in-out infinite}
 .gps-acc{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-align:center;color:var(--ink-faint);margin-top:10px}
 .gps-acc.ok{color:var(--run)}
-.gps-splits{margin-top:10px;max-height:26vh;overflow-y:auto;border:1px solid var(--line);border-radius:8px}
+.gps-splits{margin-top:10px;max-height:24vh;overflow-y:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
 .gps-splits .sp{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13.5px;
-  padding:8px 14px;border-bottom:1px solid var(--line);color:var(--ink)}
+  padding:9px 14px;border-bottom:1px solid var(--line);color:var(--ink);font-variant-numeric:tabular-nums}
 .gps-splits .sp:last-child{border-bottom:0}
 .gps-splits .sp .n{color:var(--ink-faint)}
 .gps-units{display:flex;gap:8px;justify-content:center;margin-top:12px}
+.gps-toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);max-width:300px;z-index:60;
+  background:var(--panel);border:1px solid var(--line-bright);color:var(--ink);font-size:13.5px;
+  padding:11px 18px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:opacity .25s ease}
+.ov-btn.danger{border-color:var(--danger);color:var(--danger)}
 body.theme-celina .gps-banner.work{color:#c96442;border-color:#c96442}
 .stepper button{width:40px;height:40px;border:1px solid var(--line-bright);border-radius:6px;
   font-size:18px;color:var(--ink-dim);flex:none}
@@ -2390,6 +2411,16 @@ function loadLeaflet(){
   return leafletP;
 }
 
+function gpsToast(msg){
+  var t=el('div','gps-toast'); t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){ t.remove(); },260); },2400);
+}
+function accentColor(){
+  var c=(getComputedStyle(document.body).getPropertyValue('--amber')||'').trim();
+  return c||'#FF4D00';
+}
+
 function openGpsRun(d,a,storeKey){
   var ov=openOverlay();
   var unit=unitsFor(current.athlete);
@@ -2411,7 +2442,8 @@ function openGpsRun(d,a,storeKey){
 
   var watchId=null, map=null, poly=null, marker=null, mapReady=false;
   var run={ movingMs:0, dist:0, last:null, track:[], splits:[], recent:[],
-            manualPause:false, autoPause:false, lastProgress:null, finished:false };
+            manualPause:false, autoPause:false, lastProgress:null, finished:false,
+            elevGain:0, lastAlt:null };
   var lastTickAt=null;
 
   function stopWatch(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(e){} watchId=null; } }
@@ -2438,6 +2470,8 @@ function openGpsRun(d,a,storeKey){
       var go=document.getElementById('gps-go');
       if(go && p.acc<=30) go.disabled=false;
     }
+    var chip=document.getElementById('gps-chip');
+    if(chip) chip.classList.toggle('ok',p.acc<=30);
     if(run.finished) return;
     if(p.acc>25){ run.lastFixWeak=true; return; } // too fuzzy for distance
     if(!run.started){ run.last=p; return; }       // pre-start: just track accuracy
@@ -2452,14 +2486,25 @@ function openGpsRun(d,a,storeKey){
         run.autoPause=false;
         run.lastProgress=Date.now();
         run.recent.push({t:run.movingMs,d:run.dist});
+        // elevation gain from real altitude when the device provides it
+        if(c.altitude!=null){
+          if(run.lastAlt!=null){
+            var up=c.altitude-run.lastAlt;
+            if(up>0.5&&up<15) run.elevGain+=up; // ignore noise + spikes
+          }
+          run.lastAlt=c.altitude;
+        }
         // split alert each whole mile/km
         var target=(run.splits.length+1)*UNIT_M[unit];
         if(run.dist>=target){
           var prev=0; for(var i=0;i<run.splits.length;i++) prev+=run.splits[i];
-          run.splits.push(Math.round(run.movingMs/1000-prev));
+          var sp=Math.round(run.movingMs/1000-prev);
+          run.splits.push(sp);
           beep(880,300); buzz([200,100,200]);
+          gpsToast((unit==='mi'?'Mile ':'Km ')+run.splits.length+' — '+fmtSecs(sp)+'. Keep it up!');
         }
-        if(mapReady){ poly.addLatLng([p.lat,p.lon]); marker.setLatLng([p.lat,p.lon]); map.panTo([p.lat,p.lon]); }
+        if(mapReady){ poly.addLatLng([p.lat,p.lon]); marker.setLatLng([p.lat,p.lon]);
+          map.panTo([p.lat,p.lon],{animate:true,duration:.6}); }
       }
     } else {
       run.track.push([p.lat,p.lon]);
@@ -2482,7 +2527,9 @@ function openGpsRun(d,a,storeKey){
   function readyScreen(){
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
-      '<button class="ov-x" id="gx">✕</button></div>'+
+      '<span style="display:flex;gap:8px;align-items:center">'+
+      '<span class="gps-chip" id="gps-chip"><span class="dot"></span>GPS</span>'+
+      '<button class="ov-x" id="gx">✕</button></span></div>'+
       '<div class="ov-mid" style="text-align:center">'+
         '<div class="ov-eyebrow">'+(icfg?'INTERVALS · '+esc(text):'FREE RUN')+'</div>'+
         '<div class="ov-title">Ready to run?</div>'+
@@ -2511,19 +2558,26 @@ function openGpsRun(d,a,storeKey){
     run.started=true; run.lastProgress=Date.now(); lastTickAt=Date.now();
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
-      '<button class="ov-x" id="gx">✕</button></div>'+
+      '<span style="display:flex;gap:8px;align-items:center">'+
+      '<span class="gps-chip ok" id="gps-chip"><span class="dot"></span>GPS</span>'+
+      '<button class="ov-x" id="gx">✕</button></span></div>'+
       '<div class="gps-banner" id="gps-banner">'+(schedule?'':'FREE RUN')+'</div>'+
+      '<div class="gps-eyebrow">ELAPSED TIME</div>'+
       '<div class="gps-clock" id="gps-clock">0:00</div>'+
       '<div class="gps-grid">'+
-        '<div class="gps-stat"><div class="v" id="gv-dist">0.00</div><div class="l">'+unit.toUpperCase()+'</div></div>'+
-        '<div class="gps-stat"><div class="v" id="gv-pace">--:--</div><div class="l">PACE /'+unit.toUpperCase()+'</div></div>'+
-        '<div class="gps-stat"><div class="v" id="gv-avg">--:--</div><div class="l">AVG /'+unit.toUpperCase()+'</div></div>'+
+        '<div class="gps-stat"><div class="l">DISTANCE</div><div class="v"><span id="gv-dist">0.00</span><span class="u">'+unit+'</span></div></div>'+
+        '<div class="gps-stat"><div class="l">CUR PACE</div><div class="v"><span id="gv-pace">--:--</span><span class="u">/'+unit+'</span></div></div>'+
+        '<div class="gps-stat"><div class="l">AVG PACE</div><div class="v"><span id="gv-avg">--:--</span><span class="u">/'+unit+'</span></div></div>'+
       '</div>'+
-      '<div id="gps-map" class="off"></div>'+
+      '<div class="gps-grid two">'+
+        '<div class="gps-stat"><div class="l">CALORIES · EST</div><div class="v"><span id="gv-cal">0</span></div></div>'+
+        '<div class="gps-stat"><div class="l">ELEV GAIN</div><div class="v"><span id="gv-elev">—</span><span class="u">'+(unit==='mi'?'ft':'m')+'</span></div></div>'+
+      '</div>'+
+      '<div id="gps-map" class="off"><div class="gps-maptag"><span class="dot"></span>LIVE ROUTE</div></div>'+
       '<div class="gps-splits" id="gps-splits" style="display:none"></div>'+
       '<div class="ov-actions" id="gps-actions">'+
-        '<button class="ov-btn" id="gps-pause">PAUSE</button>'+
-        '<button class="ov-btn primary" id="gps-end">END RUN</button>'+
+        '<button class="ov-btn primary" id="gps-pause">PAUSE</button>'+
+        '<button class="ov-btn danger" id="gps-end">END RUN</button>'+
       '</div>';
     ov.querySelector('#gx').addEventListener('click',function(){
       if(run.dist>10){ if(confirm('End this run?')) finishScreen(); }
@@ -2541,11 +2595,14 @@ function openGpsRun(d,a,storeKey){
       if(!ok||!mel||run.finished) return;
       mel.classList.remove('off');
       try{
+        var acc=accentColor();
         map=L.map(mel,{zoomControl:false,attributionControl:true});
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-        poly=L.polyline(run.track.length?run.track:[],{weight:5}).addTo(map);
-        marker=L.circleMarker(run.track.length?run.track[run.track.length-1]:[0,0],{radius:7}).addTo(map);
+        poly=L.polyline(run.track.length?run.track:[],
+          {color:acc,weight:5,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(map);
+        marker=L.circleMarker(run.track.length?run.track[run.track.length-1]:[0,0],
+          {radius:7,fillColor:acc,color:'#fff',weight:2,fillOpacity:1}).addTo(map);
         if(run.track.length) map.setView(run.track[run.track.length-1],16); else map.setView([0,0],2);
         mapReady=true;
       }catch(e){ mel.classList.add('off'); }
@@ -2580,6 +2637,9 @@ function openGpsRun(d,a,storeKey){
     var dv=document.getElementById('gv-dist'); if(dv) dv.textContent=distU().toFixed(2);
     var pv=document.getElementById('gv-pace'); if(pv) pv.textContent=paused()?'--:--':fmtPace(curPace());
     var av=document.getElementById('gv-avg'); if(av) av.textContent=fmtPace(avgPace());
+    var cv=document.getElementById('gv-cal'); if(cv) cv.textContent=Math.round(run.dist/UNIT_M.mi*105);
+    var ev=document.getElementById('gv-elev');
+    if(ev) ev.textContent=run.lastAlt==null?'—':Math.round(unit==='mi'?run.elevGain*3.28084:run.elevGain);
     updateBanner();
   }
 
@@ -2601,7 +2661,9 @@ function openGpsRun(d,a,storeKey){
         return '<div class="sp"><span class="n">'+(unit==='mi'?'MILE ':'KM ')+(i+1)+'</span><span>'+fmtSecs(s)+'</span></div>';
       }).join('');
     }
-    var summary='🏃 '+d.title+' — '+dist.toFixed(2)+' '+unit+' in '+fmtClock(secs)+' ('+pace+' /'+unit+')'+
+    var cal=Math.round(run.dist/UNIT_M.mi*105);
+    var summary='🏃 '+d.title+' — '+dist.toFixed(2)+' '+unit+' in '+fmtClock(secs)+' ('+pace+' /'+unit+') · ~'+cal+' cal'+
+      (run.elevGain>1?' · '+Math.round(unit==='mi'?run.elevGain*3.28084:run.elevGain)+(unit==='mi'?' ft':' m')+' climb':'')+
       (run.splits.length?'\nSplits: '+run.splits.map(fmtSecs).join(', '):'');
     var act=document.getElementById('gps-actions');
     act.innerHTML=
@@ -2618,7 +2680,8 @@ function openGpsRun(d,a,storeKey){
       var s=store.get(storeKey); s.session=true; store.set(storeKey,s);
       closeOverlay(); renderDay();
       logSession(d,' · '+dist.toFixed(1)+' '+unit,
-        {run:{dist:+dist.toFixed(2),unit:unit,secs:secs,pace:pace}});
+        {run:{dist:+dist.toFixed(2),unit:unit,secs:secs,pace:pace,cal:cal,
+              elev:run.elevGain>1?Math.round(run.elevGain):0}});
     });
   }
 
