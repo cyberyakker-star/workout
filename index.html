@@ -508,19 +508,33 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .pr-badge{font-size:10.5px;letter-spacing:.1em;color:var(--amber);border:1px solid var(--amber);border-radius:999px;padding:4px 11px}
 .pr-last{font-size:10.5px;letter-spacing:.08em;color:var(--ink-faint)}
 .set-list{display:flex;flex-direction:column;gap:8px;margin:10px 0 2px}
-.set-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 10px}
+.set-row{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 8px}
 .set-row.done{opacity:.6;border-color:var(--done)}
 .set-n{width:22px;height:22px;border-radius:50%;background:var(--panel-2);color:var(--ink-dim);
   font-size:11px;display:flex;align-items:center;justify-content:center;flex:none}
 .set-f{flex:1;min-width:0}
 .set-f .sl{display:block;font-size:8.5px;letter-spacing:.16em;color:var(--ink-faint);margin-bottom:3px}
 .stepc{display:flex;align-items:center;gap:4px}
-.st-b{width:28px;height:30px;border:1px solid var(--line-bright);border-radius:8px;background:none;color:var(--ink-dim);font-size:15px;flex:none}
-.st-in{width:100%;min-width:0;text-align:center;background:var(--bg);border:1px solid var(--line);
+.st-b{width:26px;height:30px;border:1px solid var(--line-bright);border-radius:8px;background:none;color:var(--ink-dim);font-size:15px;flex:none}
+.st-in{width:100%;min-width:34px;text-align:center;background:var(--bg);border:1px solid var(--line);
   border-radius:8px;padding:6px 2px;color:var(--ink);font-family:var(--mono);font-size:15px;-moz-appearance:textfield}
 .st-in::-webkit-outer-spin-button,.st-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .set-ck{width:38px;height:38px;flex:none;border-radius:10px;border:1px solid var(--line-bright);background:none;color:var(--ink-dim);font-size:16px}
 .set-row.done .set-ck{background:var(--done);border-color:var(--done);color:var(--bg)}
+.set-rm{width:24px;height:24px;flex:none;border:0;background:none;color:var(--ink-faint);font-size:12px;padding:0;cursor:pointer}
+.set-rm:hover{color:var(--danger)}
+.set-row.done .set-rm{visibility:hidden}
+.add-set{align-self:flex-start;font-size:10.5px;letter-spacing:.12em;color:var(--ink-dim);
+  border:1px dashed var(--line-bright);border-radius:10px;padding:9px 16px;background:none;margin-top:8px;cursor:pointer}
+.add-set:hover{color:var(--amber);border-color:var(--amber)}
+.sch-btn{background:none;border:0;padding:0;text-align:left;cursor:pointer}
+.sch-btn .sch-pen{font-size:12px;color:var(--ink-faint)}
+.sch-ed{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--line-bright);
+  border-radius:12px;padding:10px;margin-top:8px}
+.sch-ed .set-f{flex:1 1 28%;min-width:96px}
+.sch-ed.hidden{display:none}
+.sch-acts{display:flex;gap:8px;width:100%}
+.sch-acts .ov-btn{font-size:10.5px;flex:1}
 
 .ov-cues{margin-top:10px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);
   border-left:2px solid var(--lime);border-radius:4px}
@@ -2384,7 +2398,7 @@ function renderDay(){
             '<button class="check" data-check="'+id+'" aria-label="Mark done">'+CHECK.innerHTML+'</button>'+
             '<div class="ex-body">'+
               '<div class="ex-name">'+esc(nm)+'</div>'+
-              '<div class="ex-scheme mono">'+esc(ex.scheme)+'</div>'+
+              '<div class="ex-scheme mono">'+schemeLabel(nm,ex)+'</div>'+
               (ex.note?'<div class="ex-note">'+esc(ex.note)+'</div>':'')+
               (nm!==ex.name?'<div class="ex-note">⇄ Swapped in for '+esc(ex.name)+'</div>':'')+
               '<div class="ex-actions">'+actions+'</div>'+
@@ -2690,6 +2704,14 @@ function parseSetsReps(scheme){
 }
 function setsGet(a){ try{ return JSON.parse(localStorage.getItem('trainops:sets:'+a))||{}; }catch(e){ return {}; } }
 function setsSave(a,v){ try{ localStorage.setItem('trainops:sets:'+a,JSON.stringify(v)); }catch(e){} }
+// user overrides of an exercise's prescription: { "<name>": {sets, reps, w?} }
+function editsGet(a){ try{ return JSON.parse(localStorage.getItem('trainops:edits:'+a))||{}; }catch(e){ return {}; } }
+function editsSave(a,v){ try{ localStorage.setItem('trainops:edits:'+a,JSON.stringify(v)); }catch(e){} }
+function schemeLabel(nm,ex){
+  var ed=current.athlete?editsGet(current.athlete)[nm]:null;
+  if(!ed) return esc(ex.scheme);
+  return ed.sets+' × '+ed.reps+(ed.w?' · '+ed.w+' lb':'')+' ✎';
+}
 // remember the last weight/reps per exercise and keep the all-time best
 // (heavier wins; same weight, more reps wins)
 function recordSet(name,w,r){
@@ -2758,8 +2780,10 @@ function openPlayer(d,storeKey,opts){
       ? '<div class="ov-video" id="ov-video">'+iframeHTML(vids[0])+'</div>'+strip+
         '<a class="ov-yt-link" id="ov-yt" href="'+search+'" target="_blank" rel="noopener">Open on YouTube ↗</a>'
       : demoBtn;
-    // set logger: strength schemes like "4 × 8" get per-set weight/reps rows
-    var sr=parseSetsReps(ex.scheme);
+    // set logger: strength schemes like "4 × 8" get per-set weight/reps rows;
+    // the prescription itself is editable (tap the scheme) and sticks per athlete
+    var ed=editsGet(current.athlete)[nm];
+    var sr=ed?{sets:ed.sets,reps:ed.reps}:parseSetsReps(ex.scheme);
     var hist=setsGet(current.athlete)[nm];
     var prHTML=(hist&&(hist.best||hist.last))
       ? '<div class="pr-line mono">'+
@@ -2767,25 +2791,48 @@ function openPlayer(d,storeKey,opts){
           (hist.last?'<span class="pr-last">LAST '+hist.last.w+'×'+hist.last.r+' · '+daysAgo(hist.last.d)+'</span>':'')+
         '</div>'
       : '';
+    var startW=ed&&ed.w!=null?ed.w:(hist&&hist.last?hist.last.w:0);
+    function rowHTML(n,w,reps){
+      return '<div class="set-row">'+
+        '<span class="set-n mono">'+n+'</span>'+
+        '<div class="set-f"><span class="sl mono">LBS</span><div class="stepc">'+
+          '<button class="st-b" data-a="w-">−</button>'+
+          '<input class="st-in w-in" type="number" inputmode="decimal" min="0" value="'+w+'">'+
+          '<button class="st-b" data-a="w+">＋</button></div></div>'+
+        '<div class="set-f"><span class="sl mono">REPS</span><div class="stepc">'+
+          '<button class="st-b" data-a="r-">−</button>'+
+          '<input class="st-in r-in" type="number" inputmode="numeric" min="0" value="'+reps+'">'+
+          '<button class="st-b" data-a="r+">＋</button></div></div>'+
+        '<button class="set-ck" aria-label="Log set">✓</button>'+
+        '<button class="set-rm" aria-label="Remove set">✕</button>'+
+      '</div>';
+    }
     var setsHTML='';
     if(sr){
-      var startW=hist&&hist.last?hist.last.w:0;
-      for(var si=0;si<sr.sets;si++){
-        setsHTML+='<div class="set-row" data-si="'+si+'">'+
-          '<span class="set-n mono">'+(si+1)+'</span>'+
-          '<div class="set-f"><span class="sl mono">LBS</span><div class="stepc">'+
-            '<button class="st-b" data-a="w-">−</button>'+
-            '<input class="st-in w-in" type="number" inputmode="decimal" min="0" value="'+startW+'">'+
-            '<button class="st-b" data-a="w+">＋</button></div></div>'+
-          '<div class="set-f"><span class="sl mono">REPS</span><div class="stepc">'+
-            '<button class="st-b" data-a="r-">−</button>'+
-            '<input class="st-in r-in" type="number" inputmode="numeric" min="0" value="'+sr.reps+'">'+
-            '<button class="st-b" data-a="r+">＋</button></div></div>'+
-          '<button class="set-ck" aria-label="Log set">✓</button>'+
-        '</div>';
-      }
-      setsHTML='<div class="set-list" id="set-list">'+setsHTML+'</div>';
+      for(var si=0;si<sr.sets;si++) setsHTML+=rowHTML(si+1,startW,sr.reps);
+      setsHTML='<div class="set-list" id="set-list">'+setsHTML+'</div>'+
+        '<button class="add-set mono" id="add-set">＋ ADD SET</button>';
     }
+    var schemeHTML = sr
+      ? '<button class="ov-scheme sch-btn" id="sch-btn">'+
+          (ed?ed.sets+' × '+ed.reps+(ed.w?' · '+ed.w+' lb':''):esc(ex.scheme))+
+          ' <span class="sch-pen">✎</span></button>'+
+        '<div class="sch-ed hidden" id="sch-ed">'+
+          '<div class="set-f"><span class="sl mono">SETS</span><div class="stepc">'+
+            '<button class="st-b" data-e="s-">−</button><input class="st-in" id="se-sets" type="number" min="1" value="'+sr.sets+'">'+
+            '<button class="st-b" data-e="s+">＋</button></div></div>'+
+          '<div class="set-f"><span class="sl mono">REPS</span><div class="stepc">'+
+            '<button class="st-b" data-e="r-">−</button><input class="st-in" id="se-reps" type="number" min="0" value="'+sr.reps+'">'+
+            '<button class="st-b" data-e="r+">＋</button></div></div>'+
+          '<div class="set-f"><span class="sl mono">LBS</span><div class="stepc">'+
+            '<button class="st-b" data-e="w-">−</button><input class="st-in" id="se-w" type="number" min="0" value="'+startW+'">'+
+            '<button class="st-b" data-e="w+">＋</button></div></div>'+
+          '<div class="sch-acts">'+
+            '<button class="ov-btn" id="se-reset" style="padding:10px">RESET</button>'+
+            '<button class="ov-btn primary" id="se-save" style="padding:10px">SAVE</button>'+
+          '</div>'+
+        '</div>'
+      : '<div class="ov-scheme">'+esc(ex.scheme)+'</div>';
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
       '<button class="ov-x" id="pl-x">✕ EXIT</button></div>'+
@@ -2794,7 +2841,7 @@ function openPlayer(d,storeKey,opts){
         '<div class="ov-title">'+esc(nm)+'</div>'+
         prHTML+
         videoHTML+
-        '<div class="ov-scheme">'+esc(ex.scheme)+'</div>'+
+        schemeHTML+
         (ex.note?'<div class="ov-note">'+esc(ex.note)+'</div>':'')+
         setsHTML+
         '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
@@ -2836,7 +2883,18 @@ function openPlayer(d,storeKey,opts){
       row.querySelectorAll('input,.st-b').forEach(function(elm){ elm.disabled=true; });
     }
     if(sr){
-      ov.querySelectorAll('.set-row').forEach(function(row){
+      var renumber=function(){
+        ov.querySelectorAll('.set-row').forEach(function(r,i){ r.querySelector('.set-n').textContent=i+1; });
+      };
+      // adding/removing sets updates the saved prescription so it sticks
+      var persistCount=function(){
+        var all=editsGet(current.athlete);
+        var cur=all[nm]||{reps:sr.reps};
+        cur.sets=ov.querySelectorAll('.set-row').length;
+        if(cur.reps==null) cur.reps=sr.reps;
+        all[nm]=cur; editsSave(current.athlete,all);
+      };
+      var wireRow=function(row){
         row.querySelectorAll('.st-b').forEach(function(b){
           b.addEventListener('click',function(){
             var a=b.getAttribute('data-a');
@@ -2850,6 +2908,51 @@ function openPlayer(d,storeKey,opts){
           logRow(row); beep(660,120); buzz(80);
           if(!ov.querySelector('.set-row:not(.done)')) completeExercise();
         });
+        row.querySelector('.set-rm').addEventListener('click',function(){
+          if(row.classList.contains('done')) return;
+          if(ov.querySelectorAll('.set-row').length<=1) return;
+          row.remove(); renumber(); persistCount();
+          var open=ov.querySelector('.set-row:not(.done)');
+          if(!open && ov.querySelector('.set-row.done')) completeExercise();
+        });
+      };
+      ov.querySelectorAll('.set-row').forEach(wireRow);
+      ov.querySelector('#add-set').addEventListener('click',function(){
+        var list=ov.querySelector('#set-list');
+        var lastRow=list.querySelector('.set-row:last-child');
+        var w=lastRow?parseFloat(lastRow.querySelector('.w-in').value)||0:startW;
+        var reps=lastRow?parseInt(lastRow.querySelector('.r-in').value)||sr.reps:sr.reps;
+        var tmp=document.createElement('div');
+        tmp.innerHTML=rowHTML(0,w,reps);
+        var row=tmp.firstChild;
+        list.appendChild(row);
+        wireRow(row); renumber(); persistCount();
+      });
+      // tap the prescription -> inline editor; SAVE persists sets/reps/weight
+      ov.querySelector('#sch-btn').addEventListener('click',function(){
+        ov.querySelector('#sch-ed').classList.toggle('hidden');
+      });
+      ov.querySelectorAll('.sch-ed .st-b').forEach(function(b){
+        b.addEventListener('click',function(){
+          var a=b.getAttribute('data-e');
+          var inp=ov.querySelector(a[0]==='s'?'#se-sets':a[0]==='r'?'#se-reps':'#se-w');
+          var step=a[0]==='w'?5:1, min=a[0]==='s'?1:0;
+          inp.value=Math.max(min,(parseFloat(inp.value)||0)+(a[1]==='+'?step:-step));
+        });
+      });
+      ov.querySelector('#se-save').addEventListener('click',function(){
+        var all=editsGet(current.athlete);
+        all[nm]={ sets:Math.max(1,parseInt(ov.querySelector('#se-sets').value)||sr.sets),
+                  reps:Math.max(0,parseInt(ov.querySelector('#se-reps').value)||0),
+                  w:Math.max(0,parseFloat(ov.querySelector('#se-w').value)||0) };
+        editsSave(current.athlete,all);
+        showExercise();
+      });
+      ov.querySelector('#se-reset').addEventListener('click',function(){
+        var all=editsGet(current.athlete);
+        delete all[nm];
+        editsSave(current.athlete,all);
+        showExercise();
       });
     }
     ov.querySelector('#pl-done').addEventListener('click',function(){
