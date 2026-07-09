@@ -361,7 +361,7 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .calrow{display:flex;gap:16px;align-items:center}
 .calside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .calside .cs{font-size:10px;letter-spacing:.12em;color:var(--ink-faint);white-space:nowrap}
-.calside .cs b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;margin-right:3px}
+.calside .cs b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;margin:0 3px}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
 
 /* ---- race / plan date line ---- */
@@ -2030,9 +2030,9 @@ function calendarHTML(log,rt){
   // mileage stack beside the grid, as sketched: all time / this month / this week
   var side=(rt&&rt.runs)
     ? '<div class="calside mono">'+
-        '<div class="cs"><b>'+rt.all+'</b> '+rt.u+' ALL TIME</div>'+
-        '<div class="cs"><b>'+rt.month+'</b> '+rt.u+' THIS MONTH</div>'+
-        '<div class="cs"><b>'+rt.wk+'</b> '+rt.u+' THIS WEEK</div>'+
+        '<div class="cs">THIS WEEK <b>'+rt.wk+'</b> '+rt.u+'</div>'+
+        '<div class="cs">THIS MONTH <b>'+rt.month+'</b> '+rt.u+'</div>'+
+        '<div class="cs">ALL TIME <b>'+rt.all+'</b> '+rt.u+'</div>'+
       '</div>'
     : '';
   return '<div class="cal"><div class="calrow"><div class="calgrid">'+cells+'</div>'+side+'</div>'+
