@@ -1824,24 +1824,38 @@ function openAddRun(){
       '<div class="brow"><div class="blabel mono">DISTANCE · '+u.toUpperCase()+'</div>'+
         '<input id="ar-dist" type="number" inputmode="decimal" step="0.01" min="0" class="binput" placeholder="3.1"></div>'+
       '<div class="brow"><div class="blabel mono">DURATION · MINUTES</div>'+
-        '<input id="ar-dur" type="number" inputmode="decimal" step="1" min="0" class="binput" placeholder="30"></div>'+
-      '<div class="gps-acc" id="ar-pace">PACE —</div>'+
+        '<input id="ar-dur" type="number" inputmode="decimal" step="0.1" min="0" class="binput" placeholder="30"></div>'+
+      '<div class="brow"><div class="blabel mono">PACE · MIN:SEC /'+u.toUpperCase()+'</div>'+
+        '<input id="ar-pace-in" inputmode="numeric" class="binput" placeholder="9:40"></div>'+
+      '<div class="gps-acc" id="ar-hint">Fill any two — the third computes itself</div>'+
     '</div>'+
     '<div class="ov-actions">'+
       '<button class="ov-btn" id="ar-cancel">CANCEL</button>'+
       '<button class="ov-btn primary" id="ar-save" disabled>SAVE RUN ✓</button>'+
     '</div>';
-  function calc(){
-    var dist=parseFloat(ov.querySelector('#ar-dist').value);
-    var mins=parseFloat(ov.querySelector('#ar-dur').value);
-    var okv=dist>0&&mins>0&&!!ov.querySelector('#ar-date').value;
-    ov.querySelector('#ar-save').disabled=!okv;
-    ov.querySelector('#ar-pace').textContent=(dist>0&&mins>0)
-      ? 'PACE '+fmtPace(mins*60/dist)+' /'+u : 'PACE —';
+  // Nike-style: distance, duration and pace are all editable — whichever
+  // two you touched last stay put, the third recomputes
+  var touched=[];
+  function parsePaceIn(s){
+    var m=String(s).trim().match(/^(\d{1,2})(?::([0-5]?\d))?$/);
+    return m ? (+m[1])*60+(+(m[2]||0)) : NaN;
   }
-  ['#ar-dist','#ar-dur','#ar-date'].forEach(function(sel){
-    ov.querySelector(sel).addEventListener('input',calc);
+  function recalc(src){
+    if(src){ touched=touched.filter(function(x){return x!==src;}); touched.push(src); }
+    var dEl=ov.querySelector('#ar-dist'), uEl=ov.querySelector('#ar-dur'), pEl=ov.querySelector('#ar-pace-in');
+    var dist=parseFloat(dEl.value), mins=parseFloat(uEl.value), pace=parsePaceIn(pEl.value);
+    // the field to derive: the one touched least recently (or never)
+    var target=['dist','dur','pace'].filter(function(f){ return touched.slice(-2).indexOf(f)===-1; })[0];
+    if(target==='pace' && dist>0 && mins>0) pEl.value=fmtPace(mins*60/dist);
+    else if(target==='dur' && dist>0 && pace>0) uEl.value=+( dist*pace/60 ).toFixed(1);
+    else if(target==='dist' && mins>0 && pace>0) dEl.value=+( mins*60/pace ).toFixed(2);
+    dist=parseFloat(dEl.value); mins=parseFloat(uEl.value);
+    ov.querySelector('#ar-save').disabled=!(dist>0&&mins>0&&!!ov.querySelector('#ar-date').value);
+  }
+  [['#ar-dist','dist'],['#ar-dur','dur'],['#ar-pace-in','pace']].forEach(function(pair){
+    ov.querySelector(pair[0]).addEventListener('input',function(){ recalc(pair[1]); });
   });
+  ov.querySelector('#ar-date').addEventListener('input',function(){ recalc(null); });
   ov.querySelector('#ar-x').addEventListener('click',closeOverlay);
   ov.querySelector('#ar-cancel').addEventListener('click',closeOverlay);
   ov.querySelector('#ar-save').addEventListener('click',function(){
