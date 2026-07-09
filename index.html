@@ -2471,16 +2471,25 @@ function openGpsRun(d,a,storeKey){
       if(go && p.acc<=30) go.disabled=false;
     }
     var chip=document.getElementById('gps-chip');
-    if(chip) chip.classList.toggle('ok',p.acc<=30);
+    if(chip){
+      chip.classList.toggle('ok',p.acc<=50);
+      var lab=chip.querySelector('.gc-lab'); if(lab) lab.textContent='GPS ±'+Math.round(p.acc)+'m';
+    }
     if(run.finished) return;
-    if(p.acc>25){ run.lastFixWeak=true; return; } // too fuzzy for distance
-    if(!run.started){ run.last=p; return; }       // pre-start: just track accuracy
+    if(p.acc>100) return;                          // unusable fix
+    run.lastFixAt=Date.now(); run.lastAcc=p.acc;
+    if(!run.started){ run.last=p; return; }        // pre-start: remember for map seed
+    // any usable fix keeps the marker honest, even before a counted step
+    if(mapReady){ marker.setLatLng([p.lat,p.lon]); }
     if(run.manualPause){ run.last=p; return; }
+    if(p.acc>50) return;                           // track position, but too fuzzy for distance
     if(run.last){
       var step=haversine(run.last,p);
       var dt=(p.t-run.last.t)/1000;
-      if(dt>0 && step/dt>12){ return; }           // GPS jump — discard point
-      if(step>=2.5){                              // real movement (not jitter)
+      if(dt>0 && step/dt>12){ return; }            // GPS jump — discard point
+      // adaptive threshold: anchor stays put on rejected steps, so walking
+      // accumulates once real movement outgrows the jitter radius
+      if(step>=Math.max(3,p.acc*0.6)){
         run.dist+=step;
         run.track.push([p.lat,p.lon]);
         run.autoPause=false;
@@ -2503,15 +2512,15 @@ function openGpsRun(d,a,storeKey){
           beep(880,300); buzz([200,100,200]);
           gpsToast((unit==='mi'?'Mile ':'Km ')+run.splits.length+' — '+fmtSecs(sp)+'. Keep it up!');
         }
-        if(mapReady){ poly.addLatLng([p.lat,p.lon]); marker.setLatLng([p.lat,p.lon]);
+        if(mapReady){ poly.addLatLng([p.lat,p.lon]);
           map.panTo([p.lat,p.lon],{animate:true,duration:.6}); }
+        run.last=p;                                 // advance anchor only on accepted movement
       }
     } else {
       run.track.push([p.lat,p.lon]);
-      run.lastProgress=Date.now();
-      if(mapReady){ marker.setLatLng([p.lat,p.lon]); map.setView([p.lat,p.lon],16); }
+      if(mapReady){ map.setView([p.lat,p.lon],16); }
+      run.last=p;
     }
-    run.last=p;
   }
   function startWatch(){
     if(!navigator.geolocation){ var g=document.getElementById('gps-acc'); if(g) g.textContent='NO GPS ON THIS DEVICE'; return; }
@@ -2528,7 +2537,7 @@ function openGpsRun(d,a,storeKey){
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
       '<span style="display:flex;gap:8px;align-items:center">'+
-      '<span class="gps-chip" id="gps-chip"><span class="dot"></span>GPS</span>'+
+      '<span class="gps-chip" id="gps-chip"><span class="dot"></span><span class="gc-lab">GPS</span></span>'+
       '<button class="ov-x" id="gx">✕</button></span></div>'+
       '<div class="ov-mid" style="text-align:center">'+
         '<div class="ov-eyebrow">'+(icfg?'INTERVALS · '+esc(text):'FREE RUN')+'</div>'+
@@ -2559,7 +2568,7 @@ function openGpsRun(d,a,storeKey){
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
       '<span style="display:flex;gap:8px;align-items:center">'+
-      '<span class="gps-chip ok" id="gps-chip"><span class="dot"></span>GPS</span>'+
+      '<span class="gps-chip ok" id="gps-chip"><span class="dot"></span><span class="gc-lab">GPS</span></span>'+
       '<button class="ov-x" id="gx">✕</button></span></div>'+
       '<div class="gps-banner" id="gps-banner">'+(schedule?'':'FREE RUN')+'</div>'+
       '<div class="gps-eyebrow">ELAPSED TIME</div>'+
@@ -2599,11 +2608,14 @@ function openGpsRun(d,a,storeKey){
         map=L.map(mel,{zoomControl:false,attributionControl:true});
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+        // seed from the freshest position we have: counted track, else the
+        // pre-start fix — the world view is only for "no fix ever arrived"
+        var seed=run.track.length?run.track[run.track.length-1]:(run.last?[run.last.lat,run.last.lon]:null);
         poly=L.polyline(run.track.length?run.track:[],
           {color:acc,weight:5,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(map);
-        marker=L.circleMarker(run.track.length?run.track[run.track.length-1]:[0,0],
+        marker=L.circleMarker(seed||[0,0],
           {radius:7,fillColor:acc,color:'#fff',weight:2,fillOpacity:1}).addTo(map);
-        if(run.track.length) map.setView(run.track[run.track.length-1],16); else map.setView([0,0],2);
+        if(seed) map.setView(seed,16); else map.setView([0,0],2);
         mapReady=true;
       }catch(e){ mel.classList.add('off'); }
     });
@@ -2611,7 +2623,11 @@ function openGpsRun(d,a,storeKey){
   }
   function updateBanner(){
     var b=document.getElementById('gps-banner'); if(!b) return;
-    if(paused()){ b.textContent=run.manualPause?'PAUSED':'AUTO-PAUSED'; b.className='gps-banner paused'; return; }
+    if(run.manualPause){ b.textContent='PAUSED'; b.className='gps-banner paused'; return; }
+    // stale signal beats auto-pause labeling: say what's actually wrong
+    if(run.started&&(!run.lastFixAt||Date.now()-run.lastFixAt>8000)){
+      b.textContent='WEAK GPS — MOVE TO OPEN SKY'; b.className='gps-banner paused'; return; }
+    if(run.autoPause){ b.textContent='AUTO-PAUSED'; b.className='gps-banner paused'; return; }
     if(!schedule){ b.textContent='FREE RUN'; b.className='gps-banner'; return; }
     var s=Math.floor(run.movingMs/1000), acc=0;
     for(var i=0;i<schedule.length;i++){
@@ -2627,8 +2643,10 @@ function openGpsRun(d,a,storeKey){
   }
   function tick250(){
     var now=Date.now();
-    // auto-pause: no forward progress for 5s
-    if(run.started&&!run.manualPause&&!run.autoPause&&run.lastProgress&&now-run.lastProgress>5000){
+    // auto-pause: armed only once real movement has been recorded (GPS warm),
+    // then 12s without forward progress
+    if(run.started&&!run.manualPause&&!run.autoPause&&run.dist>0&&
+       run.lastProgress&&now-run.lastProgress>12000){
       run.autoPause=true; buzz(100);
     }
     if(!paused()) run.movingMs+=now-lastTickAt;
