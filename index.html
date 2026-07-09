@@ -414,6 +414,29 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
   border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-top:10px}
 .stepper .lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);text-transform:uppercase}
 .stepper .val{font-family:var(--mono);font-size:16px;color:var(--ink)}
+
+/* ---- GPS run tracker ---- */
+.gps-banner{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;
+  text-align:center;padding:9px 6px;border-radius:6px;border:1px solid var(--line);color:var(--ink-faint);margin-bottom:8px}
+.gps-banner.work{color:var(--danger);border-color:var(--danger)}
+.gps-banner.easy{color:var(--run);border-color:var(--run)}
+.gps-banner.paused{color:var(--amber);border-color:var(--amber)}
+.gps-clock{font-family:var(--mono);font-size:58px;font-weight:600;text-align:center;letter-spacing:.02em;color:var(--ink);line-height:1.05}
+.gps-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px}
+.gps-stat .v{font-family:var(--mono);font-size:24px;color:var(--ink)}
+.gps-stat .l{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin-top:2px}
+#gps-map{flex:1;min-height:180px;border-radius:10px;overflow:hidden;background:var(--panel);
+  border:1px solid var(--line);margin:12px 0 2px;position:relative;z-index:0}
+#gps-map.off{display:none}
+.gps-acc{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-align:center;color:var(--ink-faint);margin-top:10px}
+.gps-acc.ok{color:var(--run)}
+.gps-splits{margin-top:10px;max-height:26vh;overflow-y:auto;border:1px solid var(--line);border-radius:8px}
+.gps-splits .sp{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13.5px;
+  padding:8px 14px;border-bottom:1px solid var(--line);color:var(--ink)}
+.gps-splits .sp:last-child{border-bottom:0}
+.gps-splits .sp .n{color:var(--ink-faint)}
+.gps-units{display:flex;gap:8px;justify-content:center;margin-top:12px}
+body.theme-celina .gps-banner.work{color:#c96442;border-color:#c96442}
 .stepper button{width:40px;height:40px;border:1px solid var(--line-bright);border-radius:6px;
   font-size:18px;color:var(--ink-dim);flex:none}
 .stepper button:active{background:var(--panel-2)}
@@ -1659,11 +1682,13 @@ function dayDone(d,state){
   d.groups.forEach(function(g,gi){ g.items.forEach(function(ex,xi){ if(state[gi+"_"+xi]) c++; }); });
   return c;
 }
-function logSession(d,suffix){
+function logSession(d,suffix,extra){
   var log=logGet(current.athlete);
   var t=dateISO(new Date());
   var isNew=!log[t];
-  log[t]={t:d.type,title:d.title+(suffix||'')};
+  var entry={t:d.type,title:d.title+(suffix||'')};
+  if(extra) for(var k in extra) entry[k]=extra[k];
+  log[t]=entry;
   logSet(current.athlete,log);
   renderStats();
   if(isNew) confetti();
@@ -1784,9 +1809,10 @@ function renderDay(){
       '<span class="check">'+CHECK.innerHTML+'</span><span class="sd-label">'+
       (state.session?'SESSION DONE':'MARK DONE')+'</span></button>';
     if(d.type==="run"){
-      bar2.innerHTML='<button class="start-btn" id="start-timer">'+
-        '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START TIMER</button>'+
-        '<div class="startbar-sub"><button class="start-btn alt" id="start-mini10">⏱ 10-min</button>'+doneBtn+'</div>';
+      bar2.innerHTML='<button class="start-btn" id="start-gps">'+
+        '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START GPS RUN</button>'+
+        '<div class="startbar-sub"><button class="start-btn alt" id="start-timer">⏱ Timer</button>'+
+        '<button class="start-btn alt" id="start-mini10">⏱ 10-min</button>'+doneBtn+'</div>';
     } else {
       bar2.innerHTML='<div class="startbar-sub">'+doneBtn+'</div>';
     }
@@ -1800,6 +1826,8 @@ function renderDay(){
       this.querySelector('.sd-label').textContent=s.session?'SESSION DONE':'MARK SESSION DONE';
       refresh(true);
     });
+    var sg=bar2.querySelector('#start-gps');
+    if(sg) sg.addEventListener('click',function(){ openGpsRun(d,a,storeKey); });
     var st=bar2.querySelector('#start-timer');
     if(st) st.addEventListener('click',function(){ openTimer(d,a,storeKey); });
     var sm=bar2.querySelector('#start-mini10');
@@ -2323,6 +2351,278 @@ function openTimer(d,a,storeKey,opts){
       hint:'Head out when you\'re ready — the timer counts up. Tap Finish when you\'re back.',
       start:'START →', go:showStopwatch });
   }
+}
+
+/* ================= GPS run tracker ================= */
+var UNIT_M={mi:1609.344,km:1000};
+function unitsFor(a){ try{ return localStorage.getItem('trainops:units:'+a)||'mi'; }catch(e){ return 'mi'; } }
+function unitsSave(a,u){ try{ localStorage.setItem('trainops:units:'+a,u); }catch(e){} }
+function haversine(a,b){ // meters between two {lat,lon}
+  var R=6371000,rad=Math.PI/180;
+  var dLat=(b.lat-a.lat)*rad, dLon=(b.lon-a.lon)*rad;
+  var s=Math.sin(dLat/2)*Math.sin(dLat/2)+
+        Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return 2*R*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+}
+function fmtPace(sPerUnit){
+  if(!isFinite(sPerUnit)||sPerUnit<=0||sPerUnit>3599) return "--:--";
+  return Math.floor(sPerUnit/60)+":"+pad2(Math.round(sPerUnit)%60);
+}
+function fmtClock(s){
+  s=Math.floor(s);
+  if(s>=3600) return Math.floor(s/3600)+":"+pad2(Math.floor(s%3600/60))+":"+pad2(s%60);
+  return fmtSecs(s);
+}
+var leafletP=null;
+function loadLeaflet(){
+  if(window.L&&window.L.map) return Promise.resolve(true);
+  if(leafletP) return leafletP;
+  leafletP=new Promise(function(res){
+    var css=document.createElement('link');
+    css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    var s=document.createElement('script');
+    s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload=function(){ res(!!(window.L&&window.L.map)); };
+    s.onerror=function(){ leafletP=null; res(false); };
+    document.head.appendChild(s);
+  });
+  return leafletP;
+}
+
+function openGpsRun(d,a,storeKey){
+  var ov=openOverlay();
+  var unit=unitsFor(current.athlete);
+  // interval prescription -> optional phase cues on top of live stats
+  var text = a.mode==="week"
+    ? (a.runTable[parseInt(current.ctx.slice(1))]||{})[d.key]
+    : (d.run && d.run.extra);
+  var icfg=parseIntervals(text||"");
+  var schedule=null;
+  if(icfg){
+    schedule=[];
+    for(var r=0;r<icfg.rounds;r++){
+      var pair=icfg.startEasy
+        ? [{lab:icfg.easyLab,cls:'easy',secs:icfg.easy},{lab:icfg.workLab,cls:'work',secs:icfg.work}]
+        : [{lab:icfg.workLab,cls:'work',secs:icfg.work},{lab:icfg.easyLab,cls:'easy',secs:icfg.easy}];
+      schedule=schedule.concat(pair);
+    }
+  }
+
+  var watchId=null, map=null, poly=null, marker=null, mapReady=false;
+  var run={ movingMs:0, dist:0, last:null, track:[], splits:[], recent:[],
+            manualPause:false, autoPause:false, lastProgress:null, finished:false };
+  var lastTickAt=null;
+
+  function stopWatch(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(e){} watchId=null; } }
+  function stopInt(){ if(ovInt){ clearInterval(ovInt); ovInt=null; } }
+  function exit(){ stopWatch(); stopInt(); closeOverlay(); renderDay(); }
+  function paused(){ return run.manualPause||run.autoPause; }
+  function distU(){ return run.dist/UNIT_M[unit]; }
+  function avgPace(){ return distU()>0.02 ? (run.movingMs/1000)/distU() : NaN; }
+  function curPace(){ // rolling ~30s of moving time
+    var rc=run.recent;
+    while(rc.length>1 && run.movingMs-rc[0].t>30000) rc.shift();
+    if(rc.length<2) return NaN;
+    var dt=(run.movingMs-rc[0].t)/1000, dd=(run.dist-rc[0].d)/UNIT_M[unit];
+    return dd>0.003 ? dt/dd : NaN;
+  }
+
+  function onFix(pos){
+    var c=pos.coords;
+    var p={lat:c.latitude,lon:c.longitude,acc:c.accuracy==null?99:c.accuracy,t:Date.now()};
+    var accEl=document.getElementById('gps-acc');
+    if(accEl){
+      accEl.textContent=p.acc<=30?'GPS READY · ±'+Math.round(p.acc)+'m':'ACQUIRING GPS · ±'+Math.round(p.acc)+'m';
+      accEl.classList.toggle('ok',p.acc<=30);
+      var go=document.getElementById('gps-go');
+      if(go && p.acc<=30) go.disabled=false;
+    }
+    if(run.finished) return;
+    if(p.acc>25){ run.lastFixWeak=true; return; } // too fuzzy for distance
+    if(!run.started){ run.last=p; return; }       // pre-start: just track accuracy
+    if(run.manualPause){ run.last=p; return; }
+    if(run.last){
+      var step=haversine(run.last,p);
+      var dt=(p.t-run.last.t)/1000;
+      if(dt>0 && step/dt>12){ return; }           // GPS jump — discard point
+      if(step>=2.5){                              // real movement (not jitter)
+        run.dist+=step;
+        run.track.push([p.lat,p.lon]);
+        run.autoPause=false;
+        run.lastProgress=Date.now();
+        run.recent.push({t:run.movingMs,d:run.dist});
+        // split alert each whole mile/km
+        var target=(run.splits.length+1)*UNIT_M[unit];
+        if(run.dist>=target){
+          var prev=0; for(var i=0;i<run.splits.length;i++) prev+=run.splits[i];
+          run.splits.push(Math.round(run.movingMs/1000-prev));
+          beep(880,300); buzz([200,100,200]);
+        }
+        if(mapReady){ poly.addLatLng([p.lat,p.lon]); marker.setLatLng([p.lat,p.lon]); map.panTo([p.lat,p.lon]); }
+      }
+    } else {
+      run.track.push([p.lat,p.lon]);
+      run.lastProgress=Date.now();
+      if(mapReady){ marker.setLatLng([p.lat,p.lon]); map.setView([p.lat,p.lon],16); }
+    }
+    run.last=p;
+  }
+  function startWatch(){
+    if(!navigator.geolocation){ var g=document.getElementById('gps-acc'); if(g) g.textContent='NO GPS ON THIS DEVICE'; return; }
+    try{
+      watchId=navigator.geolocation.watchPosition(onFix,function(err){
+        var g=document.getElementById('gps-acc');
+        if(g) g.textContent=err&&err.code===1?'LOCATION PERMISSION DENIED':'WAITING FOR GPS…';
+      },{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+    }catch(e){}
+  }
+
+  /* ---- ready screen ---- */
+  function readyScreen(){
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
+      '<button class="ov-x" id="gx">✕</button></div>'+
+      '<div class="ov-mid" style="text-align:center">'+
+        '<div class="ov-eyebrow">'+(icfg?'INTERVALS · '+esc(text):'FREE RUN')+'</div>'+
+        '<div class="ov-title">Ready to run?</div>'+
+        (d.run&&d.run.warm?'<div class="ov-note">Warm-up: '+esc(d.run.warm)+'</div>':'')+
+        '<div class="gps-units">'+
+          '<button class="chip'+(unit==='mi'?' on':'')+'" data-u="mi">Miles</button>'+
+          '<button class="chip'+(unit==='km'?' on':'')+'" data-u="km">Kilometers</button>'+
+        '</div>'+
+        '<div class="gps-acc" id="gps-acc">ACQUIRING GPS…</div>'+
+        '<div class="ov-rest-hint">Keep the screen on while you run — the app tracks only while it\'s awake.</div>'+
+      '</div>'+
+      '<div class="ov-actions"><button class="ov-btn primary" id="gps-go" disabled>START RUN →</button></div>';
+    ov.querySelector('#gx').addEventListener('click',exit);
+    ov.querySelectorAll('.gps-units .chip').forEach(function(b){
+      b.addEventListener('click',function(){
+        unit=b.getAttribute('data-u'); unitsSave(current.athlete,unit);
+        ov.querySelectorAll('.gps-units .chip').forEach(function(x){ x.classList.toggle('on',x===b); });
+      });
+    });
+    ov.querySelector('#gps-go').addEventListener('click',liveScreen);
+    startWatch();
+  }
+
+  /* ---- live screen ---- */
+  function liveScreen(){
+    run.started=true; run.lastProgress=Date.now(); lastTickAt=Date.now();
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
+      '<button class="ov-x" id="gx">✕</button></div>'+
+      '<div class="gps-banner" id="gps-banner">'+(schedule?'':'FREE RUN')+'</div>'+
+      '<div class="gps-clock" id="gps-clock">0:00</div>'+
+      '<div class="gps-grid">'+
+        '<div class="gps-stat"><div class="v" id="gv-dist">0.00</div><div class="l">'+unit.toUpperCase()+'</div></div>'+
+        '<div class="gps-stat"><div class="v" id="gv-pace">--:--</div><div class="l">PACE /'+unit.toUpperCase()+'</div></div>'+
+        '<div class="gps-stat"><div class="v" id="gv-avg">--:--</div><div class="l">AVG /'+unit.toUpperCase()+'</div></div>'+
+      '</div>'+
+      '<div id="gps-map" class="off"></div>'+
+      '<div class="gps-splits" id="gps-splits" style="display:none"></div>'+
+      '<div class="ov-actions" id="gps-actions">'+
+        '<button class="ov-btn" id="gps-pause">PAUSE</button>'+
+        '<button class="ov-btn primary" id="gps-end">END RUN</button>'+
+      '</div>';
+    ov.querySelector('#gx').addEventListener('click',function(){
+      if(run.dist>10){ if(confirm('End this run?')) finishScreen(); }
+      else exit();
+    });
+    ov.querySelector('#gps-pause').addEventListener('click',function(){
+      run.manualPause=!run.manualPause;
+      this.textContent=run.manualPause?'RESUME':'PAUSE';
+      updateBanner();
+    });
+    ov.querySelector('#gps-end').addEventListener('click',finishScreen);
+    // map (graceful when offline / blocked)
+    loadLeaflet().then(function(ok){
+      var mel=document.getElementById('gps-map');
+      if(!ok||!mel||run.finished) return;
+      mel.classList.remove('off');
+      try{
+        map=L.map(mel,{zoomControl:false,attributionControl:true});
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+        poly=L.polyline(run.track.length?run.track:[],{weight:5}).addTo(map);
+        marker=L.circleMarker(run.track.length?run.track[run.track.length-1]:[0,0],{radius:7}).addTo(map);
+        if(run.track.length) map.setView(run.track[run.track.length-1],16); else map.setView([0,0],2);
+        mapReady=true;
+      }catch(e){ mel.classList.add('off'); }
+    });
+    ovInt=setInterval(tick250,250);
+  }
+  function updateBanner(){
+    var b=document.getElementById('gps-banner'); if(!b) return;
+    if(paused()){ b.textContent=run.manualPause?'PAUSED':'AUTO-PAUSED'; b.className='gps-banner paused'; return; }
+    if(!schedule){ b.textContent='FREE RUN'; b.className='gps-banner'; return; }
+    var s=Math.floor(run.movingMs/1000), acc=0;
+    for(var i=0;i<schedule.length;i++){
+      acc+=schedule[i].secs;
+      if(s<acc){
+        b.textContent=schedule[i].lab+' · '+fmtSecs(acc-s)+' · ROUND '+(Math.floor(i/2)+1)+'/'+icfg.rounds;
+        b.className='gps-banner '+schedule[i].cls;
+        if(run.seg!==i){ if(run.seg!=null){ beep(schedule[i].cls==='work'?880:520,350); buzz([250,80,250]); } run.seg=i; }
+        return;
+      }
+    }
+    b.textContent='INTERVALS DONE · CRUISE'; b.className='gps-banner easy';
+  }
+  function tick250(){
+    var now=Date.now();
+    // auto-pause: no forward progress for 5s
+    if(run.started&&!run.manualPause&&!run.autoPause&&run.lastProgress&&now-run.lastProgress>5000){
+      run.autoPause=true; buzz(100);
+    }
+    if(!paused()) run.movingMs+=now-lastTickAt;
+    lastTickAt=now;
+    var c=document.getElementById('gps-clock'); if(c) c.textContent=fmtClock(run.movingMs/1000);
+    var dv=document.getElementById('gv-dist'); if(dv) dv.textContent=distU().toFixed(2);
+    var pv=document.getElementById('gv-pace'); if(pv) pv.textContent=paused()?'--:--':fmtPace(curPace());
+    var av=document.getElementById('gv-avg'); if(av) av.textContent=fmtPace(avgPace());
+    updateBanner();
+  }
+
+  /* ---- finish screen (keeps the map + final route) ---- */
+  function finishScreen(){
+    run.finished=true; stopWatch(); stopInt();
+    var secs=Math.round(run.movingMs/1000), dist=distU();
+    var pace=fmtPace(avgPace());
+    var b=document.getElementById('gps-banner');
+    if(b){ b.textContent='RUN COMPLETE'; b.className='gps-banner easy'; }
+    var c=document.getElementById('gps-clock'); if(c) c.textContent=fmtClock(secs);
+    var pv=document.getElementById('gv-pace'); if(pv) pv.textContent=pace;
+    var av=document.getElementById('gv-avg'); if(av) av.textContent=pace;
+    if(mapReady&&run.track.length>1){ try{ map.fitBounds(poly.getBounds(),{padding:[20,20]}); }catch(e){} }
+    var sp=document.getElementById('gps-splits');
+    if(sp&&run.splits.length){
+      sp.style.display='block';
+      sp.innerHTML=run.splits.map(function(s,i){
+        return '<div class="sp"><span class="n">'+(unit==='mi'?'MILE ':'KM ')+(i+1)+'</span><span>'+fmtSecs(s)+'</span></div>';
+      }).join('');
+    }
+    var summary='🏃 '+d.title+' — '+dist.toFixed(2)+' '+unit+' in '+fmtClock(secs)+' ('+pace+' /'+unit+')'+
+      (run.splits.length?'\nSplits: '+run.splits.map(fmtSecs).join(', '):'');
+    var act=document.getElementById('gps-actions');
+    act.innerHTML=
+      '<button class="ov-btn" id="gps-share">SHARE</button>'+
+      '<button class="ov-btn primary" id="gps-done">MARK DONE ✓</button>';
+    act.querySelector('#gps-share').addEventListener('click',function(){
+      var btn=this;
+      if(navigator.share){ navigator.share({text:summary}).catch(function(){}); }
+      else if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(summary).then(function(){ btn.textContent='COPIED ✓'; }).catch(function(){});
+      }
+    });
+    act.querySelector('#gps-done').addEventListener('click',function(){
+      var s=store.get(storeKey); s.session=true; store.set(storeKey,s);
+      closeOverlay(); renderDay();
+      logSession(d,' · '+dist.toFixed(1)+' '+unit,
+        {run:{dist:+dist.toFixed(2),unit:unit,secs:secs,pace:pace}});
+    });
+  }
+
+  readyScreen();
 }
 
 /* ================= gym wall-board ================= */
