@@ -829,6 +829,9 @@ var EX_DB = [
   // vertical pull
   {name:"Doorway Row",pat:"pullV",eq:"bw",flags:[]},
   {name:"Pull-up",pat:"pullV",eq:"bar",flags:["overhead"]},
+  {name:"Chin-up",pat:"pullV",eq:"bar",flags:["overhead"]},
+  {name:"Negative Pull-up",pat:"pullV",eq:"bar",flags:["overhead"]},
+  {name:"Band-Assisted Pull-up",pat:"pullV",eq:"band",flags:["overhead"]},
   {name:"Band Lat Pulldown",pat:"pullV",eq:"band",flags:["overhead"]},
   {name:"Lat Pulldown",pat:"pullV",eq:"machine",flags:["overhead"]},
   // hip
@@ -849,7 +852,9 @@ var EX_DB = [
   {name:"Standing Anti-Rotation Press",pat:"core",eq:"band",flags:[]},
   // calf
   {name:"Calf Raise",pat:"calf",eq:"bw",flags:[]},
+  {name:"Single-Leg Calf Raise",pat:"calf",eq:"bw",flags:[]},
   {name:"KOT Calf Raise",pat:"calf",eq:"bw",flags:[]},
+  {name:"Seated Calf Raise",pat:"calf",eq:"db",flags:[]},
   // conditioning finishers
   {name:"Fast Step-Up",pat:"cond",eq:"bw",flags:[]},
   {name:"Squat-to-Stand Pulse",pat:"cond",eq:"bw",flags:[]},
@@ -860,6 +865,20 @@ var EX_DB = [
   {name:"KB Swing (finisher)",pat:"cond",eq:"kb",flags:["spinal","impact"]}
 ];
 var WARMUPS=["Leg Swings","Arm Circles","Hip Circles","World's Greatest Stretch","Torso Twists","Bodyweight Squat"];
+// warm-up / mobility moves (own picker category) — kept apart from EX_DB so
+// the generator never picks them as working sets, but the swap picker offers
+// them when you swap a warm-up. Each has a video + cues like everything else.
+var MOBILITY=[
+  {name:"Leg Swings",pat:"warm",eq:"bw",flags:[]},
+  {name:"Arm Circles",pat:"warm",eq:"bw",flags:[]},
+  {name:"Hip Circles",pat:"warm",eq:"bw",flags:[]},
+  {name:"Torso Twists",pat:"warm",eq:"bw",flags:[]},
+  {name:"World's Greatest Stretch",pat:"warm",eq:"bw",flags:[]},
+  {name:"Treadmill walk",pat:"warm",eq:"machine",flags:[]},
+  {name:"Band Pull-Apart",pat:"warm",eq:"band",flags:[]},
+  {name:"Scap Pull-up",pat:"warm",eq:"bar",flags:["overhead"]},
+  {name:"Thoracic Rotation",pat:"warm",eq:"bw",flags:["floor"]}
+];
 var EQ_TIERS={bodyweight:["bw"],dumbbells:["bw","db"],home:["bw","db","kb","band","bar"],full:["bw","db","kb","band","bar","barbell","machine","cable"]};
 var LIMIT_FLAGS={impact:["impact"],knee:["knee"],shoulder:["overhead"],floor:["floor","spinal"]};
 var DAY_LABEL={mon:"Mon",tue:"Tue",wed:"Wed",thu:"Thu",fri:"Fri",sat:"Sat",sun:"Sun"};
@@ -867,8 +886,9 @@ var GOAL_LABEL={stronger:"Get stronger",muscle:"Build muscle",general:"General f
 var EQUIP_LABEL={bodyweight:"Bodyweight",dumbbells:"Dumbbells",home:"Home gym",full:"Full gym"};
 var MAIN_PATS={squat:1,hinge:1,pushH:1,pushV:1,pullH:1,pullV:1};
 var CAT_LABEL={squat:"Squat",hinge:"Hinge / Deadlift",lunge:"Lunge",pushH:"Chest / Push",pushV:"Shoulders",
-  pullH:"Back / Row",pullV:"Pull-up / Pulldown",hip:"Glutes / Hips",core:"Core",calf:"Calves",carry:"Carry",cond:"Conditioning"};
-var CAT_ORDER=["squat","hinge","lunge","pushH","pushV","pullH","pullV","hip","core","calf","carry","cond"];
+  pullH:"Back / Row",pullV:"Pull-up / Pulldown",hip:"Glutes / Hips",core:"Core",calf:"Calves",carry:"Carry",cond:"Conditioning",warm:"Warm-up / Mobility"};
+var CAT_ORDER=["squat","hinge","lunge","pushH","pushV","pullH","pullV","hip","core","calf","carry","cond","warm"];
+var PICK_POOL=EX_DB.concat(MOBILITY); // swap picker draws from lifts + mobility
 var EQ_LABEL={bw:"Bodyweight",db:"Dumbbell",kb:"Kettlebell",band:"Band",bar:"Pull-up bar",barbell:"Barbell",machine:"Machine",cable:"Cable"};
 
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
@@ -996,6 +1016,10 @@ function buildCustomPlan(cfg){
 /* load / persist custom users */
 function customList(){ try{ return JSON.parse(localStorage.getItem('trainops:custom'))||[]; }catch(e){ return []; } }
 function customSave(list){ try{ localStorage.setItem('trainops:custom',JSON.stringify(list)); }catch(e){} }
+// built-in athletes the user has removed from their roster (allowed only once
+// they have a custom plan; restored automatically if all customs are deleted)
+function hiddenBuiltins(){ try{ return JSON.parse(localStorage.getItem('trainops:hidden'))||[]; }catch(e){ return []; } }
+function hiddenSave(list){ try{ localStorage.setItem('trainops:hidden',JSON.stringify(list)); }catch(e){} }
 function loadCustomAthletes(){
   customList().forEach(function(cfg){ try{ ATHLETES[cfg.id]=buildCustomPlan(cfg); }catch(e){} });
 }
@@ -1013,6 +1037,9 @@ var CUE_LIB = {
   "ab wheel rollout":["Brace your abs before you roll","Roll only as far as you control","Don't let your hips sag","Pull back with your core, not arms"],
   "suitcase carry":["Stand tall, don't lean","Brace the opposite side","Slow controlled steps","Grip hard, ribs down"],
   "side plank":["Elbow under shoulder","Stack the hips, lift high","Straight line head to heel","Don't let the hip drop"],
+  "chin-up":["Underhand grip, hands shoulder-width","Pull the elbows down to your ribs","Chin over the bar","Lower all the way, controlled"],
+  "negative pull-up":["Jump or step so your chin starts over the bar","Lower yourself as slowly as you can (3–5s)","Keep the shoulders packed down","Full stretch at the bottom, then reset"],
+  "band-assisted pull-up":["Loop the band under a knee or foot","Overhand grip, hang with arms straight","Pull the chest toward the bar","Let the band help where it's hardest"],
   "pull-up":["Start from a dead hang","Pull elbows down to your sides","Chin clears the bar","Lower all the way, controlled"],
   "push-up":["Hands under shoulders","Body in one straight line","Lower chest to the floor","Push all the way up"],
   "kneeling push-up":["Knees down, straight line knee to head","Hands under shoulders","Lower chest with control","Full press to lockout"],
@@ -1028,6 +1055,8 @@ var CUE_LIB = {
   "tibialis raise":["Heels planted, back to the wall","Pull the toes up toward shins","Squeeze the front of the shin","Lower slow and controlled"],
   "slant board fhl calf raise":["Full stretch at the bottom","Rise onto the balls of your feet","Pause at the top","Slow controlled descent"],
   "kot calf raise":["Full ankle bend at the bottom","Rise all the way up","Pause and squeeze","Lower slow through full range"],
+  "single-leg calf raise":["Stand on one foot, hold for balance","Rise onto the ball of the foot","Full stretch at the bottom","Slow and controlled, no bouncing"],
+  "seated calf raise":["Balls of the feet on a block, weight on the knees","Drop the heels for a full stretch","Drive up onto the toes","Pause and squeeze at the top"],
   "calf raise":["Full stretch at the bottom","Rise onto the balls of the feet","Pause and squeeze at the top","Slow descent"],
   "slant board reverse step-down":["Stand on the elevated leg","Lower the other heel slowly","Keep the knee tracking forward","Drive back up controlled"],
   "banded hip flexion":["Stand tall, band on the foot","Drive the knee up against tension","Keep the standing leg strong","Lower with control"],
@@ -1098,7 +1127,7 @@ var VIDEO_LIB = {
   "single-leg romanian deadlift":["Nenu2LI9_dw","Zfr6wizR8rs","iS7atZhcRnw"],
   "romanian deadlift":["aa57T45iFSE","IJdUtnxAmNo","hQgFixeXdZo"],
   "goblet squat":["gm4ln6PO4rc","BR4tlEE_A98","6mf0oa2GGUc"],
-  "atg split squat":["qfpkwZlG-cs","4qPJUSczLcM","oVGns3iOxVw"],
+  "atg split squat":["j9Jy5RRMTrw","qfpkwZlG-cs","4qPJUSczLcM"],
   "split squat":["qfpkwZlG-cs","4qPJUSczLcM","oVGns3iOxVw"],
   "kb swing":["pAWaNCsncZA","alFXWtV3VcE","1Qi0NQW89Oc"],
   "swing":["pAWaNCsncZA","alFXWtV3VcE","1Qi0NQW89Oc"],
@@ -1107,17 +1136,25 @@ var VIDEO_LIB = {
   "suitcase carry":["y-hn_Ha1-RE","WhxtwWqb2BQ","eM7u45iNOEU"],
   "carry":["y-hn_Ha1-RE","WhxtwWqb2BQ","eM7u45iNOEU"],
   "side plank":["44ND4bOB-T0","iNbH7_edNI8","XeN4pEZZJNI"],
+  "chin-up":["T78xCiw_R6g","c8G0_NEJ-yA","e1YSApl-QcM"],
+  "band-assisted pull-up":["4yE-XGDWJPg","ZHllQTJf7eA"],
+  "negative pull-up":["ELOKABEA1mU","IXBHLLl3hbg","DGSm56-FixA"],
   "pull-up":["MhokcbRLP5w","6zyx46Vpato","yl_owH54iH0"],
   "pike push-up":["pHR5yG6xBps","paCOGgmLCA0","fXgou2W10ok"],
-  "kneeling push-up":["WDIpL0pjun0","mECzqUIDWfU","IODxDxX7oi4"],
+  "kneeling push-up":["z8nUnCdZXQI","utzhPQuXWcA","1nAsgpufzhc"],
+  "incline push-up":["0JUrOH--Kdk","49jfZ_z7-us","cfns5VDVVvk"],
   "push-up":["WDIpL0pjun0","mECzqUIDWfU","IODxDxX7oi4"],
   "single-arm kb press":["bqDq1RXrTGg","gjr-QAdsq4o","X-uFqWtjpGI"],
   "renegade row":["F68p7cJFtOI","0ANhSr-Vk9M","4qEIChzM4ZA"],
   "bent-over kb row":["IyQAMOV0WAc","vjM-TVScoao","BTSSM1iEhug"],
   "kb row":["IyQAMOV0WAc","vjM-TVScoao","BTSSM1iEhug"],
-  "band row":["IyQAMOV0WAc","vjM-TVScoao"],
+  "bent-over band row":["tcMmJ3c5P8c","YJiwzLHHKp8","vR9KcvzLqVo"],
+  "band row":["tcMmJ3c5P8c","YJiwzLHHKp8"],
   "band face pull":["AlTGQrDOd98","OIMUU2Q-upU","DvjmJdEswQ4"],
   "tibialis raise":["O8ZcXfwFuqs","mmLnKYwdDMM","RXC7tE6IQcc"],
+  "kot calf raise":["06cqmzQY9r4","99E-EhDYrGY"],
+  "seated calf raise":["ORY-ke6vcgk","M5Pb5C7PgPc","71lLP3aglGQ"],
+  "single-leg calf raise":["qhGe_FynFnQ","mFTQo8k1IIU"],
   "calf raise":["97NbelB5yvQ","KRJIKsY02nE","SVtg-1loH4c"],
   "bird dog":["ZdAHe9_HeEw","biN8oIV1umA","wGh2fZU20-M"],
   "dead bug":["bxn9FBrt4-A","3eqodmkpkfA","lqnuY3wiBzA"],
@@ -1137,35 +1174,42 @@ var VIDEO_LIB = {
   "barbell deadlift":["NVpwlMFrB3I","VG64cp5KTNo"],
   "back extension":["gLT-WLH84B4","qtjJUWCnDyE"],
   "reverse lunge":["u_zSfK5ZFU4","94AXT7D3bKY"],
-  "lateral lunge":["u_zSfK5ZFU4","94AXT7D3bKY"],
+  "lateral lunge":["liFeq7swKfc","gwWv7aPcD88","qCA8E-dF8cI"],
   "step-up":["9ZknEYboBOQ","tqECKZxlCKE"],
   "db bench press":["5Y3VZsLb1Ys","pKZMNVbfUzQ"],
+  "barbell bench press":["Pp8rHcFVIYg","gRVjAtPip0Y","BkC7bIGqgjs"],
+  "band chest press":["4B6O2dHDjBw","F_A2aa9anT0"],
+  "machine chest press":["sqNwDkUU_Ps","pLofEAcfsO8","zgP-UCKGe24"],
   "bench press":["5Y3VZsLb1Ys","pKZMNVbfUzQ"],
-  "chest press":["5Y3VZsLb1Ys","pKZMNVbfUzQ"],
+  "chest press":["sqNwDkUU_Ps","pLofEAcfsO8"],
   "db overhead press":["M2rwvNhTOu0","Did01dFR3Lk"],
+  "barbell overhead press":["ZXpdJOLNoWw","wuFsq9tOsfs","iZq4yvgnajM"],
+  "band overhead press":["0rLjkQweIDg","Zli1UXH9ZeE"],
+  "machine shoulder press":["3R14MnZbcpw","e5gJP7quyGk","BAZkFGeUy5U"],
   "overhead press":["M2rwvNhTOu0","Did01dFR3Lk"],
   "shoulder press":["M2rwvNhTOu0","Did01dFR3Lk"],
   "db row":["gfUg6qWohTk","tLnlWj7LQ34"],
-  "table row":["Fl0UMfdEzsE","ytFnYaoIkSg"],
+  "table row":["EIFEKZe4Wm8","FKKZRwBJDxE","jjSaYXeKiNk"],
   "inverted row":["Fl0UMfdEzsE","ytFnYaoIkSg"],
-  "doorway row":["Fl0UMfdEzsE","ytFnYaoIkSg"],
-  "seated cable row":["7BkgqzC6WsM","f_r95UajQcg"],
-  "machine row":["7BkgqzC6WsM","f_r95UajQcg"],
+  "doorway row":["g8wWFlr2gQU","ytEalkENNiQ"],
+  "seated cable row":["7BkgqzC6WsM","OeLb503NZHk"],
+  "machine row":["0tzaCqk7_6s","TeFo51Q_Nsc","QOLEucenxn8"],
+  "band lat pulldown":["SkT4rqrmH-M"],
   "lat pulldown":["SALxEARiMkw","CAwf7n6Luuc"],
   "standing hip abduction":["xUxWsvWj3Go","4qr26RNU3EQ"],
   "cable kickback":["5jJNfIlKTmg","VSgMyiOu0uE"],
   "standing knee raise":["D0GwAezTvtg","lR3cpCVBjPM"],
   "standing anti-rotation press":["dBAmQ9bx3JA","P16SQlmWj1o"],
   "plank":["A2b2EmIg0dA","mwlp75MS6Rg"],
-  "squat-to-stand":["T6j7BpxeqqU","-CiWQ2IvY34"],
+  "squat-to-stand":["G5iP1-kE4-4","xWtrhKwUscU"],
   "jump squat":["tZSYZdtbONc","8Sl9h44XNJA"],
-  "high knees":["D0GwAezTvtg","lR3cpCVBjPM"],
+  "high knees":["lR3cpCVBjPM","82pdtHaANGk"],
   "mountain climber":["CQk4MHY2_Tc","gW-q50V6Z_0"],
   "burpee":["bTh6KWfW-r8","wGvBfVeCNko"],
-  "leg swings":["D17eUtUt0zQ","difYoBtZi2s"],
-  "arm circles":["D17eUtUt0zQ","difYoBtZi2s"],
-  "hip circles":["D17eUtUt0zQ","difYoBtZi2s"],
-  "torso twists":["T6j7BpxeqqU","-CiWQ2IvY34"],
+  "leg swings":["difYoBtZi2s","D17eUtUt0zQ"],
+  "arm circles":["tYo5ghpLksg","mwDgFY86zck","140RTNMciH8"],
+  "hip circles":["JYqLwajOGjI","altA7815AGs","qkrJXGVj_OQ"],
+  "torso twists":["QQMri8bsjy8","f4Qah0bQTIo","h6XyzlM8m24"],
   "world's greatest stretch":["T6j7BpxeqqU","-CiWQ2IvY34"],
   // ---- built-in plan (Anthony / Celina) coverage ----
   "band pull-apart":["smSSXITNpCI","LoBBo1dtY6I"],
@@ -1258,7 +1302,10 @@ function setTheme(theme){
 
 function rosterOrder(){
   var custom=customList().map(function(c){return c.id;}).filter(function(id){return ATHLETES[id];});
-  return custom.concat(['anthony','her']);
+  var builtins=['anthony','her'];
+  // built-ins can only be hidden while at least one custom plan exists
+  if(custom.length){ var h=hiddenBuiltins(); builtins=builtins.filter(function(id){return h.indexOf(id)===-1;}); }
+  return custom.concat(builtins);
 }
 function renderRoster(){
   var r=document.getElementById('roster'); r.innerHTML='';
@@ -1268,12 +1315,15 @@ function renderRoster(){
   add.addEventListener('click',openBuilder);
   r.appendChild(add);
 
+  // once the user has their own plan, built-in athletes can be removed too
+  var canHideBuiltin=customList().length>0;
   rosterOrder().forEach(function(id){
     var a=ATHLETES[id]; if(!a) return;
+    var deletable=a.custom||canHideBuiltin;
     var card=el('div','op-card '+(a.theme==="fem"?"op-fem":"op-tact")+(a.custom?' op-custom':''));
     card.innerHTML=
       '<span class="corner"></span>'+
-      (a.custom?'<button class="op-del" aria-label="Delete plan">\u2715</button>':'')+
+      (deletable?'<button class="op-del" aria-label="Remove from roster">\u2715</button>':'')+
       (a.meta.tag?'<div class="tag mono">'+esc(a.meta.tag)+'</div>':'')+
       '<div class="name">'+esc(a.meta.name)+'</div>'+
       '<div class="goal">'+esc(a.meta.goal)+'</div>'+
@@ -1282,10 +1332,15 @@ function renderRoster(){
     var del=card.querySelector('.op-del');
     if(del) del.addEventListener('click',function(e){
       e.stopPropagation();
-      if(!confirm('Delete '+a.meta.name+"'s plan? Their history stays saved.")) return;
-      customSave(customList().filter(function(c){return c.id!==id;}));
-      delete ATHLETES[id];
-      try{ localStorage.removeItem('trainops:cfg:'+id); }catch(_){}
+      if(a.custom){
+        if(!confirm('Delete '+a.meta.name+"'s plan? Their history stays saved.")) return;
+        customSave(customList().filter(function(c){return c.id!==id;}));
+        delete ATHLETES[id];
+        try{ localStorage.removeItem('trainops:cfg:'+id); }catch(_){}
+      } else {
+        if(!confirm('Remove '+a.meta.name+" from your roster? Their history stays saved, and they'll return if you delete all your custom plans.")) return;
+        var h=hiddenBuiltins(); if(h.indexOf(id)===-1){ h.push(id); hiddenSave(h); }
+      }
       renderRoster();
     });
     r.appendChild(card);
@@ -1355,14 +1410,14 @@ function openBuilder(){
 function openPicker(storeKey,id,origName){
   var ov=openOverlay();
   var curName=(store.get(storeKey)["swap_"+id])||origName;
-  var origCat=(EX_DB.filter(function(x){return x.name===origName;})[0]||{}).pat;
+  var origCat=(PICK_POOL.filter(function(x){return x.name===origName;})[0]||{}).pat;
   function render(q){
     q=(q||'').toLowerCase();
     var order=CAT_ORDER.slice();
     if(origCat){ order=[origCat].concat(order.filter(function(c){return c!==origCat;})); } // relevant first
     var body='';
     order.forEach(function(cat){
-      var items=EX_DB.filter(function(x){ return x.pat===cat && (!q || x.name.toLowerCase().indexOf(q)!==-1); });
+      var items=PICK_POOL.filter(function(x){ return x.pat===cat && (!q || x.name.toLowerCase().indexOf(q)!==-1); });
       if(!items.length) return;
       body+='<div class="pk-cat">'+esc(CAT_LABEL[cat]||cat)+'</div>';
       items.forEach(function(x){
