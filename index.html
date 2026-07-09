@@ -358,6 +358,10 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .calgrid .c.td{outline:1.5px solid var(--amber);outline-offset:-1.5px}
 .calgrid .c.fut{opacity:.35}
 .callabel{margin-top:8px;font-size:9px;letter-spacing:.14em;color:var(--ink-faint)}
+.runstats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 2px 12px}
+.runstats .rs{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 4px;text-align:center}
+.runstats .rs b{display:block;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
+.runstats .rs span{font-size:8.5px;letter-spacing:.12em;color:var(--ink-faint)}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
 
 /* ---- race / plan date line ---- */
@@ -1943,7 +1947,7 @@ function renderStats(){
       '<button id="cal-btn">'+(calOpen?'HIDE ▴':'HISTORY ▾')+'</button>'+
     '</div>'+
     adviceHTML+
-    (calOpen?calendarHTML(log):'');
+    (calOpen?runStatsHTML(log)+calendarHTML(log):'');
   document.getElementById('cal-btn').addEventListener('click',function(){
     calOpen=!calOpen; renderStats();
   });
@@ -1985,6 +1989,34 @@ function calcStreak(log){
     d.setDate(d.getDate()-1);
   }
   return streak;
+}
+// run mileage rollup for the history panel: GPS-tracked distance by window
+function runStatsHTML(log){
+  var u=unitsFor(current.athlete), per=UNIT_M[u];
+  var now=new Date();
+  var monday=new Date(now); monday.setHours(0,0,0,0);
+  monday.setDate(monday.getDate()-((now.getDay()+6)%7));
+  var mo=new Date(now.getFullYear(),now.getMonth(),1);
+  var runs=0, wk=0, month=0, all=0;
+  Object.keys(log).forEach(function(iso){
+    var e=log[iso];
+    if(e.t!=='run' && !e.run) return;
+    runs++;
+    if(!e.run||!e.run.dist) return;
+    var m=e.run.dist*(UNIT_M[e.run.unit]||UNIT_M.mi);
+    var d=parseDate(iso);
+    all+=m;
+    if(d>=monday) wk+=m;
+    if(d>=mo) month+=m;
+  });
+  if(!runs) return '';
+  function f(m){ return (m/per).toFixed(1); }
+  return '<div class="runstats mono">'+
+    '<div class="rs"><b>'+runs+'</b><span>RUNS</span></div>'+
+    '<div class="rs"><b>'+f(wk)+'</b><span>'+u.toUpperCase()+' · WEEK</span></div>'+
+    '<div class="rs"><b>'+f(month)+'</b><span>'+u.toUpperCase()+' · MONTH</span></div>'+
+    '<div class="rs"><b>'+f(all)+'</b><span>'+u.toUpperCase()+' · ALL TIME</span></div>'+
+  '</div>';
 }
 function calendarHTML(log){
   var today=new Date();
