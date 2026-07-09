@@ -358,10 +358,10 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .calgrid .c.td{outline:1.5px solid var(--amber);outline-offset:-1.5px}
 .calgrid .c.fut{opacity:.35}
 .callabel{margin-top:8px;font-size:9px;letter-spacing:.14em;color:var(--ink-faint)}
-.runstats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 2px 12px}
-.runstats .rs{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 4px;text-align:center}
-.runstats .rs b{display:block;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
-.runstats .rs span{font-size:8.5px;letter-spacing:.12em;color:var(--ink-faint)}
+.calrow{display:flex;gap:16px;align-items:center}
+.calside{display:flex;flex-direction:column;gap:10px;min-width:0}
+.calside .cs{font-size:10px;letter-spacing:.12em;color:var(--ink-faint);white-space:nowrap}
+.calside .cs b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;margin-right:3px}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
 
 /* ---- race / plan date line ---- */
@@ -1941,13 +1941,15 @@ function renderStats(){
   var ws=document.getElementById('who-stats');
   if(ws) ws.innerHTML='THIS WK <b>'+thisWeek+'</b> · STREAK <b>'+streak+'</b>';
 
+  var rt=runTotals(log);
   slot.innerHTML=
     '<div class="statsbar mono">'+
-      '<span>TOTAL <b>'+dates.length+'</b> SESSIONS</span>'+
+      '<span>TOTAL <b>'+dates.length+'</b> SESSIONS'+
+        (rt.runs?' · <b>'+rt.runs+'</b> RUNS':'')+'</span>'+
       '<button id="cal-btn">'+(calOpen?'HIDE ▴':'HISTORY ▾')+'</button>'+
     '</div>'+
     adviceHTML+
-    (calOpen?runStatsHTML(log)+calendarHTML(log):'');
+    (calOpen?calendarHTML(log,rt):'');
   document.getElementById('cal-btn').addEventListener('click',function(){
     calOpen=!calOpen; renderStats();
   });
@@ -1990,8 +1992,8 @@ function calcStreak(log){
   }
   return streak;
 }
-// run mileage rollup for the history panel: GPS-tracked distance by window
-function runStatsHTML(log){
+// run mileage rollup: GPS-tracked distance by window (week starts Monday)
+function runTotals(log){
   var u=unitsFor(current.athlete), per=UNIT_M[u];
   var now=new Date();
   var monday=new Date(now); monday.setHours(0,0,0,0);
@@ -2009,16 +2011,10 @@ function runStatsHTML(log){
     if(d>=monday) wk+=m;
     if(d>=mo) month+=m;
   });
-  if(!runs) return '';
   function f(m){ return (m/per).toFixed(1); }
-  return '<div class="runstats mono">'+
-    '<div class="rs"><b>'+runs+'</b><span>RUNS</span></div>'+
-    '<div class="rs"><b>'+f(wk)+'</b><span>'+u.toUpperCase()+' · WEEK</span></div>'+
-    '<div class="rs"><b>'+f(month)+'</b><span>'+u.toUpperCase()+' · MONTH</span></div>'+
-    '<div class="rs"><b>'+f(all)+'</b><span>'+u.toUpperCase()+' · ALL TIME</span></div>'+
-  '</div>';
+  return { runs:runs, u:u.toUpperCase(), wk:f(wk), month:f(month), all:f(all) };
 }
-function calendarHTML(log){
+function calendarHTML(log,rt){
   var today=new Date();
   var start=new Date(today);
   start.setDate(start.getDate()-((today.getDay()+6)%7)-77); // Monday, 11 weeks back
@@ -2031,7 +2027,15 @@ function calendarHTML(log){
       cell.setDate(cell.getDate()+1);
     }
   }
-  return '<div class="cal"><div class="calgrid">'+cells+'</div>'+
+  // mileage stack beside the grid, as sketched: all time / this month / this week
+  var side=(rt&&rt.runs)
+    ? '<div class="calside mono">'+
+        '<div class="cs"><b>'+rt.all+'</b> '+rt.u+' ALL TIME</div>'+
+        '<div class="cs"><b>'+rt.month+'</b> '+rt.u+' THIS MONTH</div>'+
+        '<div class="cs"><b>'+rt.wk+'</b> '+rt.u+' THIS WEEK</div>'+
+      '</div>'
+    : '';
+  return '<div class="cal"><div class="calrow"><div class="calgrid">'+cells+'</div>'+side+'</div>'+
     '<div class="callabel mono">LAST 12 WEEKS · EACH COLUMN = 1 WEEK, MON–SUN</div></div>';
 }
 
