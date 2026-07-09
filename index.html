@@ -57,7 +57,53 @@ body.theme-celina{
   --amber:#c96442; --amber-dim:#da7756; --lime:#8fac6a; --run:#b56a86;
   --strength:#c98a4a; --rest:#a89a83; --done:#8fac6a; --danger:#bf4d32;
 }
-.wrap{max-width:640px;margin:0 auto;padding:20px 16px 64px}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px calc(96px + env(safe-area-inset-bottom))}
+
+/* ---- bottom tab bar ---- */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;
+  background:var(--panel);border-top:1px solid var(--line);
+  padding:7px 6px calc(9px + env(safe-area-inset-bottom))}
+.tabbar .tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:var(--ink-faint);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  background:none;border:0;padding:3px 0;cursor:pointer}
+.tabbar .tb svg{width:22px;height:22px}
+.tabbar .tb.active{color:var(--amber)}
+body.board-mode .tabbar{display:none}
+.tabview.hidden{display:none}
+
+/* ---- home tab ---- */
+.home-date{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase}
+.home-name{font-size:32px;font-weight:800;margin:2px 0 12px;color:var(--ink)}
+body.theme-celina .home-name{font-family:var(--serif)}
+.home-strip{display:flex;gap:8px;margin-bottom:14px}
+.home-strip .hs{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 6px;text-align:center}
+.home-strip .hs b{display:block;font-family:var(--mono);font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums}
+.home-strip .hs span{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;color:var(--ink-faint)}
+.today-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.tc-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--amber);text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.tc-done{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--done);border:1px solid var(--done);border-radius:999px;padding:3px 10px}
+.tc-title{font-size:24px;font-weight:700;margin:6px 0 2px;color:var(--ink)}
+.tc-sub{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);letter-spacing:.06em}
+.tc-rest{font-size:13.5px;color:var(--ink-dim);margin-top:8px;line-height:1.5}
+.today-actions{display:flex;gap:8px;margin-top:14px}
+.home-link{display:block;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  color:var(--ink-faint);padding:10px;width:100%;background:none;border:0;cursor:pointer}
+.home-link:hover{color:var(--amber)}
+
+/* ---- activity tab ---- */
+.actlist{border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-top:14px;overflow:hidden}
+.act-row{display:flex;align-items:baseline;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.act-row:last-child{border-bottom:0}
+.act-row .ad{font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.1em;min-width:52px}
+.act-row .at{flex:1;font-size:13.5px;color:var(--ink)}
+.act-row .ar{font-family:var(--mono);font-size:11px;color:var(--run)}
+
+/* ---- profile tab ---- */
+.prof-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:14px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--ink-faint)}
+.prof-row .gps-units{margin:0}
+.op-card.cur{border-color:var(--amber)}
 .mono{font-family:var(--mono)}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
@@ -535,29 +581,10 @@ body.theme-celina .sess-done .check{border-radius:50%}
     <div class="clock mono" id="clock">&mdash; &middot; &mdash;</div>
   </div>
 
-  <div id="roster-view">
-    <p class="eyebrow">Who's training today?</p>
-    <div class="roster" id="roster"></div>
-    <div class="footnote" style="margin-top:20px">
-      Tap a card to open today's session. Checkmarks save on this device &mdash;
-      close it, come back mid-workout, everything's where you left it.
-    </div>
-    <div class="reset-line">
-      <button class="reset-btn" id="board-open">&#9707; GYM BOARD &mdash; both plans on one screen</button>
-    </div>
-  </div>
+  <div id="view-home" class="tabview hidden"></div>
 
-  <div id="board-view" class="hidden">
-    <div class="board-head">
-      <span class="board-title mono" id="board-date">TODAY</span>
-      <button class="reset-btn" id="board-exit">&#10005; EXIT BOARD</button>
-    </div>
-    <div class="board" id="board"></div>
-  </div>
-
-  <div id="session-view" class="hidden">
+  <div id="view-plan" class="tabview hidden">
     <div class="session-top">
-      <button class="backbtn" id="back">&#9664; Roster</button>
       <div class="who" id="who"></div>
     </div>
     <div id="weekstrip-slot"></div>
@@ -570,7 +597,41 @@ body.theme-celina .sess-done .check{border-radius:50%}
     </div>
   </div>
 
+  <div id="view-activity" class="tabview hidden"></div>
+
+  <div id="view-profile" class="tabview hidden">
+    <p class="eyebrow" id="prof-eyebrow">Who's training today?</p>
+    <div class="roster" id="roster"></div>
+    <div id="prof-extra"></div>
+  </div>
+
+  <div id="board-view" class="hidden">
+    <div class="board-head">
+      <span class="board-title mono" id="board-date">TODAY</span>
+      <button class="reset-btn" id="board-exit">&#10005; EXIT BOARD</button>
+    </div>
+    <div class="board" id="board"></div>
+  </div>
+
 </div>
+
+<nav class="tabbar mono" id="tabbar">
+  <button class="tb" data-tab="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+    <span>Home</span></button>
+  <button class="tb" data-tab="plan">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 12l2 2 4-4"/></svg>
+    <span>Plan</span></button>
+  <button class="tb" data-tab="run">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="4.5" r="1.6"/><path d="M13.5 8l-3.5 2 1.5 3.5L8 17l-3 3"/><path d="M13.5 8l1.5 4 4 1.5"/><path d="M10 10L7 9"/><path d="M11.5 13.5L15 17l1 4"/></svg>
+    <span>Run</span></button>
+  <button class="tb" data-tab="activity">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V14"/><path d="M10 20V9"/><path d="M15 20v-7"/><path d="M20 20V5"/></svg>
+    <span>Activity</span></button>
+  <button class="tb" data-tab="profile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20.5c1.2-3.4 4-5 7.5-5s6.3 1.6 7.5 5"/></svg>
+    <span>Profile</span></button>
+</nav>
 
 <script>
 /* ==================================================================
@@ -1368,7 +1429,7 @@ function renderRoster(){
   rosterOrder().forEach(function(id){
     var a=ATHLETES[id]; if(!a) return;
     var deletable=a.custom||canHideBuiltin;
-    var card=el('div','op-card '+(a.theme==="fem"?"op-fem":"op-tact")+(a.custom?' op-custom':''));
+    var card=el('div','op-card '+(a.theme==="fem"?"op-fem":"op-tact")+(a.custom?' op-custom':'')+(id===current.athlete?' cur':''));
     card.innerHTML=
       '<span class="corner"></span>'+
       (deletable?'<button class="op-del" aria-label="Remove from roster">\u2715</button>':'')+
@@ -1376,7 +1437,7 @@ function renderRoster(){
       '<div class="name">'+esc(a.meta.name)+'</div>'+
       '<div class="goal">'+esc(a.meta.goal)+'</div>'+
       '<div class="enter mono">'+(a.theme==="fem"?"OPEN":"ENTER")+' \u25b8</div>';
-    card.addEventListener('click',function(){ openAthlete(id); });
+    card.addEventListener('click',function(){ selectUser(id); });
     var del=card.querySelector('.op-del');
     if(del) del.addEventListener('click',function(e){
       e.stopPropagation();
@@ -1388,6 +1449,10 @@ function renderRoster(){
       } else {
         if(!confirm('Remove '+a.meta.name+" from your roster? Their history stays saved, and they'll return if you delete all your custom plans.")) return;
         var h=hiddenBuiltins(); if(h.indexOf(id)===-1){ h.push(id); hiddenSave(h); }
+      }
+      if(current.athlete===id){
+        current.athlete=null; setTheme(null);
+        try{ localStorage.removeItem('trainops:lastUser'); }catch(_){}
       }
       renderRoster();
     });
@@ -1450,7 +1515,7 @@ function openBuilder(){
     ATHLETES[cfg.id]=buildCustomPlan(cfg);
     renderRoster();
     closeOverlay();
-    openAthlete(cfg.id);
+    selectUser(cfg.id);
   });
 }
 
@@ -1500,14 +1565,20 @@ function openPicker(storeKey,id,origName){
   ov.querySelector('#pk-search').addEventListener('input',function(){ render(this.value); });
 }
 
-function openAthlete(id){
+function selectUser(id){
   current.athlete=id;
   var a=ATHLETES[id];
   setTheme(a.theme);
-  document.getElementById('roster-view').classList.add('hidden');
-  document.getElementById('session-view').classList.remove('hidden');
-  window.scrollTo(0,0);
-
+  try{ localStorage.setItem('trainops:lastUser',id); }catch(e){}
+  buildPlanChrome(id);
+  current.day=null;
+  renderTabs();
+  renderDay();
+  showTab('home');
+}
+// per-athlete chrome inside the Plan tab: name row, week/phase strip, topline, foot
+function buildPlanChrome(id){
+  var a=ATHLETES[id];
   var who=document.getElementById('who');
   who.innerHTML='<span class="n mono">'+esc(a.meta.name)+'</span>'+
     '<span class="wstat mono" id="who-stats"></span>';
@@ -1577,10 +1648,163 @@ function openAthlete(id){
     '<button class="tl-edit" id="topline-edit">'+editLabel+'</button>';
   top.querySelector('#topline-edit').addEventListener('click',function(){ rl._edit(); });
 
-  current.day=null;
-  renderTabs();
-  renderDay();
   document.getElementById('foot-slot').innerHTML='<div class="footnote">'+a.foot+'</div>';
+}
+
+/* ================= tab shell ================= */
+var activeTab='home';
+var onOverlayClose=null;
+function showTab(t){
+  if(t==='run'){ openRunTab(); return; }
+  if(!current.athlete && t!=='profile') t='profile';
+  activeTab=t;
+  ['home','plan','activity','profile'].forEach(function(k){
+    var v=document.getElementById('view-'+k);
+    if(v) v.classList.toggle('hidden',k!==t);
+  });
+  document.querySelectorAll('.tabbar .tb').forEach(function(b){
+    b.classList.toggle('active',b.getAttribute('data-tab')===t);
+  });
+  if(t==='home') renderHome();
+  else if(t==='plan'){ renderTabs(); renderDay(); }
+  else if(t==='activity') renderActivity();
+  else if(t==='profile') renderProfile();
+  window.scrollTo(0,0);
+}
+// Run is an action tab: opens the GPS tracker for today's run (or a free run)
+function openRunTab(){
+  if(!current.athlete){ showTab('profile'); return; }
+  var a=ATHLETES[current.athlete];
+  var today=todayFor(current.athlete,current.ctx);
+  var d=(today&&today.type==='run')?today
+    :{key:'free_'+todayKey(),type:'run',title:'Free Run',
+      run:{kind:'walkrun',warm:'',cool:''}};
+  var sk=store.key(current.athlete,current.ctx,d.key);
+  openGpsRun(d,a,sk);
+  // highlight Run while the tracker is up, restore the real tab after
+  // (set after openGpsRun: opening an overlay first closes any previous one,
+  // which would have fired this hook immediately)
+  document.querySelectorAll('.tabbar .tb').forEach(function(b){
+    b.classList.toggle('active',b.getAttribute('data-tab')==='run');
+  });
+  onOverlayClose=function(){ showTab(activeTab); };
+}
+
+/* ---- Home tab ---- */
+function renderHome(){
+  var v=document.getElementById('view-home');
+  if(!current.athlete){ showTab('profile'); return; }
+  var a=ATHLETES[current.athlete];
+  var d=todayFor(current.athlete,current.ctx);
+  var sk=store.key(current.athlete,current.ctx,d.key);
+  var st=store.get(sk);
+  var total=dayTotal(d), doneN=dayDone(d,st);
+  var complete=d.type!=='rest' && total>0 && doneN>=total;
+  var log=logGet(current.athlete);
+  var rt=runTotals(log);
+  var wk=isoWeek(new Date());
+  var thisWeek=Object.keys(log).filter(function(x){ return isoWeek(parseDate(x))===wk; }).length;
+  var months=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+  var wdays=["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];
+  var now=new Date();
+
+  var actions='';
+  if(d.type==='run'){
+    actions='<div class="today-actions">'+
+      '<button class="start-btn" id="hm-gps">▶ START GPS RUN</button></div>'+
+      '<div class="today-actions" style="margin-top:8px">'+
+      '<button class="start-btn alt" id="hm-timer">⏱ Timer</button>'+
+      '<button class="start-btn alt" id="hm-mini">⏱ 10-min</button></div>';
+  } else if(d.type==='rest'){
+    actions='<div class="tc-rest">'+(d.rest||[]).map(esc).join('<br>')+'</div>';
+  } else {
+    actions='<div class="today-actions">'+
+      '<button class="start-btn" id="hm-play">▶ START WORKOUT</button>'+
+      '<button class="start-btn alt" id="hm-mini" style="flex:0 0 92px">⏱ 10-min</button></div>';
+  }
+
+  v.innerHTML=
+    '<div class="home-date">'+wdays[now.getDay()]+' · '+months[now.getMonth()]+' '+now.getDate()+'</div>'+
+    '<div class="home-name">'+esc(a.meta.name)+'</div>'+
+    '<div class="home-strip">'+
+      '<div class="hs"><b>'+thisWeek+'</b><span>THIS WK</span></div>'+
+      '<div class="hs"><b>'+calcStreak(log)+'</b><span>STREAK</span></div>'+
+      '<div class="hs"><b>'+(rt.runs?rt.wk:'0.0')+'</b><span>'+(rt.u||'MI')+' · WK</span></div>'+
+    '</div>'+
+    '<div class="today-card">'+
+      '<div class="tc-eyebrow"><span>TODAY · '+esc(d.label||'')+'</span>'+
+        (complete||st.session?'<span class="tc-done">COMPLETE ✓</span>':'')+'</div>'+
+      '<div class="tc-title">'+esc(d.title)+'</div>'+
+      (d.dur?'<div class="tc-sub">'+esc(d.dur)+'</div>':'')+
+      actions+
+    '</div>'+
+    '<button class="home-link" id="hm-plan">VIEW FULL PLAN ▸</button>';
+
+  // arm AFTER opening: openOverlay() closes any prior overlay, which fires the hook
+  function refreshHome(){ onOverlayClose=function(){ if(activeTab==='home') renderHome(); }; }
+  var g=v.querySelector('#hm-gps'); if(g) g.addEventListener('click',function(){ openGpsRun(d,a,sk); refreshHome(); });
+  var t=v.querySelector('#hm-timer'); if(t) t.addEventListener('click',function(){ current.day=d.key; openTimer(d,a,sk); refreshHome(); });
+  var p=v.querySelector('#hm-play'); if(p) p.addEventListener('click',function(){ openPlayer(d,sk); refreshHome(); });
+  var m=v.querySelector('#hm-mini'); if(m) m.addEventListener('click',function(){
+    if(d.type==='run'){ current.day=d.key; openTimer(d,a,sk,{countdown:600,label:'EASY PACE',mini:true}); }
+    else openPlayer(d,sk,{items:miniItems(d,store.get(sk)),rest:30,mini:true});
+    refreshHome();
+  });
+  var pl=v.querySelector('#hm-plan'); if(pl) pl.addEventListener('click',function(){ showTab('plan'); });
+}
+
+/* ---- Activity tab ---- */
+function renderActivity(){
+  var v=document.getElementById('view-activity');
+  if(!current.athlete){ showTab('profile'); return; }
+  var log=logGet(current.athlete);
+  var rt=runTotals(log);
+  var dates=Object.keys(log).sort().reverse();
+  var rows=dates.slice(0,15).map(function(iso){
+    var e=log[iso];
+    return '<div class="act-row"><span class="ad">'+fmtDate(parseDate(iso))+'</span>'+
+      '<span class="at">'+esc(e.title)+'</span>'+
+      (e.run?'<span class="ar">'+e.run.dist+' '+esc(e.run.unit)+' · '+esc(e.run.pace)+'</span>':'')+
+      '</div>';
+  }).join('');
+  v.innerHTML=
+    '<p class="eyebrow">Activity</p>'+
+    '<div class="statsbar mono" style="margin-top:0"><span>TOTAL <b>'+dates.length+'</b> SESSIONS'+
+      (rt.runs?' · <b>'+rt.runs+'</b> RUNS':'')+'</span></div>'+
+    calendarHTML(log,rt)+
+    (rows?'<div class="actlist">'+rows+'</div>'
+         :'<div class="footnote" style="margin-top:14px">No sessions yet — today\'s a good day to start.</div>');
+}
+
+/* ---- Profile tab ---- */
+function renderProfile(){
+  var eb=document.getElementById('prof-eyebrow');
+  if(eb) eb.textContent=current.athlete?'Plans':"Who's training today?";
+  renderRoster();
+  var ex=document.getElementById('prof-extra');
+  var u=current.athlete?unitsFor(current.athlete):null;
+  ex.innerHTML=
+    (u?'<div class="prof-row"><span>UNITS</span><span class="gps-units">'+
+      '<button class="chip'+(u==='mi'?' on':'')+'" data-u="mi">Miles</button>'+
+      '<button class="chip'+(u==='km'?' on':'')+'" data-u="km">Kilometers</button></span></div>':'')+
+    '<div class="reset-line"><button class="reset-btn" id="board-open">⛫ GYM BOARD — both plans on one screen</button></div>'+
+    '<div class="footnote">Add to Home Screen to use this as a full-screen app. Checkmarks and history save on this device.</div>';
+  ex.querySelectorAll('.gps-units .chip').forEach(function(b){
+    b.addEventListener('click',function(){
+      unitsSave(current.athlete,b.getAttribute('data-u'));
+      renderProfile();
+    });
+  });
+  ex.querySelector('#board-open').addEventListener('click',function(){
+    setTheme(null);
+    document.body.classList.add('board-mode');
+    ['home','plan','activity','profile'].forEach(function(k){
+      document.getElementById('view-'+k).classList.add('hidden');
+    });
+    document.getElementById('board-view').classList.remove('hidden');
+    renderBoard();
+    window.scrollTo(0,0);
+  });
 }
 
 // resolve the current week/phase context for an athlete (auto-select from dates)
@@ -1660,7 +1884,10 @@ function raceLine(id,a){
       if(isWeek){ if(v) c2.race=v; else delete c2.race; }
       else { if(v) c2.start=v; else delete c2.start; }
       cfgSet(id,c2);
-      openAthlete(id);
+      buildPlanChrome(id);
+      current.day=null;
+      renderTabs(); renderDay();
+      showTab(activeTab);
     });
     box.querySelector('#date-cancel').addEventListener('click',draw);
   }
@@ -2085,6 +2312,7 @@ function closeOverlay(){
   if(ovInt){ clearInterval(ovInt); ovInt=null; }
   if(overlayEl){ overlayEl.remove(); overlayEl=null; }
   try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){}
+  if(typeof onOverlayClose==='function'){ var f=onOverlayClose; onOverlayClose=null; f(); }
 }
 
 /* ================= workout player ================= */
@@ -2816,25 +3044,13 @@ function renderBoard(){
     box.appendChild(col);
   });
 }
-document.getElementById('board-open').addEventListener('click',function(){
-  setTheme(null);
-  document.getElementById('roster-view').classList.add('hidden');
-  document.getElementById('board-view').classList.remove('hidden');
-  renderBoard();
-  window.scrollTo(0,0);
-});
 document.getElementById('board-exit').addEventListener('click',function(){
   document.getElementById('board-view').classList.add('hidden');
-  document.getElementById('roster-view').classList.remove('hidden');
+  document.body.classList.remove('board-mode');
+  if(current.athlete) setTheme(ATHLETES[current.athlete].theme);
+  showTab('profile');
 });
 
-document.getElementById('back').addEventListener('click',function(){
-  setTheme(null);
-  document.getElementById('topline').textContent='';
-  document.getElementById('session-view').classList.add('hidden');
-  document.getElementById('roster-view').classList.remove('hidden');
-  window.scrollTo(0,0);
-});
 document.getElementById('reset-day').addEventListener('click',function(){
   var k=store.key(current.athlete,current.ctx,current.day);
   store.del(k);
@@ -2858,7 +3074,13 @@ function tick(){
 tick(); setInterval(tick,10000);
 
 loadCustomAthletes();
-renderRoster();
+document.querySelectorAll('.tabbar .tb').forEach(function(b){
+  b.addEventListener('click',function(){ showTab(b.getAttribute('data-tab')); });
+});
+var lastUser=null;
+try{ lastUser=localStorage.getItem('trainops:lastUser'); }catch(e){}
+if(lastUser && ATHLETES[lastUser]) selectUser(lastUser);
+else showTab('profile');
 
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   navigator.serviceWorker.register('sw.js').catch(function(){});
