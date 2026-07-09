@@ -71,14 +71,44 @@ body.theme-celina{
 body.board-mode .tabbar{display:none}
 .tabview.hidden{display:none}
 
-/* ---- home tab ---- */
-.home-date{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase}
-.home-name{font-size:32px;font-weight:800;margin:2px 0 12px;color:var(--ink)}
+/* ---- home tab (dashboard) ---- */
+.hm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.avatar{width:42px;height:42px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line-bright);
+  color:var(--ink);font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.avatar:hover{border-color:var(--amber)}
+.streak-pill{font-size:10.5px;letter-spacing:.1em;color:var(--amber);background:var(--panel);
+  border:1px solid var(--line);border-radius:999px;padding:8px 14px}
+.home-name{font-size:32px;font-weight:800;margin:0;color:var(--ink);line-height:1.1}
 body.theme-celina .home-name{font-family:var(--serif)}
-.home-strip{display:flex;gap:8px;margin-bottom:14px}
-.home-strip .hs{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 6px;text-align:center}
-.home-strip .hs b{display:block;font-family:var(--mono);font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums}
-.home-strip .hs span{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;color:var(--ink-faint)}
+.home-sub{font-size:14px;color:var(--ink-dim);margin:2px 0 14px}
+.today-card.accent{background:var(--amber);border-color:var(--amber)}
+.today-card.accent .tc-eyebrow{color:var(--bg)}
+.today-card.accent .tc-eyebrow span{opacity:.85}
+.today-card.accent .tc-title{color:var(--bg)}
+.today-card.accent .tc-done{color:var(--bg);border-color:var(--bg);opacity:.9}
+.today-card.accent .tc-rest{color:var(--bg);opacity:.9}
+.tc-chips{display:flex;gap:8px;margin-top:8px}
+.tcc{font-size:9.5px;letter-spacing:.14em;padding:5px 11px;border-radius:8px;
+  background:rgba(0,0,0,.22);color:var(--bg)}
+body.theme-celina .tcc{background:rgba(255,255,255,.3);color:#3d3929}
+.today-card.accent .start-btn{background:var(--bg);color:var(--ink);border-color:var(--bg);font-weight:700}
+.today-card.accent .start-btn.alt{background:rgba(0,0,0,.18);color:var(--bg);border-color:transparent;font-weight:400}
+body.theme-celina .today-card.accent .start-btn.alt{background:rgba(255,255,255,.28);color:#3d3929}
+.hm-sec{font-size:10px;letter-spacing:.2em;color:var(--ink-faint);text-transform:uppercase;margin:18px 2px 8px}
+.hm-viewall{font-size:10px;letter-spacing:.12em;color:var(--amber);background:none;border:0;cursor:pointer;padding:0}
+.wkstrip2{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.wkstrip2 .wd{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 0 7px;
+  display:flex;flex-direction:column;align-items:center;gap:4px}
+.wkstrip2 .wd.on{background:var(--panel-2);border-color:var(--line-bright)}
+.wkstrip2 .wd.td{border-color:var(--amber)}
+.wkstrip2 .wl{font-size:10px;letter-spacing:.05em;color:var(--ink-dim)}
+.wkstrip2 .wd.on .wl{color:var(--ink)}
+.wkstrip2 .wdot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.wkstrip2 .wn{font-size:10px;color:var(--ink-faint)}
+.stat-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stt{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:14px 6px;text-align:center}
+.stt b{display:block;font-family:var(--mono);font-size:26px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.stt span{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--ink-faint)}
 .today-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
 .tc-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--amber);text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
 .tc-done{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--done);border:1px solid var(--done);border-radius:999px;padding:3px 10px}
@@ -104,6 +134,12 @@ body.theme-celina .home-name{font-family:var(--serif)}
 .act-row .ad{font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.1em;min-width:52px}
 .act-row .at{flex:1;font-size:13.5px;color:var(--ink)}
 .act-row .ar{font-family:var(--mono);font-size:11px;color:var(--run)}
+
+/* ---- library tab ---- */
+.lib-chips{display:flex;gap:6px;flex-wrap:wrap}
+.lib-chips .chip{font-size:12px;padding:7px 12px}
+.lib-row{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:8px;padding:10px}
+.lib-cat{display:block;font-size:9px;letter-spacing:.16em;color:var(--ink-faint);margin-top:3px;text-transform:uppercase}
 
 /* ---- profile tab ---- */
 .prof-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);
@@ -452,6 +488,25 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .ov-title{font-size:30px;font-weight:700;line-height:1.15;margin:2px 0;color:var(--ink)}
 .ov-scheme{font-family:var(--mono);font-size:17px;color:var(--amber)}
 .ov-note{font-size:14px;color:var(--ink-dim)}
+/* ---- in-workout set logger ---- */
+.pr-line{display:flex;gap:10px;align-items:center;margin:2px 0 4px;flex-wrap:wrap}
+.pr-badge{font-size:10.5px;letter-spacing:.1em;color:var(--amber);border:1px solid var(--amber);border-radius:999px;padding:4px 11px}
+.pr-last{font-size:10.5px;letter-spacing:.08em;color:var(--ink-faint)}
+.set-list{display:flex;flex-direction:column;gap:8px;margin:10px 0 2px}
+.set-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 10px}
+.set-row.done{opacity:.6;border-color:var(--done)}
+.set-n{width:22px;height:22px;border-radius:50%;background:var(--panel-2);color:var(--ink-dim);
+  font-size:11px;display:flex;align-items:center;justify-content:center;flex:none}
+.set-f{flex:1;min-width:0}
+.set-f .sl{display:block;font-size:8.5px;letter-spacing:.16em;color:var(--ink-faint);margin-bottom:3px}
+.stepc{display:flex;align-items:center;gap:4px}
+.st-b{width:28px;height:30px;border:1px solid var(--line-bright);border-radius:8px;background:none;color:var(--ink-dim);font-size:15px;flex:none}
+.st-in{width:100%;min-width:0;text-align:center;background:var(--bg);border:1px solid var(--line);
+  border-radius:8px;padding:6px 2px;color:var(--ink);font-family:var(--mono);font-size:15px;-moz-appearance:textfield}
+.st-in::-webkit-outer-spin-button,.st-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.set-ck{width:38px;height:38px;flex:none;border-radius:10px;border:1px solid var(--line-bright);background:none;color:var(--ink-dim);font-size:16px}
+.set-row.done .set-ck{background:var(--done);border-color:var(--done);color:var(--bg)}
+
 .ov-cues{margin-top:10px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);
   border-left:2px solid var(--lime);border-radius:4px}
 .ov-cues ul{margin:0;padding:0}
@@ -609,6 +664,8 @@ body.theme-celina .sess-done .check{border-radius:50%}
 
   <div id="view-activity" class="tabview hidden"></div>
 
+  <div id="view-library" class="tabview hidden"></div>
+
   <div id="view-profile" class="tabview hidden">
     <p class="eyebrow" id="prof-eyebrow">Who's training today?</p>
     <div class="roster" id="roster"></div>
@@ -638,9 +695,9 @@ body.theme-celina .sess-done .check{border-radius:50%}
   <button class="tb" data-tab="activity">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V14"/><path d="M10 20V9"/><path d="M15 20v-7"/><path d="M20 20V5"/></svg>
     <span>Activity</span></button>
-  <button class="tb" data-tab="profile">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20.5c1.2-3.4 4-5 7.5-5s6.3 1.6 7.5 5"/></svg>
-    <span>Profile</span></button>
+  <button class="tb" data-tab="library">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9v6M9.5 7v10M14.5 7v10M17.5 9v6"/><path d="M4 10.5v3M20 10.5v3"/><path d="M9.5 12h5"/></svg>
+    <span>Library</span></button>
 </nav>
 
 <script>
@@ -1666,18 +1723,20 @@ var activeTab='home';
 var onOverlayClose=null;
 function showTab(t){
   if(t==='run'){ openRunTab(); return; }
-  if(!current.athlete && t!=='profile') t='profile';
+  if(!current.athlete && t!=='profile' && t!=='library') t='profile';
   activeTab=t;
-  ['home','plan','activity','profile'].forEach(function(k){
+  ['home','plan','activity','library','profile'].forEach(function(k){
     var v=document.getElementById('view-'+k);
     if(v) v.classList.toggle('hidden',k!==t);
   });
+  // profile isn't on the tab bar (reached via the Home avatar): no tab lights up
   document.querySelectorAll('.tabbar .tb').forEach(function(b){
     b.classList.toggle('active',b.getAttribute('data-tab')===t);
   });
   if(t==='home') renderHome();
   else if(t==='plan'){ renderTabs(); renderDay(); }
   else if(t==='activity') renderActivity();
+  else if(t==='library') renderLibrary();
   else if(t==='profile') renderProfile();
   window.scrollTo(0,0);
 }
@@ -1733,23 +1792,59 @@ function renderHome(){
       '<button class="start-btn alt" id="hm-mini" style="flex:0 0 92px">⏱ 10-min</button></div>';
   }
 
+  // dashboard extras: week/month/total tiles, Mon–Sun strip, recent sessions
+  var streak=calcStreak(log);
+  var allDates=Object.keys(log);
+  var monthN=allDates.filter(function(x){ var p=parseDate(x);
+    return p.getMonth()===now.getMonth()&&p.getFullYear()===now.getFullYear(); }).length;
+  var monday=new Date(now); monday.setHours(0,0,0,0);
+  monday.setDate(monday.getDate()-((now.getDay()+6)%7));
+  var letters=['M','T','W','T','F','S','S'], stripHTML='';
+  for(var i=0;i<7;i++){
+    var dd=new Date(monday); dd.setDate(monday.getDate()+i);
+    var iso=dateISO(dd), isToday=iso===dateISO(now), on=!!log[iso];
+    stripHTML+='<div class="wd'+(on?' on':'')+(isToday?' td':'')+'">'+
+      '<span class="wl mono">'+letters[i]+'</span>'+
+      (on?'<span class="wdot"></span>':'<span class="wn mono">'+dd.getDate()+'</span>')+
+    '</div>';
+  }
+  var recent=allDates.sort().reverse().slice(0,3).map(function(iso){
+    var e=log[iso];
+    return '<div class="act-row"><span class="ad">'+fmtDate(parseDate(iso))+'</span>'+
+      '<span class="at">'+esc(e.title)+'</span>'+
+      (e.run?'<span class="ar">'+e.run.dist+' '+esc(e.run.unit)+'</span>':'')+'</div>';
+  }).join('');
+  var chips = d.type==='rest' ? '<span class="tcc mono">REST DAY</span>'
+    : '<span class="tcc mono">'+(d.type==='run'?'RUN':total+' EXERCISES')+'</span>'+
+      (d.dur?'<span class="tcc mono">~'+esc(d.dur).toUpperCase()+'</span>':'');
+
   v.innerHTML=
-    '<div class="home-date">'+wdays[now.getDay()]+' · '+months[now.getMonth()]+' '+now.getDate()+'</div>'+
-    '<div class="home-name">'+esc(a.meta.name)+'</div>'+
-    '<div class="home-strip">'+
-      '<div class="hs"><b>'+thisWeek+'</b><span>THIS WK</span></div>'+
-      '<div class="hs"><b>'+calcStreak(log)+'</b><span>STREAK</span></div>'+
-      '<div class="hs"><b>'+(rt.runs?rt.wk:'0.0')+'</b><span>'+(rt.u||'MI')+' · WK</span></div>'+
+    '<div class="hm-top">'+
+      '<button class="avatar" id="hm-avatar" aria-label="Profile">'+esc((a.meta.name||'?')[0])+'</button>'+
+      '<span class="streak-pill mono">🔥 '+streak+' DAY STREAK</span>'+
     '</div>'+
-    '<div class="today-card">'+
-      '<div class="tc-eyebrow"><span>TODAY · '+esc(d.label||'')+'</span>'+
+    '<div class="home-name">'+esc(a.meta.name)+'</div>'+
+    '<div class="home-sub">Let\'s get after it.</div>'+
+    '<div class="today-card accent">'+
+      '<div class="tc-eyebrow"><span>TODAY\'S SESSION · '+esc(d.label||'')+'</span>'+
         (complete||st.session?'<span class="tc-done">COMPLETE ✓</span>':'')+'</div>'+
       '<div class="tc-title">'+esc(d.title)+'</div>'+
-      (d.dur?'<div class="tc-sub">'+esc(d.dur)+'</div>':'')+
+      '<div class="tc-chips">'+chips+'</div>'+
       actions+
     '</div>'+
     '<button class="home-link" id="hm-plan">VIEW FULL PLAN ▸</button>'+
-    '<div class="today-card">'+
+    '<div class="hm-sec mono">THIS WEEK</div>'+
+    '<div class="wkstrip2">'+stripHTML+'</div>'+
+    '<div class="stat-tiles">'+
+      '<div class="stt"><b>'+thisWeek+'</b><span>WEEK</span></div>'+
+      '<div class="stt"><b>'+monthN+'</b><span>MONTH</span></div>'+
+      '<div class="stt"><b>'+allDates.length+'</b><span>TOTAL</span></div>'+
+    '</div>'+
+    '<div class="hm-sec mono" style="display:flex;justify-content:space-between;align-items:center">'+
+      '<span>RECENT TRAINING</span><button class="hm-viewall mono" id="hm-viewall">VIEW ALL →</button></div>'+
+    (recent?'<div class="actlist" style="margin-top:8px">'+recent+'</div>'
+           :'<div class="footnote">Nothing logged yet — today\'s the day.</div>')+
+    '<div class="today-card" style="margin-top:14px">'+
       '<div class="tc-eyebrow"><span>LOOKING FOR MORE?</span></div>'+
       '<div class="tc-title" style="font-size:21px">Go for a run!</div>'+
       '<div class="tc-sub">GPS tracked · counts toward your mileage</div>'+
@@ -1768,6 +1863,8 @@ function renderHome(){
   });
   var pl=v.querySelector('#hm-plan'); if(pl) pl.addEventListener('click',function(){ showTab('plan'); });
   var fr=v.querySelector('#hm-freerun'); if(fr) fr.addEventListener('click',function(){ showTab('run'); });
+  v.querySelector('#hm-avatar').addEventListener('click',function(){ showTab('profile'); });
+  v.querySelector('#hm-viewall').addEventListener('click',function(){ showTab('activity'); });
 }
 
 /* ---- Activity tab ---- */
@@ -1901,6 +1998,77 @@ function renderProfile(){
     renderBoard();
     window.scrollTo(0,0);
   });
+}
+
+/* ---- Library tab: browse the whole movement database ---- */
+var libCat='all', libQ='';
+function renderLibrary(){
+  var v=document.getElementById('view-library');
+  var chips='<button class="chip'+(libCat==='all'?' on':'')+'" data-c="all">All</button>'+
+    CAT_ORDER.map(function(c){
+      return '<button class="chip'+(libCat===c?' on':'')+'" data-c="'+c+'">'+esc(CAT_LABEL[c])+'</button>';
+    }).join('');
+  var q=libQ.toLowerCase();
+  var items=PICK_POOL.filter(function(x){
+    return (libCat==='all'||x.pat===libCat) &&
+           (!q || x.name.toLowerCase().indexOf(q)!==-1);
+  });
+  var rows=items.map(function(x){
+    var vid=(videoIds(x.name)||[])[0];
+    var thumb=vid?'<img class="pk-thumb" alt="" src="https://i.ytimg.com/vi/'+vid+'/mqdefault.jpg">'
+                 :'<span class="pk-thumb pk-noimg"></span>';
+    return '<button class="pk-row lib-row" data-name="'+esc(x.name)+'">'+thumb+
+      '<span class="pk-nm">'+esc(x.name)+'<span class="lib-cat mono">'+esc(CAT_LABEL[x.pat]||x.pat)+'</span></span>'+
+      '<span class="pk-eq mono">'+esc(EQ_LABEL[x.eq]||x.eq)+'</span></button>';
+  }).join('');
+  v.innerHTML=
+    '<p class="eyebrow">Library · Movement database</p>'+
+    '<input id="lib-search" class="binput" placeholder="Search movements…" value="'+esc(libQ)+'" autocomplete="off" style="margin:4px 0 10px">'+
+    '<div class="lib-chips">'+chips+'</div>'+
+    '<div class="ex" id="lib-list" style="margin-top:10px">'+(rows||'<div class="pk-empty">No matches</div>')+'</div>';
+  var si=v.querySelector('#lib-search');
+  si.addEventListener('input',function(){
+    libQ=this.value;
+    var pos=this.selectionStart;
+    renderLibrary();
+    var s2=document.getElementById('lib-search');
+    s2.focus(); s2.setSelectionRange(pos,pos);
+  });
+  v.querySelectorAll('.lib-chips .chip').forEach(function(b){
+    b.addEventListener('click',function(){ libCat=b.getAttribute('data-c'); renderLibrary(); });
+  });
+  v.querySelectorAll('.lib-row').forEach(function(b){
+    b.addEventListener('click',function(){ openMoveDetail(b.getAttribute('data-name')); });
+    var im=b.querySelector('img'); if(im) im.addEventListener('error',function(){ im.replaceWith(document.createElement('span')); });
+  });
+}
+// movement detail: video, cues, equipment — plus your PB when you have one
+function openMoveDetail(name){
+  var mv=PICK_POOL.filter(function(x){return x.name===name;})[0];
+  if(!mv) return;
+  var ov=openOverlay();
+  var vids=videoIds(name)||[], search=demoURL(name);
+  var cues=autoCues(name);
+  var hist=current.athlete?setsGet(current.athlete)[name]:null;
+  var videoHTML=vids.length
+    ? '<div class="ov-video"><iframe src="https://www.youtube-nocookie.com/embed/'+vids[0]+
+      '?rel=0&playsinline=1&modestbranding=1" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>'
+    : '';
+  ov.innerHTML=
+    '<div class="ov-top"><span class="ov-prog">'+esc(CAT_LABEL[mv.pat]||mv.pat).toUpperCase()+'</span>'+
+    '<button class="ov-x" id="md-x">✕</button></div>'+
+    '<div class="ov-mid ex">'+
+      '<div class="ov-title">'+esc(name)+'</div>'+
+      '<div class="pr-line mono"><span class="pk-eq mono" style="border:1px solid var(--line);border-radius:999px;padding:4px 11px">'+esc(EQ_LABEL[mv.eq]||mv.eq)+'</span>'+
+        (hist&&hist.best?'<span class="pr-badge">BEST '+hist.best.w+'×'+hist.best.r+'</span>':'')+
+      '</div>'+
+      videoHTML+
+      '<a class="ov-yt-link" href="'+search+'" target="_blank" rel="noopener">'+(vids.length?'Open on YouTube ↗':'Search a demo on YouTube ↗')+'</a>'+
+      '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
+    '</div>'+
+    '<div class="ov-actions"><button class="ov-btn" id="md-close">CLOSE</button></div>';
+  ov.querySelector('#md-x').addEventListener('click',closeOverlay);
+  ov.querySelector('#md-close').addEventListener('click',closeOverlay);
 }
 
 // resolve the current week/phase context for an athlete (auto-select from dates)
@@ -2412,6 +2580,37 @@ function closeOverlay(){
 }
 
 /* ================= workout player ================= */
+/* ---- set / weight / reps logging ---- */
+// "4 × 8" -> 4x8 · "3 × 8 / side" -> 3x8 · "4 × 15–20" -> 4x15 · "× 12" -> 1x12
+// timed holds / "4 × max" -> null (no logger)
+function parseSetsReps(scheme){
+  if(!scheme) return null;
+  var s=String(scheme);
+  if(/max|min\b|\ds\b|steps/i.test(s)) return null;
+  var m=s.match(/(\d+)\s*[×x]\s*(\d+)/);
+  if(m) return {sets:+m[1],reps:+m[2]};
+  var m2=s.match(/^\s*[×x]\s*(\d+)/);
+  if(m2) return {sets:1,reps:+m2[1]};
+  return null;
+}
+function setsGet(a){ try{ return JSON.parse(localStorage.getItem('trainops:sets:'+a))||{}; }catch(e){ return {}; } }
+function setsSave(a,v){ try{ localStorage.setItem('trainops:sets:'+a,JSON.stringify(v)); }catch(e){} }
+// remember the last weight/reps per exercise and keep the all-time best
+// (heavier wins; same weight, more reps wins)
+function recordSet(name,w,r){
+  var all=setsGet(current.athlete);
+  var e=all[name]||{};
+  var d=dateISO(new Date());
+  e.last={w:w,r:r,d:d};
+  if(!e.best || w>e.best.w || (w===e.best.w && r>e.best.r)) e.best={w:w,r:r,d:d};
+  all[name]=e;
+  setsSave(current.athlete,all);
+}
+function daysAgo(iso){
+  var n=Math.round((new Date().setHours(0,0,0,0)-parseDate(iso).getTime())/864e5);
+  return n<=0?'today':n===1?'1d ago':n+'d ago';
+}
+
 function openPlayer(d,storeKey,opts){
   opts=opts||{};
   var startState=store.get(storeKey);
@@ -2464,15 +2663,45 @@ function openPlayer(d,storeKey,opts){
       ? '<div class="ov-video" id="ov-video">'+iframeHTML(vids[0])+'</div>'+strip+
         '<a class="ov-yt-link" id="ov-yt" href="'+search+'" target="_blank" rel="noopener">Open on YouTube ↗</a>'
       : demoBtn;
+    // set logger: strength schemes like "4 × 8" get per-set weight/reps rows
+    var sr=parseSetsReps(ex.scheme);
+    var hist=setsGet(current.athlete)[nm];
+    var prHTML=(hist&&(hist.best||hist.last))
+      ? '<div class="pr-line mono">'+
+          (hist.best?'<span class="pr-badge">BEST '+hist.best.w+'×'+hist.best.r+'</span>':'')+
+          (hist.last?'<span class="pr-last">LAST '+hist.last.w+'×'+hist.last.r+' · '+daysAgo(hist.last.d)+'</span>':'')+
+        '</div>'
+      : '';
+    var setsHTML='';
+    if(sr){
+      var startW=hist&&hist.last?hist.last.w:0;
+      for(var si=0;si<sr.sets;si++){
+        setsHTML+='<div class="set-row" data-si="'+si+'">'+
+          '<span class="set-n mono">'+(si+1)+'</span>'+
+          '<div class="set-f"><span class="sl mono">LBS</span><div class="stepc">'+
+            '<button class="st-b" data-a="w-">−</button>'+
+            '<input class="st-in w-in" type="number" inputmode="decimal" min="0" value="'+startW+'">'+
+            '<button class="st-b" data-a="w+">＋</button></div></div>'+
+          '<div class="set-f"><span class="sl mono">REPS</span><div class="stepc">'+
+            '<button class="st-b" data-a="r-">−</button>'+
+            '<input class="st-in r-in" type="number" inputmode="numeric" min="0" value="'+sr.reps+'">'+
+            '<button class="st-b" data-a="r+">＋</button></div></div>'+
+          '<button class="set-ck" aria-label="Log set">✓</button>'+
+        '</div>';
+      }
+      setsHTML='<div class="set-list" id="set-list">'+setsHTML+'</div>';
+    }
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
       '<button class="ov-x" id="pl-x">✕ EXIT</button></div>'+
       '<div class="ov-mid ex">'+
         (it.label?'<div class="ov-eyebrow">'+esc(it.label)+'</div>':'')+
         '<div class="ov-title">'+esc(nm)+'</div>'+
+        prHTML+
         videoHTML+
         '<div class="ov-scheme">'+esc(ex.scheme)+'</div>'+
         (ex.note?'<div class="ov-note">'+esc(ex.note)+'</div>':'')+
+        setsHTML+
         '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
       '</div>'+
       '<div class="ov-actions">'+
@@ -2495,13 +2724,43 @@ function openPlayer(d,storeKey,opts){
     }
     ov.querySelector('#pl-x').addEventListener('click',exit);
     ov.querySelector('#pl-skip').addEventListener('click',function(){ idx++; showExercise(); });
-    ov.querySelector('#pl-done').addEventListener('click',function(){
+    function completeExercise(){
       var s=store.get(storeKey);
       s[flat[idx].id]=true;
       store.set(storeKey,s);
       idx++;
       if(idx>=flat.length){ finish(); return; }
       showRest(flat[idx].gi!==flat[idx-1].gi?groupRest:restSecs);
+    }
+    function logRow(row){
+      if(row.classList.contains('done')) return;
+      var w=parseFloat(row.querySelector('.w-in').value)||0;
+      var r=parseInt(row.querySelector('.r-in').value)||0;
+      recordSet(nm,w,r);
+      row.classList.add('done');
+      row.querySelectorAll('input,.st-b').forEach(function(elm){ elm.disabled=true; });
+    }
+    if(sr){
+      ov.querySelectorAll('.set-row').forEach(function(row){
+        row.querySelectorAll('.st-b').forEach(function(b){
+          b.addEventListener('click',function(){
+            var a=b.getAttribute('data-a');
+            var inp=row.querySelector(a[0]==='w'?'.w-in':'.r-in');
+            var step=a[0]==='w'?5:1;
+            var val=(parseFloat(inp.value)||0)+(a[1]==='+'?step:-step);
+            inp.value=Math.max(0,val);
+          });
+        });
+        row.querySelector('.set-ck').addEventListener('click',function(){
+          logRow(row); beep(660,120); buzz(80);
+          if(!ov.querySelector('.set-row:not(.done)')) completeExercise();
+        });
+      });
+    }
+    ov.querySelector('#pl-done').addEventListener('click',function(){
+      // DONE checks off any remaining sets at their current values
+      if(sr) ov.querySelectorAll('.set-row:not(.done)').forEach(logRow);
+      completeExercise();
     });
   }
   function showRest(secs){
