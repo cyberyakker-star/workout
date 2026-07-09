@@ -129,6 +129,21 @@ body.theme-celina .today-card.accent .start-btn.alt{background:rgba(255,255,255,
   border-radius:8px;width:30px;height:30px;flex:none;cursor:pointer;align-self:center}
 .act-share:hover{color:var(--amber);border-color:var(--amber)}
 .actlist{border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-top:14px;overflow:hidden}
+.act-row.click{cursor:pointer}
+.act-row.click:hover{background:var(--panel-2)}
+/* session detail */
+#sd-map{width:100%;height:230px;border-radius:16px;overflow:hidden;background:var(--panel);
+  border:1px solid var(--line);margin:2px 0 12px;position:relative;z-index:0;flex:none}
+.sd-rows{margin-top:10px}
+.sd-row{display:flex;align-items:baseline;justify-content:space-between;padding:12px 2px;border-bottom:1px solid var(--line)}
+.sd-row:last-child{border-bottom:0}
+.sd-l{font-size:13.5px;color:var(--ink-dim)}
+.sd-v{font-size:22px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.sd-sec{font-size:10px;letter-spacing:.2em;color:var(--ink-faint);text-transform:uppercase;margin:16px 2px 10px}
+.sd-split{margin-bottom:12px}
+.sd-sl{font-size:11.5px;color:var(--ink-dim);letter-spacing:.06em;margin-bottom:5px}
+.sd-bar{height:16px;border-radius:999px;background:var(--panel-2);overflow:hidden}
+.sd-bar span{display:block;height:100%;border-radius:999px;background:var(--amber);opacity:.85}
 .act-row{display:flex;align-items:baseline;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
 .act-row:last-child{border-bottom:0}
 .act-row .ad{font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.1em;min-width:52px}
@@ -1810,7 +1825,7 @@ function renderHome(){
   }
   var recent=allDates.sort().reverse().slice(0,3).map(function(iso){
     var e=log[iso];
-    return '<div class="act-row"><span class="ad">'+fmtDate(parseDate(iso))+'</span>'+
+    return '<div class="act-row click" data-iso="'+iso+'"><span class="ad">'+fmtDate(parseDate(iso))+'</span>'+
       '<span class="at">'+esc(e.title)+'</span>'+
       (e.run?'<span class="ar">'+e.run.dist+' '+esc(e.run.unit)+'</span>':'')+'</div>';
   }).join('');
@@ -1865,6 +1880,9 @@ function renderHome(){
   var fr=v.querySelector('#hm-freerun'); if(fr) fr.addEventListener('click',function(){ showTab('run'); });
   v.querySelector('#hm-avatar').addEventListener('click',function(){ showTab('profile'); });
   v.querySelector('#hm-viewall').addEventListener('click',function(){ showTab('activity'); });
+  v.querySelectorAll('.act-row.click').forEach(function(rw){
+    rw.addEventListener('click',function(){ openSessionDetail(rw.getAttribute('data-iso')); });
+  });
 }
 
 /* ---- Activity tab ---- */
@@ -1876,7 +1894,7 @@ function renderActivity(){
   var dates=Object.keys(log).sort().reverse();
   var rows=dates.slice(0,15).map(function(iso){
     var e=log[iso];
-    return '<div class="act-row"><span class="ad">'+fmtDate(parseDate(iso))+'</span>'+
+    return '<div class="act-row click" data-iso="'+iso+'"><span class="ad">'+fmtDate(parseDate(iso))+'</span>'+
       '<span class="at">'+esc(e.title)+'</span>'+
       (e.run?'<span class="ar">'+e.run.dist+' '+esc(e.run.unit)+' · '+esc(e.run.pace)+'</span>':'')+
       '<button class="act-share" data-iso="'+iso+'" aria-label="Share">↗</button>'+
@@ -1892,7 +1910,11 @@ function renderActivity(){
          :'<div class="footnote" style="margin-top:14px">No sessions yet — today\'s a good day to start.</div>');
   v.querySelector('#act-add').addEventListener('click',openAddRun);
   v.querySelectorAll('.act-share').forEach(function(b){
-    b.addEventListener('click',function(){ shareRun(b.getAttribute('data-iso'),log[b.getAttribute('data-iso')],b); });
+    b.addEventListener('click',function(ev){ ev.stopPropagation();
+      shareRun(b.getAttribute('data-iso'),log[b.getAttribute('data-iso')],b); });
+  });
+  v.querySelectorAll('.act-row.click').forEach(function(rw){
+    rw.addEventListener('click',function(){ openSessionDetail(rw.getAttribute('data-iso')); });
   });
 }
 // proof of work: send a logged session through the phone's share sheet
@@ -1905,6 +1927,79 @@ function shareRun(iso,e,btn){
     navigator.clipboard.writeText(msg).then(function(){ if(btn) btn.textContent='✓'; }).catch(function(){});
   }
 }
+// session overview: map replay, stat rows, pace-per-split bars
+function openSessionDetail(iso){
+  var log=logGet(current.athlete), e=log[iso];
+  if(!e) return;
+  var ov=openOverlay();
+  var r=e.run;
+  function row(l,v){ return '<div class="sd-row"><span class="sd-l">'+l+'</span><span class="sd-v mono">'+v+'</span></div>'; }
+  var rows='', splitsHTML='', mapHTML='';
+  if(r){
+    var elevTxt=r.elev?(r.unit==='mi'?Math.round(r.elev*3.28084)+' ft':r.elev+' m'):'';
+    rows=row('Duration',fmtClock(r.secs))+
+      row('Distance',r.dist+' '+r.unit)+
+      row('Avg pace',r.pace+' /'+r.unit)+
+      (r.cal?row('Calories · est',r.cal):'')+
+      (elevTxt?row('Elev gain',elevTxt):'');
+    if(r.splits&&r.splits.length){
+      var slowest=Math.max.apply(null,r.splits);
+      splitsHTML='<div class="sd-sec mono">PACE PER SPLIT</div>'+
+        r.splits.map(function(s){
+          return '<div class="sd-split">'+
+            '<div class="sd-sl mono">1.00 '+esc(r.unit)+' · '+fmtPace(s)+' /'+esc(r.unit)+'</div>'+
+            '<div class="sd-bar"><span style="width:'+Math.max(8,Math.round(s/slowest*100))+'%"></span></div>'+
+          '</div>';
+        }).join('');
+    }
+    if(r.track&&r.track.length>1) mapHTML='<div id="sd-map"></div>';
+  } else {
+    rows=row('Type',(e.t||'session').toUpperCase())+
+      '<div class="ov-note" style="margin-top:10px">Session completed ✓</div>';
+  }
+  ov.innerHTML=
+    '<div class="ov-top"><span class="ov-prog">'+fmtDate(parseDate(iso)).toUpperCase()+'</span>'+
+    '<button class="ov-x" id="sd-x">✕</button></div>'+
+    '<div class="ov-mid ex">'+
+      mapHTML+
+      '<div class="ov-title">'+esc(e.title)+'</div>'+
+      '<div class="sd-rows">'+rows+'</div>'+
+      splitsHTML+
+    '</div>'+
+    '<div class="ov-actions">'+
+      '<button class="ov-btn danger" id="sd-del">DELETE</button>'+
+      (r?'<button class="ov-btn" id="sd-share">SHARE</button>':'')+
+      '<button class="ov-btn primary" id="sd-close">CLOSE</button>'+
+    '</div>';
+  ov.querySelector('#sd-x').addEventListener('click',closeOverlay);
+  ov.querySelector('#sd-close').addEventListener('click',closeOverlay);
+  var sh=ov.querySelector('#sd-share');
+  if(sh) sh.addEventListener('click',function(){ shareRun(iso,e,sh); });
+  ov.querySelector('#sd-del').addEventListener('click',function(){
+    if(!confirm('Delete this session from your history?')) return;
+    delete log[iso];
+    logSet(current.athlete,log);
+    closeOverlay();
+    showTab(activeTab);
+  });
+  if(r&&r.track&&r.track.length>1){
+    loadLeaflet().then(function(ok){
+      var mel=document.getElementById('sd-map');
+      if(!ok||!mel) return;
+      try{
+        var acc=accentColor();
+        var m=L.map(mel,{zoomControl:false,attributionControl:true});
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(m);
+        var p=L.polyline(r.track,{color:acc,weight:5,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(m);
+        L.circleMarker(r.track[0],{radius:6,fillColor:'#fff',color:acc,weight:2,fillOpacity:1}).addTo(m);
+        L.circleMarker(r.track[r.track.length-1],{radius:6,fillColor:acc,color:'#fff',weight:2,fillOpacity:1}).addTo(m);
+        m.fitBounds(p.getBounds(),{padding:[24,24]});
+      }catch(err){ mel.style.display='none'; }
+    });
+  }
+}
+
 // manual entry, Nike-style: date, distance, duration -> pace computed
 function openAddRun(){
   var ov=openOverlay();
@@ -3344,9 +3439,21 @@ function openGpsRun(d,a,storeKey){
     act.querySelector('#gps-done').addEventListener('click',function(){
       var s=store.get(storeKey); s.session=true; store.set(storeKey,s);
       closeOverlay(); renderDay();
+      // keep splits + a downsampled route (≤200 pts) so history can replay the run
+      var slim=[];
+      if(run.track.length>1){
+        var stepN=Math.max(1,run.track.length/200);
+        for(var ti=0;ti<run.track.length;ti+=stepN){
+          var pt=run.track[Math.floor(ti)];
+          slim.push([+pt[0].toFixed(5),+pt[1].toFixed(5)]);
+        }
+        var lastPt=run.track[run.track.length-1];
+        slim.push([+lastPt[0].toFixed(5),+lastPt[1].toFixed(5)]);
+      }
       logSession(d,' · '+dist.toFixed(1)+' '+unit,
         {run:{dist:+dist.toFixed(2),unit:unit,secs:secs,pace:pace,cal:cal,
-              elev:run.elevGain>1?Math.round(run.elevGain):0}});
+              elev:run.elevGain>1?Math.round(run.elevGain):0,
+              splits:run.splits.slice(),track:slim}});
     });
   }
 
