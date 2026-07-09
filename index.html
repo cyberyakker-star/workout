@@ -91,6 +91,13 @@ body.theme-celina .home-name{font-family:var(--serif)}
 .home-link:hover{color:var(--amber)}
 
 /* ---- activity tab ---- */
+.act-head{display:flex;align-items:center;justify-content:space-between}
+.act-add{font-size:10.5px;letter-spacing:.12em;color:var(--ink-dim);border:1px solid var(--line-bright);
+  border-radius:999px;padding:8px 14px;background:none;cursor:pointer}
+.act-add:hover{color:var(--amber);border-color:var(--amber)}
+.act-share{font-size:14px;color:var(--ink-faint);background:none;border:1px solid var(--line);
+  border-radius:8px;width:30px;height:30px;flex:none;cursor:pointer;align-self:center}
+.act-share:hover{color:var(--amber);border-color:var(--amber)}
 .actlist{border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-top:14px;overflow:hidden}
 .act-row{display:flex;align-items:baseline;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
 .act-row:last-child{border-bottom:0}
@@ -497,6 +504,9 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .gps-maptag .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:gpsPulse 1.6s ease-in-out infinite}
 .gps-acc{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-align:center;color:var(--ink-faint);margin-top:10px}
 .gps-acc.ok{color:var(--run)}
+/* ready screen: live map of where you are, washed behind the controls */
+.gps-readybg{position:absolute;inset:0;z-index:0;opacity:.3;pointer-events:none;background:transparent}
+.overlay .ov-top,.overlay .ov-mid,.overlay .ov-actions{position:relative;z-index:1}
 .gps-splits{margin-top:10px;max-height:24vh;overflow-y:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
 .gps-splits .sp{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13.5px;
   padding:9px 14px;border-bottom:1px solid var(--line);color:var(--ink);font-variant-numeric:tabular-nums}
@@ -1738,7 +1748,13 @@ function renderHome(){
       (d.dur?'<div class="tc-sub">'+esc(d.dur)+'</div>':'')+
       actions+
     '</div>'+
-    '<button class="home-link" id="hm-plan">VIEW FULL PLAN ▸</button>';
+    '<button class="home-link" id="hm-plan">VIEW FULL PLAN ▸</button>'+
+    '<div class="today-card">'+
+      '<div class="tc-eyebrow"><span>LOOKING FOR MORE?</span></div>'+
+      '<div class="tc-title" style="font-size:21px">Go for a run!</div>'+
+      '<div class="tc-sub">GPS tracked · counts toward your mileage</div>'+
+      '<div class="today-actions"><button class="start-btn" id="hm-freerun">▶ START A RUN</button></div>'+
+    '</div>';
 
   // arm AFTER opening: openOverlay() closes any prior overlay, which fires the hook
   function refreshHome(){ onOverlayClose=function(){ if(activeTab==='home') renderHome(); }; }
@@ -1751,6 +1767,7 @@ function renderHome(){
     refreshHome();
   });
   var pl=v.querySelector('#hm-plan'); if(pl) pl.addEventListener('click',function(){ showTab('plan'); });
+  var fr=v.querySelector('#hm-freerun'); if(fr) fr.addEventListener('click',function(){ showTab('run'); });
 }
 
 /* ---- Activity tab ---- */
@@ -1765,15 +1782,80 @@ function renderActivity(){
     return '<div class="act-row"><span class="ad">'+fmtDate(parseDate(iso))+'</span>'+
       '<span class="at">'+esc(e.title)+'</span>'+
       (e.run?'<span class="ar">'+e.run.dist+' '+esc(e.run.unit)+' · '+esc(e.run.pace)+'</span>':'')+
+      '<button class="act-share" data-iso="'+iso+'" aria-label="Share">↗</button>'+
       '</div>';
   }).join('');
   v.innerHTML=
-    '<p class="eyebrow">Activity</p>'+
-    '<div class="statsbar mono" style="margin-top:0"><span>TOTAL <b>'+dates.length+'</b> SESSIONS'+
+    '<div class="act-head"><p class="eyebrow" style="margin:0">Activity</p>'+
+      '<button class="act-add mono" id="act-add">＋ ADD RUN</button></div>'+
+    '<div class="statsbar mono" style="margin-top:10px"><span>TOTAL <b>'+dates.length+'</b> SESSIONS'+
       (rt.runs?' · <b>'+rt.runs+'</b> RUNS':'')+'</span></div>'+
     calendarHTML(log,rt)+
     (rows?'<div class="actlist">'+rows+'</div>'
          :'<div class="footnote" style="margin-top:14px">No sessions yet — today\'s a good day to start.</div>');
+  v.querySelector('#act-add').addEventListener('click',openAddRun);
+  v.querySelectorAll('.act-share').forEach(function(b){
+    b.addEventListener('click',function(){ shareRun(b.getAttribute('data-iso'),log[b.getAttribute('data-iso')],b); });
+  });
+}
+// proof of work: send a logged session through the phone's share sheet
+function shareRun(iso,e,btn){
+  if(!e) return;
+  var msg='🏃 '+e.title+' — '+fmtDate(parseDate(iso))+
+    (e.run?' · '+e.run.dist+' '+e.run.unit+' in '+fmtClock(e.run.secs)+' ('+e.run.pace+' /'+e.run.unit+')':'');
+  if(navigator.share){ navigator.share({text:msg}).catch(function(){}); }
+  else if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(msg).then(function(){ if(btn) btn.textContent='✓'; }).catch(function(){});
+  }
+}
+// manual entry, Nike-style: date, distance, duration -> pace computed
+function openAddRun(){
+  var ov=openOverlay();
+  var u=unitsFor(current.athlete);
+  var today=dateISO(new Date());
+  ov.innerHTML=
+    '<div class="ov-top"><span class="ov-prog">ADD RUN</span>'+
+    '<button class="ov-x" id="ar-x">✕</button></div>'+
+    '<div class="ov-mid ex" style="gap:4px">'+
+      '<div class="brow"><div class="blabel mono">NAME (OPTIONAL)</div>'+
+        '<input id="ar-name" class="binput" placeholder="Morning run" maxlength="24"></div>'+
+      '<div class="brow"><div class="blabel mono">DATE</div>'+
+        '<input id="ar-date" type="date" class="binput" value="'+today+'" max="'+today+'"></div>'+
+      '<div class="brow"><div class="blabel mono">DISTANCE · '+u.toUpperCase()+'</div>'+
+        '<input id="ar-dist" type="number" inputmode="decimal" step="0.01" min="0" class="binput" placeholder="3.1"></div>'+
+      '<div class="brow"><div class="blabel mono">DURATION · MINUTES</div>'+
+        '<input id="ar-dur" type="number" inputmode="decimal" step="1" min="0" class="binput" placeholder="30"></div>'+
+      '<div class="gps-acc" id="ar-pace">PACE —</div>'+
+    '</div>'+
+    '<div class="ov-actions">'+
+      '<button class="ov-btn" id="ar-cancel">CANCEL</button>'+
+      '<button class="ov-btn primary" id="ar-save" disabled>SAVE RUN ✓</button>'+
+    '</div>';
+  function calc(){
+    var dist=parseFloat(ov.querySelector('#ar-dist').value);
+    var mins=parseFloat(ov.querySelector('#ar-dur').value);
+    var okv=dist>0&&mins>0&&!!ov.querySelector('#ar-date').value;
+    ov.querySelector('#ar-save').disabled=!okv;
+    ov.querySelector('#ar-pace').textContent=(dist>0&&mins>0)
+      ? 'PACE '+fmtPace(mins*60/dist)+' /'+u : 'PACE —';
+  }
+  ['#ar-dist','#ar-dur','#ar-date'].forEach(function(sel){
+    ov.querySelector(sel).addEventListener('input',calc);
+  });
+  ov.querySelector('#ar-x').addEventListener('click',closeOverlay);
+  ov.querySelector('#ar-cancel').addEventListener('click',closeOverlay);
+  ov.querySelector('#ar-save').addEventListener('click',function(){
+    var iso=ov.querySelector('#ar-date').value;
+    var dist=+parseFloat(ov.querySelector('#ar-dist').value).toFixed(2);
+    var secs=Math.round(parseFloat(ov.querySelector('#ar-dur').value)*60);
+    var name=(ov.querySelector('#ar-name').value||'').trim()||'Run';
+    var log=logGet(current.athlete);
+    if(log[iso] && !confirm('Replace the session already logged on '+iso+'?')) return;
+    log[iso]={t:'run',title:name+' · '+dist.toFixed(1)+' '+u,
+      run:{dist:dist,unit:u,secs:secs,pace:fmtPace(secs/dist),manual:true}};
+    logSet(current.athlete,log);
+    closeOverlay(); renderActivity(); confetti();
+  });
 }
 
 /* ---- Profile tab ---- */
@@ -2705,6 +2787,7 @@ function openGpsRun(d,a,storeKey){
   }
 
   var watchId=null, map=null, poly=null, marker=null, mapReady=false;
+  var readyMap=null, readyMarker=null;
   var run={ movingMs:0, dist:0, last:null, track:[], splits:[], recent:[],
             manualPause:false, autoPause:false, lastProgress:null, finished:false,
             elevGain:0, lastAlt:null };
@@ -2712,7 +2795,7 @@ function openGpsRun(d,a,storeKey){
 
   function stopWatch(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(e){} watchId=null; } }
   function stopInt(){ if(ovInt){ clearInterval(ovInt); ovInt=null; } }
-  function exit(){ stopWatch(); stopInt(); closeOverlay(); renderDay(); }
+  function exit(){ stopWatch(); stopInt(); killReadyMap(); closeOverlay(); renderDay(); }
   function paused(){ return run.manualPause||run.autoPause; }
   function distU(){ return run.dist/UNIT_M[unit]; }
   function avgPace(){ return distU()>0.02 ? (run.movingMs/1000)/distU() : NaN; }
@@ -2742,7 +2825,7 @@ function openGpsRun(d,a,storeKey){
     if(run.finished) return;
     if(p.acc>100) return;                          // unusable fix
     run.lastFixAt=Date.now(); run.lastAcc=p.acc;
-    if(!run.started){ run.last=p; return; }        // pre-start: remember for map seed
+    if(!run.started){ run.last=p; ensureReadyMap(); return; } // pre-start: remember for map seed
     // any usable fix keeps the marker honest, even before a counted step
     if(mapReady){ marker.setLatLng([p.lat,p.lon]); }
     if(run.manualPause){ run.last=p; return; }
@@ -2786,6 +2869,31 @@ function openGpsRun(d,a,storeKey){
       run.last=p;
     }
   }
+  // Nike-style ready screen: your surroundings, washed, behind the controls
+  function ensureReadyMap(){
+    if(!run.last||run.started||run.finished) return;
+    if(readyMap){
+      try{ readyMarker.setLatLng([run.last.lat,run.last.lon]);
+           readyMap.setView([run.last.lat,run.last.lon],15,{animate:false}); }catch(e){}
+      return;
+    }
+    if(!document.getElementById('gps-ready-bg')) return;
+    loadLeaflet().then(function(ok){
+      var mel=document.getElementById('gps-ready-bg');
+      if(!ok||!mel||readyMap||run.started||run.finished||!run.last) return;
+      try{
+        readyMap=L.map(mel,{zoomControl:false,attributionControl:false,
+          dragging:false,touchZoom:false,scrollWheelZoom:false});
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(readyMap);
+        readyMarker=L.circleMarker([run.last.lat,run.last.lon],
+          {radius:8,fillColor:accentColor(),color:'#fff',weight:2,fillOpacity:1}).addTo(readyMap);
+        readyMap.setView([run.last.lat,run.last.lon],15);
+      }catch(e){ readyMap=null; }
+    });
+  }
+  function killReadyMap(){
+    if(readyMap){ try{ readyMap.remove(); }catch(e){} readyMap=null; readyMarker=null; }
+  }
   function startWatch(){
     if(!navigator.geolocation){ var g=document.getElementById('gps-acc'); if(g) g.textContent='NO GPS ON THIS DEVICE'; return; }
     try{
@@ -2799,6 +2907,7 @@ function openGpsRun(d,a,storeKey){
   /* ---- ready screen ---- */
   function readyScreen(){
     ov.innerHTML=
+      '<div class="gps-readybg" id="gps-ready-bg"></div>'+
       '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
       '<span style="display:flex;gap:8px;align-items:center">'+
       '<span class="gps-chip" id="gps-chip"><span class="dot"></span><span class="gc-lab">GPS</span></span>'+
@@ -2828,6 +2937,7 @@ function openGpsRun(d,a,storeKey){
 
   /* ---- live screen ---- */
   function liveScreen(){
+    killReadyMap();
     run.started=true; run.lastProgress=Date.now(); lastTickAt=Date.now();
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
