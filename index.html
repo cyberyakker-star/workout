@@ -464,8 +464,9 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .callabel{margin-top:8px;font-size:9px;letter-spacing:.14em;color:var(--ink-faint)}
 .calrow{display:flex;gap:16px;align-items:center}
 .calside{display:flex;flex-direction:column;gap:10px;min-width:0}
-.calside .cs{font-size:10px;letter-spacing:.12em;color:var(--ink-faint);white-space:nowrap}
-.calside .cs b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;margin:0 3px}
+.calside .cs{font-size:9.5px;letter-spacing:.12em;color:var(--ink-faint);white-space:nowrap}
+.calside .cs b{font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums;margin:0 4px}
+.statsbar b{font-size:16px}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:99}
 
 /* ---- race / plan date line ---- */
@@ -606,6 +607,13 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
   background:var(--panel);border:1px solid var(--line-bright);color:var(--ink);font-size:13.5px;
   padding:11px 18px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:opacity .25s ease}
 .ov-btn.danger{border-color:var(--danger);color:var(--danger)}
+.confirming{color:var(--danger)!important;border-color:var(--danger)!important}
+.op-del.confirming{width:auto;padding:0 9px;border-radius:999px;font-size:9px;letter-spacing:.08em;opacity:1}
+.mute-btn{font-family:var(--mono);border:1px solid var(--line-bright);border-radius:3px;
+  padding:7px 10px;font-size:13px;color:var(--ink-dim);background:none;cursor:pointer}
+.mute-btn:hover{color:var(--amber);border-color:var(--amber)}
+.ex-last{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink-faint);margin-top:2px}
+.ex-name[data-hist]{cursor:pointer}
 body.theme-celina .gps-banner.work{color:#c96442;border-color:#c96442}
 .stepper button{width:40px;height:40px;border:1px solid var(--line-bright);border-radius:6px;
   font-size:18px;color:var(--ink-dim);flex:none}
@@ -1485,7 +1493,10 @@ function logGet(a){ try{ return JSON.parse(localStorage.getItem('trainops:log:'+
 function logSet(a,v){ try{ localStorage.setItem('trainops:log:'+a,JSON.stringify(v)); }catch(e){} }
 
 var AC=null;
+function muted(){ try{ return localStorage.getItem('trainops:mute')==='1'; }catch(e){ return false; } }
+function setMuted(v){ try{ localStorage.setItem('trainops:mute',v?'1':'0'); }catch(e){} }
 function beep(freq,ms){
+  if(muted()) return; // vibration still fires — only the tone is muted
   try{
     AC=AC||new (window.AudioContext||window.webkitAudioContext)();
     if(AC.state==='suspended') AC.resume();
@@ -1500,6 +1511,26 @@ function beep(freq,ms){
   }catch(e){}
 }
 function buzz(p){ try{ if(navigator.vibrate) navigator.vibrate(p||150); }catch(e){} }
+// inline two-tap confirmation: first tap arms the button (danger style, 2.5s),
+// second tap runs the action — replaces native confirm() (unreliable in WKWebView)
+function confirmTap(btn,label,fn){
+  if(btn._armed){
+    clearTimeout(btn._t); btn._armed=0;
+    btn.innerHTML=btn._orig; btn.classList.remove('confirming');
+    fn(); return;
+  }
+  btn._armed=1; btn._orig=btn.innerHTML;
+  btn.innerHTML=label; btn.classList.add('confirming');
+  btn._t=setTimeout(function(){
+    btn._armed=0; btn.innerHTML=btn._orig; btn.classList.remove('confirming');
+  },2500);
+}
+// small mute toggle for overlay headers
+function muteBtnHTML(){ return '<button class="mute-btn" id="mute-btn" aria-label="Mute">'+(muted()?'🔇':'🔊')+'</button>'; }
+function wireMuteBtn(ov){
+  var b=ov.querySelector('#mute-btn');
+  if(b) b.addEventListener('click',function(){ setMuted(!muted()); b.textContent=muted()?'🔇':'🔊'; });
+}
 
 function setTheme(theme){
   document.body.classList.remove('theme-tactical','theme-celina');
@@ -1542,20 +1573,20 @@ function renderRoster(){
     var del=card.querySelector('.op-del');
     if(del) del.addEventListener('click',function(e){
       e.stopPropagation();
-      if(a.custom){
-        if(!confirm('Delete '+a.meta.name+"'s plan? Their history stays saved.")) return;
-        customSave(customList().filter(function(c){return c.id!==id;}));
-        delete ATHLETES[id];
-        try{ localStorage.removeItem('trainops:cfg:'+id); }catch(_){}
-      } else {
-        if(!confirm('Remove '+a.meta.name+" from your roster? Their history stays saved, and they'll return if you delete all your custom plans.")) return;
-        var h=hiddenBuiltins(); if(h.indexOf(id)===-1){ h.push(id); hiddenSave(h); }
-      }
-      if(current.athlete===id){
-        current.athlete=null; setTheme(null);
-        try{ localStorage.removeItem('trainops:lastUser'); }catch(_){}
-      }
-      renderRoster();
+      confirmTap(del,'SURE?',function(){
+        if(a.custom){
+          customSave(customList().filter(function(c){return c.id!==id;}));
+          delete ATHLETES[id];
+          try{ localStorage.removeItem('trainops:cfg:'+id); }catch(_){}
+        } else {
+          var h=hiddenBuiltins(); if(h.indexOf(id)===-1){ h.push(id); hiddenSave(h); }
+        }
+        if(current.athlete===id){
+          current.athlete=null; setTheme(null);
+          try{ localStorage.removeItem('trainops:lastUser'); }catch(_){}
+        }
+        renderRoster();
+      });
     });
     r.appendChild(card);
   });
@@ -1995,11 +2026,12 @@ function openSessionDetail(iso){
   var sh=ov.querySelector('#sd-share');
   if(sh) sh.addEventListener('click',function(){ shareRun(iso,e,sh); });
   ov.querySelector('#sd-del').addEventListener('click',function(){
-    if(!confirm('Delete this session from your history?')) return;
-    delete log[iso];
-    logSet(current.athlete,log);
-    closeOverlay();
-    showTab(activeTab);
+    confirmTap(this,'TAP TO CONFIRM',function(){
+      delete log[iso];
+      logSet(current.athlete,log);
+      closeOverlay();
+      showTab(activeTab);
+    });
   });
   if(r&&r.track&&r.track.length>1){
     loadLeaflet().then(function(ok){
@@ -2017,6 +2049,32 @@ function openSessionDetail(iso){
       }catch(err){ mel.style.display='none'; }
     });
   }
+}
+
+// per-exercise performance history: dated list of logged sessions
+function openExerciseHistory(name){
+  var e=setsGet(current.athlete)[name]||{};
+  var ov=openOverlay();
+  var rows=(e.hist||[]).slice().reverse().map(function(h){
+    return '<div class="act-row"><span class="ad">'+fmtDate(parseDate(h.d))+'</span>'+
+      '<span class="at mono">'+h.w+' × '+h.r+'</span>'+
+      '<span class="ar">'+h.sets+' set'+(h.sets>1?'s':'')+'</span></div>';
+  }).join('');
+  ov.innerHTML=
+    '<div class="ov-top"><span class="ov-prog">HISTORY</span>'+
+    '<button class="ov-x" id="eh-x">✕</button></div>'+
+    '<div class="ov-mid ex">'+
+      '<div class="ov-title">'+esc(name)+'</div>'+
+      ((e.best||e.last)?'<div class="pr-line mono">'+
+        (e.best?'<span class="pr-badge">BEST '+e.best.w+'×'+e.best.r+'</span>':'')+
+        (e.last?'<span class="pr-last">LAST '+e.last.w+'×'+e.last.r+' · '+daysAgo(e.last.d)+'</span>':'')+
+      '</div>':'')+
+      (rows?'<div class="actlist" style="margin-top:12px">'+rows+'</div>'
+           :'<div class="ov-note" style="margin-top:12px">No logged sets yet — weights and reps you check off in the player will show up here.</div>')+
+    '</div>'+
+    '<div class="ov-actions"><button class="ov-btn primary" id="eh-close">CLOSE</button></div>';
+  ov.querySelector('#eh-x').addEventListener('click',closeOverlay);
+  ov.querySelector('#eh-close').addEventListener('click',closeOverlay);
 }
 
 // manual entry, Nike-style: date, distance, duration -> pace computed
@@ -2069,17 +2127,21 @@ function openAddRun(){
   ov.querySelector('#ar-date').addEventListener('input',function(){ recalc(null); });
   ov.querySelector('#ar-x').addEventListener('click',closeOverlay);
   ov.querySelector('#ar-cancel').addEventListener('click',closeOverlay);
-  ov.querySelector('#ar-save').addEventListener('click',function(){
+  function doSaveRun(){
     var iso=ov.querySelector('#ar-date').value;
     var dist=+parseFloat(ov.querySelector('#ar-dist').value).toFixed(2);
     var secs=Math.round(parseFloat(ov.querySelector('#ar-dur').value)*60);
     var name=(ov.querySelector('#ar-name').value||'').trim()||'Run';
     var log=logGet(current.athlete);
-    if(log[iso] && !confirm('Replace the session already logged on '+iso+'?')) return;
     log[iso]={t:'run',title:name+' · '+dist.toFixed(1)+' '+u,
       run:{dist:dist,unit:u,secs:secs,pace:fmtPace(secs/dist),manual:true}};
     logSet(current.athlete,log);
     closeOverlay(); renderActivity(); confetti();
+  }
+  ov.querySelector('#ar-save').addEventListener('click',function(){
+    var iso=ov.querySelector('#ar-date').value;
+    if(logGet(current.athlete)[iso]) confirmTap(this,'REPLACE EXISTING?',doSaveRun);
+    else doSaveRun();
   });
 }
 
@@ -2095,12 +2157,68 @@ function renderProfile(){
       '<button class="chip'+(u==='mi'?' on':'')+'" data-u="mi">Miles</button>'+
       '<button class="chip'+(u==='km'?' on':'')+'" data-u="km">Kilometers</button></span></div>':'')+
     '<div class="reset-line"><button class="reset-btn" id="board-open">⛫ GYM BOARD — both plans on one screen</button></div>'+
-    '<div class="footnote">Add to Home Screen to use this as a full-screen app. Checkmarks and history save on this device.</div>';
+    '<div class="prof-row"><span>DATA</span><span style="display:flex;gap:8px">'+
+      '<button class="act-add mono" id="exp-btn">⬇ EXPORT</button>'+
+      '<button class="act-add mono" id="imp-btn">⬆ IMPORT</button></span></div>'+
+    '<div id="imp-confirm"></div>'+
+    '<input type="file" id="imp-file" accept=".json,application/json" style="display:none">'+
+    '<div class="footnote">Export downloads everything — plans, history, PRs — as a file you can restore from. Add to Home Screen to use this as a full-screen app.</div>';
   ex.querySelectorAll('.gps-units .chip').forEach(function(b){
     b.addEventListener('click',function(){
       unitsSave(current.athlete,b.getAttribute('data-u'));
       renderProfile();
     });
+  });
+  // backup: every trainops:* key, raw, into a dated JSON download
+  ex.querySelector('#exp-btn').addEventListener('click',function(){
+    var out={version:1,exported:new Date().toISOString(),data:{}};
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i);
+        if(k&&k.indexOf('trainops:')===0) out.data[k]=localStorage.getItem(k);
+      }
+    }catch(e){}
+    var blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='workout-backup-'+dateISO(new Date())+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },5000);
+    gpsToast('Backup saved ✓');
+  });
+  ex.querySelector('#imp-btn').addEventListener('click',function(){
+    ex.querySelector('#imp-file').click();
+  });
+  ex.querySelector('#imp-file').addEventListener('change',function(){
+    var f=this.files&&this.files[0]; this.value='';
+    if(!f) return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      var obj=null;
+      try{ obj=JSON.parse(rd.result); }catch(e){}
+      var keys=obj&&obj.data?Object.keys(obj.data).filter(function(k){return k.indexOf('trainops:')===0;}):[];
+      var box=ex.querySelector('#imp-confirm');
+      if(!keys.length){ box.innerHTML='<div class="footnote" style="color:var(--danger)">That file isn\'t a workout backup.</div>'; return; }
+      box.innerHTML='<div class="prof-row" style="border-color:var(--danger)">'+
+        '<span>RESTORE '+keys.length+' KEYS · OVERWRITES CURRENT DATA</span>'+
+        '<span style="display:flex;gap:8px">'+
+        '<button class="act-add mono" id="imp-cancel">CANCEL</button>'+
+        '<button class="act-add mono" id="imp-go" style="color:var(--danger);border-color:var(--danger)">IMPORT ✓</button></span></div>';
+      box.querySelector('#imp-cancel').addEventListener('click',function(){ box.innerHTML=''; });
+      box.querySelector('#imp-go').addEventListener('click',function(){
+        try{
+          var drop=[];
+          for(var i=0;i<localStorage.length;i++){
+            var k=localStorage.key(i);
+            if(k&&k.indexOf('trainops:')===0) drop.push(k);
+          }
+          drop.forEach(function(k){ localStorage.removeItem(k); });
+          keys.forEach(function(k){ localStorage.setItem(k,obj.data[k]); });
+        }catch(e){}
+        location.reload();
+      });
+    };
+    rd.readAsText(f);
   });
   ex.querySelector('#board-open').addEventListener('click',function(){
     setTheme(null);
@@ -2402,8 +2520,10 @@ function renderDay(){
           '<div class="ex-head">'+
             '<button class="check" data-check="'+id+'" aria-label="Mark done">'+CHECK.innerHTML+'</button>'+
             '<div class="ex-body">'+
-              '<div class="ex-name">'+esc(nm)+'</div>'+
+              '<div class="ex-name" data-hist="'+esc(nm)+'">'+esc(nm)+'</div>'+
               '<div class="ex-scheme mono">'+schemeLabel(nm,ex)+'</div>'+
+              (function(){ var h=setsGet(current.athlete)[nm];
+                return (h&&h.last)?'<div class="ex-last mono">LAST '+h.last.w+'×'+h.last.r+' · '+daysAgo(h.last.d)+'</div>':''; })()+
               (ex.note?'<div class="ex-note">'+esc(ex.note)+'</div>':'')+
               (nm!==ex.name?'<div class="ex-note">⇄ Swapped in for '+esc(ex.name)+'</div>':'')+
               '<div class="ex-actions">'+actions+'</div>'+
@@ -2412,6 +2532,7 @@ function renderDay(){
             '</div>'+
           '</div>';
         list.appendChild(row);
+        row.querySelector('[data-hist]').addEventListener('click',function(){ openExerciseHistory(nm); });
         row.querySelector('[data-check]').addEventListener('click',function(){
           var s=store.get(storeKey);
           s[id]=!s[id];
@@ -2725,6 +2846,16 @@ function recordSet(name,w,r){
   var d=dateISO(new Date());
   e.last={w:w,r:r,d:d};
   if(!e.best || w>e.best.w || (w===e.best.w && r>e.best.r)) e.best={w:w,r:r,d:d};
+  // dated history, one entry per day (capped): sets count + heaviest set of the day
+  e.hist=e.hist||[];
+  var h=e.hist[e.hist.length-1];
+  if(h && h.d===d){
+    h.sets++;
+    if(w>h.w || (w===h.w && r>h.r)){ h.w=w; h.r=r; }
+  } else {
+    e.hist.push({d:d,w:w,r:r,sets:1});
+    if(e.hist.length>30) e.hist.shift();
+  }
   all[name]=e;
   setsSave(current.athlete,all);
 }
@@ -2845,7 +2976,8 @@ function openPlayer(d,storeKey,opts){
       : '<div class="ov-scheme">'+esc(ex.scheme)+'</div>';
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
-      '<button class="ov-x" id="pl-x">✕ EXIT</button></div>'+
+      '<span style="display:flex;gap:8px;align-items:center">'+muteBtnHTML()+
+      '<button class="ov-x" id="pl-x">✕ EXIT</button></span></div>'+
       '<div class="ov-mid ex">'+
         (it.label?'<div class="ov-eyebrow">'+esc(it.label)+'</div>':'')+
         '<div class="ov-title">'+esc(nm)+'</div>'+
@@ -2873,6 +3005,7 @@ function openPlayer(d,storeKey,opts){
         });
       });
     }
+    wireMuteBtn(ov);
     ov.querySelector('#pl-x').addEventListener('click',exit);
     ov.querySelector('#pl-skip').addEventListener('click',function(){ idx++; showExercise(); });
     function completeExercise(){
@@ -2978,13 +3111,15 @@ function openPlayer(d,storeKey,opts){
     var left=secs;
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
-      '<button class="ov-x" id="pl-x">✕ EXIT</button></div>'+
+      '<span style="display:flex;gap:8px;align-items:center">'+muteBtnHTML()+
+      '<button class="ov-x" id="pl-x">✕ EXIT</button></span></div>'+
       '<div class="ov-mid">'+
         '<div class="ov-phase easy">REST</div>'+
         '<div class="ov-clock" id="pl-clock">'+fmtSecs(left)+'</div>'+
         '<div class="ov-rest-hint">Next: '+esc(flat[idx].nm||flat[idx].ex.name)+'</div>'+
       '</div>'+
       '<div class="ov-actions"><button class="ov-btn primary" id="pl-go">SKIP REST →</button></div>';
+    wireMuteBtn(ov);
     ov.querySelector('#pl-x').addEventListener('click',exit);
     ov.querySelector('#pl-go').addEventListener('click',function(){ stopInt(); showExercise(); });
     ovInt=setInterval(function(){
@@ -3134,13 +3269,15 @@ function openTimer(d,a,storeKey,opts){
       var s=seq[si];
       ov.innerHTML=
         '<div class="ov-top"><span class="ov-prog">ROUND '+(Math.floor(si/2)+1)+' / '+cfg.rounds+'</span>'+
-        '<button class="ov-x" id="tm-x">✕ END</button></div>'+
+        '<span style="display:flex;gap:8px;align-items:center">'+muteBtnHTML()+
+        '<button class="ov-x" id="tm-x">✕ END</button></span></div>'+
         '<div class="ov-mid">'+
           '<div class="ov-phase '+s.cls+'">'+esc(s.lab)+'</div>'+
           '<div class="ov-clock" id="tm-clock">'+fmtSecs(left)+'</div>'+
           '<div class="ov-round">NEXT: '+(si+1<seq.length?esc(seq[si+1].lab):'DONE')+'</div>'+
         '</div>'+
         '<div class="ov-actions"><button class="ov-btn" id="tm-pause">'+(paused?'RESUME':'PAUSE')+'</button></div>';
+      wireMuteBtn(ov);
       ov.querySelector('#tm-x').addEventListener('click',function(){ doneScreen('INTERVALS STOPPED'); });
       ov.querySelector('#tm-pause').addEventListener('click',function(){
         paused=!paused; this.textContent=paused?'RESUME':'PAUSE';
@@ -3447,7 +3584,7 @@ function openGpsRun(d,a,storeKey){
         '<button class="ov-btn danger" id="gps-end">END RUN</button>'+
       '</div>';
     ov.querySelector('#gx').addEventListener('click',function(){
-      if(run.dist>10){ if(confirm('End this run?')) finishScreen(); }
+      if(run.dist>10) confirmTap(this,'END?',finishScreen);
       else exit();
     });
     ov.querySelector('#gps-pause').addEventListener('click',function(){
