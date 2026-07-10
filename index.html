@@ -527,12 +527,17 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .add-set{align-self:flex-start;font-size:10.5px;letter-spacing:.12em;color:var(--ink-dim);
   border:1px dashed var(--line-bright);border-radius:10px;padding:9px 16px;background:none;margin-top:8px;cursor:pointer}
 .add-set:hover{color:var(--amber);border-color:var(--amber)}
-.sch-btn{background:none;border:0;padding:0;text-align:left;cursor:pointer}
-.sch-btn .sch-pen{font-size:12px;color:var(--ink-faint)}
+.sch-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line-bright);border-radius:12px;padding:12px 14px;margin:6px 0 2px}
+.sch-btn.open{border-color:var(--amber)}
+.sch-btn .ov-scheme{flex:1}
+.sch-edit-tag{font-size:9.5px;letter-spacing:.14em;color:var(--amber);border:1px solid var(--amber);
+  border-radius:999px;padding:4px 10px;flex:none}
+.sch-chev{color:var(--ink-faint);font-size:12px;flex:none}
+#set-wrap.hidden{display:none}
 .sch-ed{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--line-bright);
   border-radius:12px;padding:10px;margin-top:8px}
 .sch-ed .set-f{flex:1 1 28%;min-width:96px}
-.sch-ed.hidden{display:none}
 .sch-acts{display:flex;gap:8px;width:100%}
 .sch-acts .ov-btn{font-size:10.5px;flex:1}
 
@@ -2814,10 +2819,13 @@ function openPlayer(d,storeKey,opts){
         '<button class="add-set mono" id="add-set">＋ ADD SET</button>';
     }
     var schemeHTML = sr
-      ? '<button class="ov-scheme sch-btn" id="sch-btn">'+
-          (ed?ed.sets+' × '+ed.reps+(ed.w?' · '+ed.w+' lb':''):esc(ex.scheme))+
-          ' <span class="sch-pen">✎</span></button>'+
-        '<div class="sch-ed hidden" id="sch-ed">'+
+      ? '<button class="sch-btn" id="sch-btn">'+
+          '<span class="ov-scheme" style="margin:0">'+
+            (ed?ed.sets+' × '+ed.reps+(ed.w?' · '+ed.w+' lb':''):esc(ex.scheme))+'</span>'+
+          '<span class="sch-edit-tag mono">✎ EDIT</span>'+
+          '<span class="sch-chev">▾</span></button>'+
+        '<div id="set-wrap" class="hidden">'+
+        '<div class="sch-ed" id="sch-ed">'+
           '<div class="set-f"><span class="sl mono">SETS</span><div class="stepc">'+
             '<button class="st-b" data-e="s-">−</button><input class="st-in" id="se-sets" type="number" min="1" value="'+sr.sets+'">'+
             '<button class="st-b" data-e="s+">＋</button></div></div>'+
@@ -2831,6 +2839,8 @@ function openPlayer(d,storeKey,opts){
             '<button class="ov-btn" id="se-reset" style="padding:10px">RESET</button>'+
             '<button class="ov-btn primary" id="se-save" style="padding:10px">SAVE</button>'+
           '</div>'+
+        '</div>'+
+        setsHTML+
         '</div>'
       : '<div class="ov-scheme">'+esc(ex.scheme)+'</div>';
     ov.innerHTML=
@@ -2843,7 +2853,6 @@ function openPlayer(d,storeKey,opts){
         videoHTML+
         schemeHTML+
         (ex.note?'<div class="ov-note">'+esc(ex.note)+'</div>':'')+
-        setsHTML+
         '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
       '</div>'+
       '<div class="ov-actions">'+
@@ -2928,9 +2937,13 @@ function openPlayer(d,storeKey,opts){
         list.appendChild(row);
         wireRow(row); renumber(); persistCount();
       });
-      // tap the prescription -> inline editor; SAVE persists sets/reps/weight
+      // tap the prescription button -> expand the set breakout (rows + editor)
       ov.querySelector('#sch-btn').addEventListener('click',function(){
-        ov.querySelector('#sch-ed').classList.toggle('hidden');
+        var w=ov.querySelector('#set-wrap');
+        w.classList.toggle('hidden');
+        this.classList.toggle('open',!w.classList.contains('hidden'));
+        var ch=this.querySelector('.sch-chev');
+        if(ch) ch.textContent=w.classList.contains('hidden')?'▾':'▴';
       });
       ov.querySelectorAll('.sch-ed .st-b').forEach(function(b){
         b.addEventListener('click',function(){
