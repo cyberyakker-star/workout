@@ -72,13 +72,14 @@ body.board-mode .tabbar{display:none}
 .tabview.hidden{display:none}
 
 /* ---- home tab (dashboard) ---- */
-.hm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.avatar{width:42px;height:42px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line-bright);
+.hm-top{display:flex;align-items:center;gap:11px;margin-bottom:4px}
+.avatar{width:42px;height:42px;flex:none;border-radius:50%;background:var(--panel-2);border:1px solid var(--line-bright);
   color:var(--ink);font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .avatar:hover{border-color:var(--amber)}
-.streak-pill{font-size:10.5px;letter-spacing:.1em;color:var(--amber);background:var(--panel);
-  border:1px solid var(--line);border-radius:999px;padding:8px 14px}
-.home-name{font-size:32px;font-weight:800;margin:0;color:var(--ink);line-height:1.1}
+.streak-pill{flex:none;font-size:10.5px;letter-spacing:.1em;color:var(--amber);background:var(--panel);
+  border:1px solid var(--line);border-radius:999px;padding:8px 12px;white-space:nowrap}
+.home-name{flex:1;min-width:0;font-size:26px;font-weight:800;margin:0;color:var(--ink);line-height:1.1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.theme-celina .home-name{font-family:var(--serif)}
 .home-sub{font-size:14px;color:var(--ink-dim);margin:2px 0 14px}
 .today-card.accent{background:var(--amber);border-color:var(--amber)}
@@ -1892,9 +1893,9 @@ function renderHome(){
   v.innerHTML=
     '<div class="hm-top">'+
       '<button class="avatar" id="hm-avatar" aria-label="Profile">'+esc((a.meta.name||'?')[0])+'</button>'+
+      '<div class="home-name">'+esc(a.meta.name)+'</div>'+
       '<span class="streak-pill mono">🔥 '+streak+' DAY STREAK</span>'+
     '</div>'+
-    '<div class="home-name">'+esc(a.meta.name)+'</div>'+
     '<div class="home-sub">Let\'s get after it.</div>'+
     '<div class="today-card accent">'+
       '<div class="tc-eyebrow"><span>TODAY\'S SESSION · '+esc(d.label||'')+'</span>'+
