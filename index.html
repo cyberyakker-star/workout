@@ -1370,6 +1370,8 @@ var VIDEO_LIB = {
   "band row":["tcMmJ3c5P8c","YJiwzLHHKp8"],
   "band face pull":["AlTGQrDOd98","OIMUU2Q-upU","DvjmJdEswQ4"],
   "tibialis raise":["O8ZcXfwFuqs","mmLnKYwdDMM","RXC7tE6IQcc"],
+  "slant board fhl calf raise":["p4Nv3VBkWho","GDVlVr6yWbg"],
+  "fhl calf raise":["p4Nv3VBkWho","GDVlVr6yWbg"],
   "kot calf raise":["06cqmzQY9r4","99E-EhDYrGY"],
   "seated calf raise":["ORY-ke6vcgk","M5Pb5C7PgPc","71lLP3aglGQ"],
   "single-leg calf raise":["qhGe_FynFnQ","mFTQo8k1IIU"],
@@ -1440,7 +1442,8 @@ var VIDEO_LIB = {
   "squat side step":["y_bqFDQZSHQ","9MuZrYJddcQ"],
   "double pulse squat":["P-yaD24bUE8","R0vJBTrzLac"],
   "banded hip flexion":["D0GwAezTvtg","lR3cpCVBjPM"],
-  "reverse step-down":["9ZknEYboBOQ","tqECKZxlCKE"]
+  "slant board reverse step-down":["95gQB2YU0JA","Or4C-UQ63Xc"],
+  "reverse step-down":["95gQB2YU0JA","Or4C-UQ63Xc"]
 };
 function videoIds(name){
   var n=name.toLowerCase();
@@ -2277,10 +2280,10 @@ function renderLibrary(){
     var im=b.querySelector('img'); if(im) im.addEventListener('error',function(){ im.replaceWith(document.createElement('span')); });
   });
 }
-// movement detail: video, cues, equipment — plus your PB when you have one
+// movement detail: video, cues, equipment + your logged history.
+// works for library movements and plan-only exercises (mv may be null).
 function openMoveDetail(name){
   var mv=PICK_POOL.filter(function(x){return x.name===name;})[0];
-  if(!mv) return;
   var ov=openOverlay();
   var vids=videoIds(name)||[], search=demoURL(name);
   var cues=autoCues(name);
@@ -2289,17 +2292,32 @@ function openMoveDetail(name){
     ? '<div class="ov-video"><iframe src="https://www.youtube-nocookie.com/embed/'+vids[0]+
       '?rel=0&playsinline=1&modestbranding=1" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>'
     : '';
+  var eyebrow = mv ? (CAT_LABEL[mv.pat]||mv.pat).toUpperCase() : 'EXERCISE';
+  var eqBadge = mv ? '<span class="pk-eq mono" style="border:1px solid var(--line);border-radius:999px;padding:4px 11px">'+esc(EQ_LABEL[mv.eq]||mv.eq)+'</span>' : '';
+  var histRows=(hist&&hist.hist?hist.hist:[]).slice().reverse().map(function(h){
+    return '<div class="act-row"><span class="ad">'+fmtDate(parseDate(h.d))+'</span>'+
+      '<span class="at mono">'+h.w+' × '+h.r+'</span>'+
+      '<span class="ar">'+h.sets+' set'+(h.sets>1?'s':'')+'</span></div>';
+  }).join('');
+  var histBody=(hist&&(hist.best||hist.last||histRows))
+    ? ((hist.best||hist.last)?'<div class="pr-line mono" style="margin-top:8px">'+
+        (hist.best?'<span class="pr-badge">BEST '+hist.best.w+'×'+hist.best.r+'</span>':'')+
+        (hist.last?'<span class="pr-last">LAST '+hist.last.w+'×'+hist.last.r+' · '+daysAgo(hist.last.d)+'</span>':'')+'</div>':'')+
+      (histRows?'<div class="actlist" style="margin-top:10px">'+histRows+'</div>':'')
+    : '<div class="ov-note" style="margin-top:8px">No logged sets yet — weights and reps you check off in the player show up here.</div>';
   ov.innerHTML=
-    '<div class="ov-top"><span class="ov-prog">'+esc(CAT_LABEL[mv.pat]||mv.pat).toUpperCase()+'</span>'+
+    '<div class="ov-top"><span class="ov-prog">'+eyebrow+'</span>'+
     '<button class="ov-x" id="md-x">✕</button></div>'+
     '<div class="ov-mid ex">'+
       '<div class="ov-title">'+esc(name)+'</div>'+
-      '<div class="pr-line mono"><span class="pk-eq mono" style="border:1px solid var(--line);border-radius:999px;padding:4px 11px">'+esc(EQ_LABEL[mv.eq]||mv.eq)+'</span>'+
-        (hist&&hist.best?'<span class="pr-badge">BEST '+hist.best.w+'×'+hist.best.r+'</span>':'')+
-      '</div>'+
+      (eqBadge?'<div class="pr-line mono">'+eqBadge+'</div>':'')+
       videoHTML+
       '<a class="ov-yt-link" href="'+search+'" target="_blank" rel="noopener">'+(vids.length?'Open on YouTube ↗':'Search a demo on YouTube ↗')+'</a>'+
       '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
+      '<div class="md-hist" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">'+
+        '<div class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--ink-faint)">HISTORY</div>'+
+        histBody+
+      '</div>'+
     '</div>'+
     '<div class="ov-actions"><button class="ov-btn" id="md-close">CLOSE</button></div>';
   ov.querySelector('#md-x').addEventListener('click',closeOverlay);
@@ -2603,7 +2621,7 @@ function renderDay(){
             '</div>'+
           '</div>';
         list.appendChild(row);
-        row.querySelector('[data-hist]').addEventListener('click',function(){ openExerciseHistory(nm); });
+        row.querySelector('[data-hist]').addEventListener('click',function(){ openMoveDetail(nm); });
         row.querySelector('[data-check]').addEventListener('click',function(){
           var s=store.get(storeKey);
           s[id]=!s[id];
