@@ -1104,6 +1104,18 @@ var DAY_LABEL={mon:"Mon",tue:"Tue",wed:"Wed",thu:"Thu",fri:"Fri",sat:"Sat",sun:"
 var GOAL_LABEL={stronger:"Get stronger",muscle:"Build muscle",general:"General fitness",fatloss:"Lose fat",endurance:"Endurance"};
 var EQUIP_LABEL={bodyweight:"Bodyweight",dumbbells:"Dumbbells",home:"Home gym",full:"Full gym"};
 var MAIN_PATS={squat:1,hinge:1,pushH:1,pushV:1,pullH:1,pullV:1};
+// muscles worked by each movement pattern — powers the "focus / emphasis" picker
+var PAT_MUS={squat:["quads","glutes"],hinge:["hams","glutes","back"],lunge:["quads","glutes"],
+  pushH:["chest","arms","shoulders"],pushV:["shoulders","arms"],pullH:["back","arms"],pullV:["back","arms"],
+  hip:["glutes"],core:["core"],calf:["calves"],cond:["quads","core"],warm:[]};
+function musOf(x){ return PAT_MUS[x.pat]||[]; }
+// user-facing focus areas -> the muscles they cover
+var FOCUS_AREAS=[["glutes","Glutes"],["legs","Legs"],["back","Back"],["chest","Chest"],["shoulders","Shoulders"],["arms","Arms"],["core","Core"]];
+var AREA_MUS={glutes:["glutes"],legs:["quads","hams","calves"],back:["back"],chest:["chest"],shoulders:["shoulders"],arms:["arms"],core:["core"]};
+// preferred movement patterns for each focus area (first = most targeted)
+var AREA_PATS={glutes:["hip","hinge"],legs:["squat","lunge","hinge","calf"],back:["pullH","pullV"],
+  chest:["pushH"],shoulders:["pushV"],arms:["pushV","pullV","pushH","pullH"],core:["core"]};
+var AREA_LABEL={}; FOCUS_AREAS.forEach(function(a){ AREA_LABEL[a[0]]=a[1]; });
 var CAT_LABEL={squat:"Squat",hinge:"Hinge / Deadlift",lunge:"Lunge",pushH:"Chest / Push",pushV:"Shoulders",
   pullH:"Back / Row",pullV:"Pull-up / Pulldown",hip:"Glutes / Hips",core:"Core",calf:"Calves",carry:"Carry",cond:"Conditioning",warm:"Warm-up / Mobility"};
 var CAT_ORDER=["squat","hinge","lunge","pushH","pushV","pullH","pullV","hip","core","calf","carry","cond","warm"];
@@ -1164,11 +1176,23 @@ function buildCustomPlan(cfg){
       if(!used[l[i].name]){ used[l[i].name]=1; return l[i]; } }
     return null;
   }
+  // pick an unused accessory for a focus area, preferring its most targeted pattern
+  function pickByArea(area,used){
+    var pats=AREA_PATS[area]||[];
+    var cand=pool.filter(function(x){ return !used[x.name] && pats.indexOf(x.pat)!==-1; });
+    if(!cand.length) return null;
+    var best=cand.filter(function(x){ return x.pat===pats[0]; });
+    var from=best.length?best:cand;
+    var p=from[Math.floor(rand()*from.length)]; used[p.name]=1; return p;
+  }
   var warms=shuffle(WARMUPS,rand);
   function warmGroup(i){ return { label:"Warm-up \u00b7 5 min", items:[
     { name:warms[i%warms.length], scheme:"1\u20132 min" },
     { name:warms[(i+1)%warms.length], scheme:"\u00d7 10 / side" } ]}; }
-  var nMain={beginner:4,intermediate:5,advanced:6}[exp]||5;
+  // session length drives how many working movements each day gets
+  var nMain={ '30':3, '45':4, '60':5, '75':6 }[cfg.duration] || {beginner:4,intermediate:5,advanced:6}[exp] || 5;
+  var durLabel={ '30':'~30 min', '45':'~45 min', '60':'~55 min', '75':'~70 min' }[cfg.duration] || '40\u201350 min';
+  var emph=cfg.focus||[];
 
   var week={};
   function restDay(key){ return { key:key, label:DAY_LABEL[key], type:"rest", title:"Rest / Recovery",
@@ -1211,12 +1235,22 @@ function buildCustomPlan(cfg){
         mains.push({ name:ex.name, scheme:schemeFor(goal,exp,!!MAIN_PATS[pats[i]]), note:noteFor(ex) });
       }
       var groups=[ wg, { label:"Strength", items:mains } ];
+      // emphasis: add targeted accessory work, rotating focus areas across days
+      if(emph.length){
+        var picks=[], nFocus=(cfg.duration==='75'?2:1);
+        for(var fi=0;fi<nFocus;fi++){
+          var area=emph[(di+fi)%emph.length];
+          var fex=pickByArea(area,used);
+          if(fex) picks.push({ name:fex.name, scheme: goal==='stronger'?'3 \u00d7 8':(goal==='fatloss'?'3 \u00d7 15':'3 \u00d7 12'), note:noteFor(fex) });
+        }
+        if(picks.length) groups.push({ label:"Focus \u00b7 "+emph.map(function(a){return AREA_LABEL[a];}).join(' / '), items:picks });
+      }
       var core=pickUnused('core',used); var fin=[];
       if(core) fin.push({ name:core.name, scheme: goal==='fatloss'?'40s':'\u00d7 12' });
       if(goal==='fatloss'){ var c=pickUnused('cond',used); if(c) fin.push({ name:c.name, scheme:'40s on / 20s off \u00d7 4' }); }
       if(fin.length) groups.push({ label: goal==='fatloss'?"Finisher":"Core", items:fin });
       week[key]={ key:key, label:DAY_LABEL[key], type: goal==='fatloss'?"mixed":"strength",
-        title: titles[di]||"Strength", dur:"40\u201350 min", groups:groups };
+        title: titles[di]||"Strength", dur:durLabel, groups:groups };
     });
     ["mon","tue","wed","thu","fri","sat","sun"].forEach(function(k){ if(!week[k]) week[k]=restDay(k); });
   }
@@ -1606,6 +1640,8 @@ var BUILDER_OPTS={
   exp:[["beginner","Beginner"],["intermediate","Intermediate"],["advanced","Advanced"]],
   weeks:[["4","4 weeks"],["6","6 weeks"],["8","8 weeks"],["0","Continuous"]],
   freq:[["3","3 days"],["4","4 days"],["5","5 days"],["6","6 days"],["7","7 days"]],
+  duration:[["30","30 min"],["45","45 min"],["60","60 min"],["75","75 min"]],
+  focus:[["glutes","Glutes"],["legs","Legs"],["back","Back"],["chest","Chest"],["shoulders","Shoulders"],["arms","Arms"],["core","Core"]],
   equip:[["bodyweight","Bodyweight"],["dumbbells","Dumbbells"],["home","Home gym"],["full","Full gym"]],
   limits:[["impact","Low-impact"],["knee","Knee-friendly"],["shoulder","Shoulder-friendly"],["floor","No floor / back"]]
 };
@@ -1632,7 +1668,7 @@ var EQUIP_CARDS=[
 // generated week you can shuffle before starting. buildCustomPlan is the engine.
 function openBuilder(){
   ensureEditorCSS();
-  var sel={ name:"", sex:"male", goal:"muscle", exp:"beginner", weeks:"6", freq:"3", equip:"dumbbells", limits:[] };
+  var sel={ name:"", sex:"male", goal:"muscle", exp:"beginner", weeks:"6", freq:"3", duration:"45", equip:"dumbbells", limits:[], focus:[] };
   var variant=0, step=0;
   var ov=openOverlay();
   var STEPS=[
@@ -1640,14 +1676,18 @@ function openBuilder(){
     { label:'EXPERIENCE', q:'How much experience do you have?', groups:[{field:'exp',cards:EXP_CARDS}] },
     { label:'SCHEDULE', q:'Set your schedule', groups:[
       {field:'freq',title:'Days per week',opts:BUILDER_OPTS.freq},
+      {field:'duration',title:'Time per session',opts:BUILDER_OPTS.duration},
       {field:'weeks',title:'Program length',opts:BUILDER_OPTS.weeks}] },
     { label:'EQUIPMENT', q:'What can you train with?', groups:[
       {field:'equip',cards:EQUIP_CARDS},
-      {field:'limits',multi:true,title:'Any limitations? (optional)',opts:BUILDER_OPTS.limits}] }
+      {field:'limits',multi:true,title:'Any limitations? (optional)',opts:BUILDER_OPTS.limits}] },
+    { label:'FOCUS', q:'Any areas to emphasize?', groups:[
+      {field:'focus',multi:true,title:'Pick a few — or none (optional)',opts:BUILDER_OPTS.focus}] }
   ];
   function previewCfg(){
     return { id:'__preview__', seed:'plan#'+variant, name:(sel.name||'You').slice(0,18), sex:sel.sex,
-      goal:sel.goal, exp:sel.exp, weeks:parseInt(sel.weeks)||0, freq:parseInt(sel.freq), equip:sel.equip, limits:sel.limits.slice() };
+      goal:sel.goal, exp:sel.exp, weeks:parseInt(sel.weeks)||0, freq:parseInt(sel.freq), duration:sel.duration,
+      equip:sel.equip, limits:sel.limits.slice(), focus:sel.focus.slice() };
   }
   function wireOptions(){
     ov.querySelectorAll('[data-field]').forEach(function(grp){
