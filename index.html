@@ -685,7 +685,6 @@ body.theme-celina .sess-done .check{border-radius:50%}
 
   <div class="top">
     <div class="topline mono" id="topline"></div>
-    <div class="clock mono" id="clock">&mdash; &middot; &mdash;</div>
   </div>
 
   <div id="view-home" class="tabview hidden"></div>
@@ -696,6 +695,7 @@ body.theme-celina .sess-done .check{border-radius:50%}
     </div>
     <div id="weekstrip-slot"></div>
     <div class="days" id="days"></div>
+    <div id="planedit-slot"></div>
     <div id="stats-slot"></div>
     <div id="session-slot"></div>
     <div id="foot-slot"></div>
@@ -1771,14 +1771,17 @@ function buildPlanChrome(id){
     }
   }
 
-  var rl=raceLine(id,a);
-  slot.appendChild(rl);
   var top=document.getElementById('topline');
-  var editLabel = (a.mode==="week" && !cfg.race) ? '＋ set race date' : 'edit';
-  var showText = !(a.mode==="week" && !cfg.race);
-  top.innerHTML=(showText?'<span class="tl-text">'+esc(headerStatusText(id))+'</span>':'')+
-    '<button class="tl-edit" id="topline-edit">'+editLabel+'</button>';
-  top.querySelector('#topline-edit').addEventListener('click',function(){ rl._edit(); });
+  var gtext=goalStatusText(id);
+  top.innerHTML=(gtext?'<span class="tl-text">'+esc(gtext)+'</span>':'')+
+    '<button class="tl-edit" id="topline-edit">'+(gtext?'edit goal':'＋ set a goal')+'</button>';
+  top.querySelector('#topline-edit').addEventListener('click',function(){ openGoalEditor(id); });
+
+  var peSlot=document.getElementById('planedit-slot');
+  if(peSlot){
+    peSlot.innerHTML='<button class="edit-plan-btn" id="edit-plan-btn">✎ EDIT PLAN — build your week</button>';
+    peSlot.querySelector('#edit-plan-btn').addEventListener('click',openPlanEditor);
+  }
 
   document.getElementById('foot-slot').innerHTML='<div class="footnote">'+a.foot+'</div>';
 }
@@ -2362,6 +2365,50 @@ function headerStatusText(id){
   var wkN = cfg.start ? (total ? Math.min(weeksSince(cfg.start),total) : weeksSince(cfg.start)) : 1;
   return total ? ("Week "+wkN+" of "+total) : ("Week "+wkN);
 }
+// user-settable countdown shown at the top of the plan (any athlete).
+// falls back to a week-mode race date so existing race plans keep their countdown.
+function goalStatusText(id){
+  var cfg=cfgGet(id);
+  var date=cfg.goalDate||cfg.race||'';
+  if(!date) return '';
+  var g=parseDate(date), today=new Date(); today.setHours(0,0,0,0);
+  var days=Math.round((g-today)/864e5);
+  if(isNaN(days)) return '';
+  var name=(cfg.goalName||(cfg.race?'Race':'Goal')).toUpperCase();
+  if(days<0) return name+' · '+fmtDate(g);
+  if(days===0) return name+' · TODAY';
+  return name+' IN '+(days<14 ? days+' DAY'+(days===1?'':'S') : Math.ceil(days/7)+' WK')+' · '+fmtDate(g);
+}
+function openGoalEditor(id){
+  ensureEditorCSS();
+  var a=ATHLETES[id], cfg=cfgGet(id);
+  var name=cfg.goalName!=null?cfg.goalName:(cfg.race?'Race':'');
+  var date=cfg.goalDate||cfg.race||'';
+  var ov=openOverlay();
+  ov.innerHTML='<div class="ov-top"><span class="ov-prog">YOUR GOAL</span>'+
+    '<button class="ov-x" id="g-x">✕ CLOSE</button></div>'+
+    '<div class="ov-mid" style="text-align:left">'+
+    '<p class="ed-hint">Set something to work toward — a race, a trip, any date on the calendar. It shows as a countdown at the top of your plan.</p>'+
+    '<label class="ed-lab">Goal name</label>'+
+    '<input class="binput" id="g-name" value="'+esc(name)+'" placeholder="e.g. Half marathon, Beach trip" autocomplete="off">'+
+    '<label class="ed-lab">Target date</label>'+
+    '<input class="binput" id="g-date" type="date" value="'+esc(date)+'">'+
+    '</div><div class="ov-actions">'+
+    '<button class="ov-btn" id="g-clear">CLEAR</button>'+
+    '<button class="ov-btn primary" id="g-save">SAVE GOAL</button></div>';
+  function done(){ closeOverlay(); buildPlanChrome(id); current.day=null; renderTabs(); renderDay(); if(activeTab==='home') renderHome(); }
+  ov.querySelector('#g-x').addEventListener('click',closeOverlay);
+  ov.querySelector('#g-save').addEventListener('click',function(){
+    var c=cfgGet(id), nm=ov.querySelector('#g-name').value.trim(), dt=ov.querySelector('#g-date').value;
+    if(dt){ c.goalDate=dt; c.goalName=nm; if(a.mode==='week') c.race=dt; }
+    else { delete c.goalDate; delete c.goalName; if(a.mode==='week') delete c.race; }
+    cfgSet(id,c); done();
+  });
+  ov.querySelector('#g-clear').addEventListener('click',function(){
+    var c=cfgGet(id); delete c.goalDate; delete c.goalName; if(a.mode==='week') delete c.race;
+    cfgSet(id,c); done();
+  });
+}
 function raceLine(id,a){
   var box=el('div');
   function draw(){
@@ -2416,9 +2463,6 @@ function renderTabs(){
     t.addEventListener('click',function(){ current.day=d.key; renderTabs(); renderDay(); window.scrollTo({top:0,behavior:'smooth'}); });
     box.appendChild(t);
   });
-  var pe=el('button','day-tab edit-plan'); pe.innerHTML='<span class="dtype"></span>✎ PLAN';
-  pe.addEventListener('click',openPlanEditor);
-  box.appendChild(pe);
 }
 
 function dayTotal(d){
@@ -2676,18 +2720,9 @@ function renderStats(){
   var ws=document.getElementById('who-stats');
   if(ws) ws.innerHTML='THIS WK <b>'+thisWeek+'</b> · STREAK <b>'+streak+'</b>';
 
-  var rt=runTotals(log);
-  slot.innerHTML=
-    '<div class="statsbar mono">'+
-      '<span>TOTAL <b>'+dates.length+'</b> SESSIONS'+
-        (rt.runs?' · <b>'+rt.runs+'</b> RUNS':'')+'</span>'+
-      '<button id="cal-btn">'+(calOpen?'HIDE ▴':'HISTORY ▾')+'</button>'+
-    '</div>'+
-    adviceHTML+
-    (calOpen?calendarHTML(log,rt):'');
-  document.getElementById('cal-btn').addEventListener('click',function(){
-    calOpen=!calOpen; renderStats();
-  });
+  // the session/run totals + calendar live on the Activity tab; the Plan tab
+  // keeps only the (occasional) missed-day nudge to stay uncluttered
+  slot.innerHTML=adviceHTML;
   var ax=document.getElementById('adv-x');
   if(ax) ax.addEventListener('click',function(){
     var c=cfgGet(current.athlete);
@@ -2928,6 +2963,10 @@ function ensureEditorCSS(){
     ".edit-day-btn{background:none;border:1px solid var(--line);color:var(--ink-dim);font-family:var(--mono);"+
       "font-size:9.5px;letter-spacing:.1em;padding:4px 8px;border-radius:4px;cursor:pointer}"+
     ".edit-day-btn:hover{color:var(--ink);border-color:var(--ink-dim)}"+
+    ".edit-plan-btn{width:100%;margin:12px 0 2px;background:none;border:1px dashed var(--line);"+
+      "color:var(--ink-dim);font-family:var(--mono);font-size:11px;letter-spacing:.12em;"+
+      "text-transform:uppercase;padding:11px;border-radius:7px;cursor:pointer}"+
+    ".edit-plan-btn:hover{color:var(--ink);border-color:var(--ink-dim)}"+
     ".day-tab.edit-plan{opacity:.85;font-family:var(--mono);font-size:10px;letter-spacing:.06em}"+
     ".ed-lab{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;"+
       "color:var(--ink-faint);margin:12px 2px 5px}"+
@@ -4045,13 +4084,15 @@ function tick(){
   var hh=((h%12)||12);
   var mm=(m<10?"0":"")+m;
   var ap=h<12?"AM":"PM";
-  document.getElementById('clock').textContent=days[d.getDay()]+" \u00b7 "+hh+":"+mm+" "+ap;
+  var ck=document.getElementById('clock');
+  if(ck) ck.textContent=days[d.getDay()]+" \u00b7 "+hh+":"+mm+" "+ap;
   // board day rollover
   if(boardDay && boardDay!==todayKey() &&
      !document.getElementById('board-view').classList.contains('hidden')) renderBoard();
 }
 tick(); setInterval(tick,10000);
 
+ensureEditorCSS();
 loadCustomAthletes();
 document.querySelectorAll('.tabbar .tb').forEach(function(b){
   b.addEventListener('click',function(){ showTab(b.getAttribute('data-tab')); });
