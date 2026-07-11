@@ -2326,7 +2326,7 @@ function ctxFor(id){
 // today's day object for an athlete (with the Sat/Sun fold)
 function todayFor(id,ctx){
   var a=ATHLETES[id];
-  var days=a.mode==="week"?a.days:a.phaseDays[ctx];
+  var days=applyPlanEdits(id,ctx,a.mode==="week"?a.days:a.phaseDays[ctx]);
   var tk=todayKey();
   if(!days.filter(function(d){return d.key===tk;}).length && tk==="sun") tk="sat";
   return days.filter(function(d){return d.key===tk;})[0]||days[0];
@@ -2394,8 +2394,8 @@ function raceLine(id,a){
 
 function activeDays(){
   var a=ATHLETES[current.athlete];
-  if(a.mode==="week") return a.days;
-  return a.phaseDays[current.ctx];
+  var base=a.mode==="week"?a.days:a.phaseDays[current.ctx];
+  return applyPlanEdits(current.athlete,current.ctx,base);
 }
 
 function renderTabs(){
@@ -2416,18 +2416,22 @@ function renderTabs(){
     t.addEventListener('click',function(){ current.day=d.key; renderTabs(); renderDay(); window.scrollTo({top:0,behavior:'smooth'}); });
     box.appendChild(t);
   });
+  var pe=el('button','day-tab edit-plan'); pe.innerHTML='<span class="dtype"></span>✎ PLAN';
+  pe.addEventListener('click',openPlanEditor);
+  box.appendChild(pe);
 }
 
 function dayTotal(d){
-  if(!d.groups) return 1;
-  var t=0; d.groups.forEach(function(g){ t+=g.items.length; });
-  return t;
+  var t=0;
+  if(d.groups) d.groups.forEach(function(g){ t+=g.items.length; });
+  t+=runBlockCount(d);
+  return t>0?t:1; // rest days count as 1
 }
 function dayDone(d,state){
   if(state.session) return dayTotal(d); // 10-min rule: a done session completes the day
-  if(!d.groups) return 0;
   var c=0;
-  d.groups.forEach(function(g,gi){ g.items.forEach(function(ex,xi){ if(state[gi+"_"+xi]) c++; }); });
+  if(d.groups) d.groups.forEach(function(g,gi){ g.items.forEach(function(ex,xi){ if(state[gi+"_"+xi]) c++; }); });
+  for(var i=0;i<runBlockCount(d);i++){ if(state["run_"+i]) c++; }
   return c;
 }
 function logSession(d,suffix,extra){
@@ -2468,7 +2472,8 @@ function renderDay(){
     '<div class="st"><span class="badge '+d.type+'">'+d.type+'</span>'+
     '<h2>'+esc(d.title)+'</h2></div>'+
     '<span class="hd-right"><span class="chip-done hidden">COMPLETE</span>'+
-    (d.dur?'<span class="dur mono">'+esc(d.dur)+'</span>':'')+'</span>';
+    (d.dur?'<span class="dur mono">'+esc(d.dur)+'</span>':'')+
+    '<button class="edit-day-btn" id="edit-day" title="Edit this workout">✎ EDIT</button></span>';
   sess.appendChild(head);
 
   var progWrap=el('div','prog'), progFill=el('div','fill');
@@ -2487,12 +2492,34 @@ function renderDay(){
     }
   }
 
-  if(d.type==="run"){
-    sess.appendChild(runBrief(d,a));
-  } else if(d.type==="rest"){
+  // run blocks: a day can carry several, and can pair them with strength below
+  var runBlocks = d.runs ? d.runs : (d.run ? [d.run] : (d.type==="run" ? [{}] : []));
+  runBlocks.forEach(function(run,ri){
+    sess.appendChild(runBrief(d,a,run));
+    var rid='run_'+ri, rdone=!!state[rid];
+    var rbar=el('div','startbar');
+    rbar.innerHTML='<button class="start-btn" data-gps="'+ri+'">'+
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START GPS RUN</button>'+
+      '<div class="startbar-sub"><button class="start-btn alt" data-rtimer="'+ri+'">⏱ Timer</button>'+
+      '<button class="start-btn alt" data-rmini="'+ri+'">⏱ 10-min</button>'+
+      '<button class="sess-done'+(rdone?' on':'')+'" data-rdone="'+ri+'">'+
+      '<span class="check">'+CHECK.innerHTML+'</span><span class="sd-label">'+
+      (rdone?'RUN DONE':'MARK RUN DONE')+'</span></button></div>';
+    sess.appendChild(rbar);
+    rbar.querySelector('[data-gps]').addEventListener('click',function(){ openGpsRun(d,a,storeKey); });
+    rbar.querySelector('[data-rtimer]').addEventListener('click',function(){ openTimer(d,a,storeKey); });
+    rbar.querySelector('[data-rmini]').addEventListener('click',function(){ openTimer(d,a,storeKey,{countdown:600,label:'EASY PACE',mini:true}); });
+    rbar.querySelector('[data-rdone]').addEventListener('click',function(){
+      var s=store.get(storeKey); s[rid]=!s[rid]; store.set(storeKey,s);
+      this.classList.toggle('on',!!s[rid]);
+      this.querySelector('.sd-label').textContent=s[rid]?'RUN DONE':'MARK RUN DONE';
+      refresh(true);
+    });
+  });
+  if(d.type==="rest"){
     var rb=el('div','restbrief');
     rb.innerHTML='<div class="big mono">'+(a.theme==="fem"?"REST DAY":"STAND DOWN")+'</div><ul>'+
-      d.rest.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+      (d.rest||['Full rest / easy recovery']).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
     sess.appendChild(rb);
   }
 
@@ -2549,43 +2576,29 @@ function renderDay(){
       });
     });
     sess.appendChild(list);
-    slot.appendChild(sess);
     bar.querySelector('#start-player').addEventListener('click',function(){ openPlayer(d,storeKey); });
     bar.querySelector('#start-mini').addEventListener('click',function(){
       openPlayer(d,storeKey,{items:miniItems(d,store.get(storeKey)),rest:30,mini:true});
     });
-  } else {
+  } else if(!runBlocks.length){
+    // rest day (or an emptied day): a single mark-done control
     var bar2=el('div','startbar');
-    var doneBtn='<button class="sess-done'+(state.session?' on':'')+'" id="sess-done">'+
+    bar2.innerHTML='<div class="startbar-sub"><button class="sess-done'+(state.session?' on':'')+'" id="sess-done">'+
       '<span class="check">'+CHECK.innerHTML+'</span><span class="sd-label">'+
-      (state.session?'SESSION DONE':'MARK DONE')+'</span></button>';
-    if(d.type==="run"){
-      bar2.innerHTML='<button class="start-btn" id="start-gps">'+
-        '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START GPS RUN</button>'+
-        '<div class="startbar-sub"><button class="start-btn alt" id="start-timer">⏱ Timer</button>'+
-        '<button class="start-btn alt" id="start-mini10">⏱ 10-min</button>'+doneBtn+'</div>';
-    } else {
-      bar2.innerHTML='<div class="startbar-sub">'+doneBtn+'</div>';
-    }
+      (state.session?'SESSION DONE':'MARK DONE')+'</span></button></div>';
     sess.appendChild(bar2);
-    slot.appendChild(sess);
     bar2.querySelector('#sess-done').addEventListener('click',function(){
       var s=store.get(storeKey);
       s.session=!s.session;
       store.set(storeKey,s);
       this.classList.toggle('on',!!s.session);
-      this.querySelector('.sd-label').textContent=s.session?'SESSION DONE':'MARK SESSION DONE';
+      this.querySelector('.sd-label').textContent=s.session?'SESSION DONE':'MARK DONE';
       refresh(true);
     });
-    var sg=bar2.querySelector('#start-gps');
-    if(sg) sg.addEventListener('click',function(){ openGpsRun(d,a,storeKey); });
-    var st=bar2.querySelector('#start-timer');
-    if(st) st.addEventListener('click',function(){ openTimer(d,a,storeKey); });
-    var sm=bar2.querySelector('#start-mini10');
-    if(sm) sm.addEventListener('click',function(){
-      openTimer(d,a,storeKey,{countdown:600,label:'EASY PACE',mini:true});
-    });
   }
+  var editBtn=sess.querySelector('#edit-day');
+  if(editBtn) editBtn.addEventListener('click',function(){ openDayEditor(d.key); });
+  slot.appendChild(sess);
   refresh(false);
   renderStats();
 }
@@ -2607,20 +2620,14 @@ function miniItems(d,state){
   return out;
 }
 
-function runBrief(d,a){
+function runBrief(d,a,run){
   var wrap=el('div','runbrief');
-  var r=d.run;
-  var headline='', note='';
-  if(a.mode==="week"){
+  var r=run||d.run||{};
+  var headline=runHeadline(d,a,r), note='';
+  if(a.mode==="week" && !d.edited && !r.main){
     var wk=parseInt(current.ctx.slice(1));
-    var row=a.runTable[wk];
-    if(d.key==="tue") headline=row.tue;
-    else if(d.key==="thu") headline=row.thu;
-    else if(d.key==="sat") headline=row.sat;
     // in week mode `extra` is a supplementary tip, optionally gated to later weeks
     if(r.extra && headline!==r.extra && (!r.extraFrom || wk>=r.extraFrom)) note=r.extra;
-  } else {
-    headline = r.extra || d.title;
   }
   function step(mark,lab,text,cls,sub){
     if(!text) return '';
@@ -2628,7 +2635,9 @@ function runBrief(d,a){
       '<div class="rbody"><div class="rlab mono">'+lab+'</div>'+
       '<div class="rtext">'+esc(text)+'</div>'+(sub?'<div class="rnote">'+esc(sub)+'</div>':'')+'</div></div>';
   }
-  wrap.innerHTML='<div class="runseq">'+
+  wrap.innerHTML=
+    (r.title?'<div class="runblock-label mono">'+esc(r.title)+'</div>':'')+
+    '<div class="runseq">'+
     step('1','Warm-up',r.warm,'warm')+
     step('▶','Main effort',headline||d.title,'main',note)+
     step('3','Cool-down',r.cool,'cool')+
@@ -2833,6 +2842,233 @@ function setsSave(a,v){ try{ localStorage.setItem('trainops:sets:'+a,JSON.string
 // user overrides of an exercise's prescription: { "<name>": {sets, reps, w?} }
 function editsGet(a){ try{ return JSON.parse(localStorage.getItem('trainops:edits:'+a))||{}; }catch(e){ return {}; } }
 function editsSave(a,v){ try{ localStorage.setItem('trainops:edits:'+a,JSON.stringify(v)); }catch(e){} }
+
+/* ---- structural plan edits: per-day overrides that fully replace a base day.
+   A day can hold any mix of run blocks (d.runs) and strength blocks (d.groups),
+   so a single day can be run + lift, or several strength/run blocks at once.
+   Keyed by day for week-mode plans (the weekly template repeats) and by
+   phase|day for phase-mode plans (each phase has its own template). Works for
+   built-in AND custom plans. ---- */
+function planEditsGet(a){ try{ return JSON.parse(localStorage.getItem('trainops:planedit:'+a))||{}; }catch(e){ return {}; } }
+function planEditsSave(a,v){ try{ localStorage.setItem('trainops:planedit:'+a,JSON.stringify(v)); }catch(e){} }
+function planEditKey(id,ctx,dayKey){ return ATHLETES[id].mode==='week' ? dayKey : (ctx+'|'+dayKey); }
+function applyPlanEdits(id,ctx,days){
+  var ov=planEditsGet(id);
+  if(!ov || !Object.keys(ov).length) return days;
+  return days.map(function(d){
+    var o=ov[planEditKey(id,ctx,d.key)];
+    return o ? normalizeDay(o,d) : d;
+  });
+}
+// merge a saved override onto its base day; content decides the display type
+function normalizeDay(o,base){
+  var d={}; for(var k in base) d[k]=base[k];
+  d.title = o.title!=null ? o.title : base.title;
+  d.dur   = o.dur!=null ? o.dur : base.dur;
+  d.groups= (o.groups && o.groups.length) ? o.groups : null;
+  d.runs  = (o.runs && o.runs.length) ? o.runs : null;
+  d.edited= true;
+  if(d.runs){ var r0=d.runs[0]; // keep a legacy single run so the GPS/timer overlays still work
+    d.run={kind:r0.kind||'walkrun',warm:r0.warm||'',cool:r0.cool||'',extra:r0.main||''}; }
+  else { delete d.run; }
+  d.rest = (!d.runs && !d.groups) ? (base.rest||['Full rest / easy recovery']) : null;
+  d.type = dayType(d);
+  return d;
+}
+function dayType(d){
+  var hasR=d.runs&&d.runs.length, hasG=d.groups&&d.groups.length;
+  if(hasR&&hasG) return 'mixed';
+  if(hasR) return 'run';
+  if(hasG) return 'strength';
+  return 'rest';
+}
+function runBlockCount(d){ return d.runs?d.runs.length:((d.run||d.type==='run')?1:0); }
+// main-effort line for a run block: explicit text, else the week run-table, else the day title
+function runHeadline(d,a,run){
+  if(run && run.main) return run.main;
+  if(a.mode==='week' && !d.edited && a.runTable){
+    var row=a.runTable[parseInt(current.ctx.slice(1))];
+    if(row){ if(d.key==='tue')return row.tue; if(d.key==='thu')return row.thu; if(d.key==='sat')return row.sat; }
+  }
+  return (run&&run.extra)||d.title||'';
+}
+/* ================= workout / plan editor ================= */
+function blankRun(){ return {title:'',warm:'',main:'',cool:''}; }
+function blankGroup(){ return {label:'Strength', items:[{name:'',scheme:'3 × 10',note:''}]}; }
+// turn a rendered day into the editor's working model
+function dayToModel(d,a){
+  var runs=[];
+  if(d.runs) runs=d.runs.map(function(r){return {title:r.title||'',warm:r.warm||'',main:r.main||runHeadline(d,a,r),cool:r.cool||''};});
+  else if(d.run) runs=[{title:'',warm:d.run.warm||'',main:runHeadline(d,a,d.run),cool:d.run.cool||''}];
+  else if(d.type==='run') runs=[blankRun()];
+  var groups=(d.groups||[]).map(function(g){
+    return {label:g.label||'', items:(g.items||[]).map(function(x){return {name:x.name||'',scheme:x.scheme||'',note:x.note||''};})}; });
+  return { title:d.title||'', dur:d.dur||'', runs:runs, groups:groups };
+}
+function saveDayModel(id,ctx,dayKey,model){
+  function t(s){ return (s||'').trim(); }
+  var runs=model.runs.map(function(r){ return {title:t(r.title),warm:t(r.warm),main:t(r.main),cool:t(r.cool)}; })
+    .filter(function(r){ return r.title||r.warm||r.main||r.cool; });
+  var groups=model.groups.map(function(g){
+    return { label:t(g.label), items:g.items.map(function(x){ return {name:t(x.name),scheme:t(x.scheme),note:t(x.note)}; })
+      .filter(function(x){ return x.name; }) }; }).filter(function(g){ return g.items.length; });
+  var day={ title:t(model.title)||'Workout', dur:t(model.dur), runs:runs, groups:groups };
+  var all=planEditsGet(id); all[planEditKey(id,ctx,dayKey)]=day; planEditsSave(id,all);
+}
+function afterPlanEdit(dayKey){
+  closeOverlay();
+  if(dayKey) current.day=dayKey; else current.day=null;
+  renderTabs(); renderDay();
+  if(activeTab==='home') renderHome();
+}
+function ensureEditorCSS(){
+  if(document.getElementById('editor-css')) return;
+  var s=document.createElement('style'); s.id='editor-css';
+  s.textContent=
+    ".edit-day-btn{background:none;border:1px solid var(--line);color:var(--ink-dim);font-family:var(--mono);"+
+      "font-size:9.5px;letter-spacing:.1em;padding:4px 8px;border-radius:4px;cursor:pointer}"+
+    ".edit-day-btn:hover{color:var(--ink);border-color:var(--ink-dim)}"+
+    ".day-tab.edit-plan{opacity:.85;font-family:var(--mono);font-size:10px;letter-spacing:.06em}"+
+    ".ed-lab{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;"+
+      "color:var(--ink-faint);margin:12px 2px 5px}"+
+    ".ed-sec{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--ink-dim);"+
+      "text-transform:uppercase;margin:20px 2px 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}"+
+    ".ed-block{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:rgba(127,127,127,.04)}"+
+    ".ed-block-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}"+
+    ".ed-block-h>span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink-dim);flex:1}"+
+    ".ed-glabel{flex:1;margin:0}"+
+    ".ed-item{display:flex;gap:6px;align-items:center;margin:6px 0}"+
+    ".ed-item .ed-name{flex:2;margin:0}.ed-item .ed-scheme{flex:1;margin:0;min-width:66px}"+
+    ".ed-rm{background:none;border:none;color:var(--ink-faint);font-family:var(--mono);font-size:10px;"+
+      "letter-spacing:.08em;cursor:pointer;text-transform:uppercase}"+
+    ".ed-rm:hover{color:var(--run,#e5533c)}"+
+    ".ed-rm2{background:none;border:1px solid var(--line);color:var(--ink-faint);border-radius:4px;"+
+      "width:30px;height:30px;flex:none;cursor:pointer;font-size:13px}"+
+    ".ed-add,.ed-add2{background:none;border:1px dashed var(--line);color:var(--ink-dim);width:100%;"+
+      "padding:9px;border-radius:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;"+
+      "cursor:pointer;margin:6px 0}"+
+    ".ed-add:hover,.ed-add2:hover{color:var(--ink);border-color:var(--ink-dim)}"+
+    ".ed-hint{color:var(--ink-dim);font-size:13px;line-height:1.5;margin:4px 2px 14px}"+
+    ".pe-day{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;"+
+      "border:1px solid var(--line);border-radius:8px;padding:11px;margin:7px 0;cursor:pointer;color:var(--ink)}"+
+    ".pe-day:hover{border-color:var(--ink-dim)}"+
+    ".pe-badge{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;"+
+      "padding:3px 6px;border-radius:3px;background:rgba(127,127,127,.14);flex:none;min-width:52px;text-align:center}"+
+    ".pe-badge.run{background:rgba(229,83,60,.16);color:var(--run,#e5533c)}"+
+    ".pe-badge.mixed{background:rgba(160,110,240,.16)}"+
+    ".pe-info{flex:1;font-size:14px}.pe-info b{margin-right:4px}"+
+    ".pe-edited{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;color:var(--ink-faint);"+
+      "border:1px solid var(--line);border-radius:3px;padding:1px 4px;text-transform:uppercase}"+
+    ".pe-go{color:var(--ink-faint);font-size:15px}"+
+    ".ov-btn.danger{border-color:var(--run,#e5533c);color:var(--run,#e5533c)}";
+  document.head.appendChild(s);
+}
+function openDayEditor(dayKey){
+  ensureEditorCSS();
+  var id=current.athlete, a=ATHLETES[id], ctx=current.ctx;
+  var days=activeDays();
+  var d=days.filter(function(x){return x.key===dayKey;})[0]||days[0];
+  var model=dayToModel(d,a);
+  var exOptions=PICK_POOL.map(function(x){return '<option value="'+esc(x.name)+'">';}).join('');
+  var ov=openOverlay();
+  function render(){
+    var h='<div class="ov-top"><span class="ov-prog">EDIT WORKOUT · '+esc(DAY_LABEL[dayKey]||dayKey)+'</span>'+
+      '<button class="ov-x" id="ed-x">✕ CLOSE</button></div>'+
+      '<div class="ov-mid" style="text-align:left">'+
+      '<label class="ed-lab">Workout name</label>'+
+      '<input class="binput" id="ed-title" value="'+esc(model.title)+'" placeholder="e.g. Lower + Easy Run">'+
+      '<label class="ed-lab">Duration (optional)</label>'+
+      '<input class="binput" id="ed-dur" value="'+esc(model.dur)+'" placeholder="e.g. 45 min">'+
+      '<div class="ed-sec">Run blocks</div>';
+    model.runs.forEach(function(r,i){
+      h+='<div class="ed-block">'+
+        '<div class="ed-block-h"><span>▶ Run '+(i+1)+'</span><button class="ed-rm" data-rmrun="'+i+'">Remove</button></div>'+
+        '<input class="binput" data-rt="'+i+'" placeholder="Label — e.g. Speed intervals" value="'+esc(r.title)+'" style="margin:4px 0">'+
+        '<input class="binput" data-rw="'+i+'" placeholder="Warm-up" value="'+esc(r.warm)+'" style="margin:4px 0">'+
+        '<input class="binput" data-rmain="'+i+'" placeholder="Main effort — e.g. 3 mi easy" value="'+esc(r.main)+'" style="margin:4px 0">'+
+        '<input class="binput" data-rc="'+i+'" placeholder="Cool-down" value="'+esc(r.cool)+'" style="margin:4px 0"></div>';
+    });
+    h+='<button class="ed-add" id="ed-add-run">＋ Add run</button>'+
+      '<div class="ed-sec">Strength blocks</div>';
+    model.groups.forEach(function(g,gi){
+      h+='<div class="ed-block">'+
+        '<div class="ed-block-h"><input class="binput ed-glabel" data-gl="'+gi+'" placeholder="Block name — e.g. Warm-up" value="'+esc(g.label)+'">'+
+        '<button class="ed-rm" data-rmgrp="'+gi+'">Remove</button></div>';
+      g.items.forEach(function(x,xi){
+        h+='<div class="ed-item">'+
+          '<input class="binput ed-name" list="ed-exnames" data-nm="'+gi+'_'+xi+'" placeholder="Exercise" value="'+esc(x.name)+'">'+
+          '<input class="binput ed-scheme" data-sc="'+gi+'_'+xi+'" placeholder="3 × 10" value="'+esc(x.scheme)+'">'+
+          '<button class="ed-rm2" data-rmitem="'+gi+'_'+xi+'" aria-label="Remove">✕</button></div>';
+      });
+      h+='<button class="ed-add2" data-additem="'+gi+'">＋ Add exercise</button></div>';
+    });
+    h+='<button class="ed-add" id="ed-add-grp">＋ Add strength block</button>'+
+      '</div><div class="ov-actions">'+
+      '<button class="ov-btn" id="ed-reset">RESET TO ORIGINAL</button>'+
+      '<button class="ov-btn primary" id="ed-save">SAVE WORKOUT</button></div>'+
+      '<datalist id="ed-exnames">'+exOptions+'</datalist>';
+    ov.innerHTML=h;
+    // wire text inputs directly to their model nodes
+    ov.querySelector('#ed-title').addEventListener('input',function(){ model.title=this.value; });
+    ov.querySelector('#ed-dur').addEventListener('input',function(){ model.dur=this.value; });
+    model.runs.forEach(function(r,i){
+      ov.querySelector('[data-rt="'+i+'"]').addEventListener('input',function(){ r.title=this.value; });
+      ov.querySelector('[data-rw="'+i+'"]').addEventListener('input',function(){ r.warm=this.value; });
+      ov.querySelector('[data-rmain="'+i+'"]').addEventListener('input',function(){ r.main=this.value; });
+      ov.querySelector('[data-rc="'+i+'"]').addEventListener('input',function(){ r.cool=this.value; });
+    });
+    model.groups.forEach(function(g,gi){
+      ov.querySelector('[data-gl="'+gi+'"]').addEventListener('input',function(){ g.label=this.value; });
+      g.items.forEach(function(x,xi){
+        ov.querySelector('[data-nm="'+gi+'_'+xi+'"]').addEventListener('input',function(){ x.name=this.value; });
+        ov.querySelector('[data-sc="'+gi+'_'+xi+'"]').addEventListener('input',function(){ x.scheme=this.value; });
+      });
+    });
+    ov.querySelectorAll('[data-rmrun]').forEach(function(b){ b.addEventListener('click',function(){ model.runs.splice(+b.getAttribute('data-rmrun'),1); render(); }); });
+    ov.querySelector('#ed-add-run').addEventListener('click',function(){ model.runs.push(blankRun()); render(); });
+    ov.querySelectorAll('[data-rmgrp]').forEach(function(b){ b.addEventListener('click',function(){ model.groups.splice(+b.getAttribute('data-rmgrp'),1); render(); }); });
+    ov.querySelectorAll('[data-rmitem]').forEach(function(b){ b.addEventListener('click',function(){ var p=b.getAttribute('data-rmitem').split('_'); model.groups[+p[0]].items.splice(+p[1],1); render(); }); });
+    ov.querySelectorAll('[data-additem]').forEach(function(b){ b.addEventListener('click',function(){ model.groups[+b.getAttribute('data-additem')].items.push({name:'',scheme:'3 × 10',note:''}); render(); }); });
+    ov.querySelector('#ed-add-grp').addEventListener('click',function(){ model.groups.push(blankGroup()); render(); });
+    ov.querySelector('#ed-x').addEventListener('click',closeOverlay);
+    ov.querySelector('#ed-reset').addEventListener('click',function(){
+      var all=planEditsGet(id); delete all[planEditKey(id,ctx,dayKey)]; planEditsSave(id,all);
+      afterPlanEdit(dayKey);
+    });
+    ov.querySelector('#ed-save').addEventListener('click',function(){
+      saveDayModel(id,ctx,dayKey,model); afterPlanEdit(dayKey);
+    });
+    ov.scrollTop=0;
+  }
+  render();
+}
+function openPlanEditor(){
+  ensureEditorCSS();
+  var id=current.athlete, ctx=current.ctx;
+  var days=activeDays();
+  var ov=openOverlay();
+  var h='<div class="ov-top"><span class="ov-prog">EDIT PLAN</span><button class="ov-x" id="pe-x">✕ CLOSE</button></div>'+
+    '<div class="ov-mid" style="text-align:left">'+
+    '<p class="ed-hint">Tap any day to edit its whole workout — rename it, add run blocks, add strength blocks, or mix a run and a lift in the same day.</p>';
+  days.forEach(function(d){
+    h+='<button class="pe-day" data-day="'+d.key+'">'+
+      '<span class="pe-badge '+d.type+'">'+d.type+'</span>'+
+      '<span class="pe-info"><b>'+esc(d.label)+'</b>'+esc(d.title)+(d.edited?' <span class="pe-edited">edited</span>':'')+'</span>'+
+      '<span class="pe-go">✎</span></button>';
+  });
+  h+='</div><div class="ov-actions"><button class="ov-btn" id="pe-reset">RESET ALL EDITS</button>'+
+    '<button class="ov-btn primary" id="pe-done">DONE</button></div>';
+  ov.innerHTML=h;
+  ov.querySelectorAll('[data-day]').forEach(function(b){ b.addEventListener('click',function(){ openDayEditor(b.getAttribute('data-day')); }); });
+  ov.querySelector('#pe-x').addEventListener('click',closeOverlay);
+  ov.querySelector('#pe-done').addEventListener('click',closeOverlay);
+  ov.querySelector('#pe-reset').addEventListener('click',function(){
+    var self=this;
+    if(self.getAttribute('data-armed')){ planEditsSave(id,{}); afterPlanEdit(null); }
+    else { self.setAttribute('data-armed','1'); self.textContent='TAP AGAIN TO RESET ALL'; self.classList.add('danger');
+      setTimeout(function(){ self.removeAttribute('data-armed'); self.textContent='RESET ALL EDITS'; self.classList.remove('danger'); },2500); }
+  });
+}
 function schemeLabel(nm,ex){
   var ed=current.athlete?editsGet(current.athlete)[nm]:null;
   if(!ed) return esc(ex.scheme);
