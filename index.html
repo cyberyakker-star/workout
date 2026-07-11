@@ -1137,19 +1137,21 @@ var SPLITS={
   3:[["squat","pushH","pullH","hip","core","calf"],["hinge","pushV","pullV","lunge","core","calf"],["lunge","pushH","pullH","hip","core","calf"]],
   4:[["pushH","pullH","pushV","pullV","core"],["squat","hinge","lunge","hip","calf"],["pushV","pullV","pushH","pullH","core"],["hinge","squat","lunge","hip","calf"]],
   5:[["pushH","pushV","pushH","core"],["pullH","pullV","pullH","core"],["squat","hinge","lunge","hip","calf"],["pushH","pullH","pushV","pullV","core"],["hinge","squat","lunge","hip","calf"]],
-  6:[["pushH","pushV","pushH","core"],["pullH","pullV","pullH","core"],["squat","hinge","lunge","hip","calf"],["pushV","pushH","pushH","core"],["pullV","pullH","pullH","core"],["hinge","squat","lunge","hip","calf"]]
+  6:[["pushH","pushV","pushH","core"],["pullH","pullV","pullH","core"],["squat","hinge","lunge","hip","calf"],["pushV","pushH","pushH","core"],["pullV","pullH","pullH","core"],["hinge","squat","lunge","hip","calf"]],
+  7:[["pushH","pushV","pushH","core"],["pullH","pullV","pullH","core"],["squat","hinge","lunge","hip","calf"],["pushV","pushH","pushH","core"],["pullV","pullH","pullH","core"],["hinge","squat","lunge","hip","calf"],["squat","pushH","pullH","hip","core","calf"]]
 };
 var SPLIT_TITLES={
   3:["Full Body A","Full Body B","Full Body C"],
   4:["Upper A","Lower A","Upper B","Lower B"],
   5:["Push","Pull","Legs","Upper","Lower"],
-  6:["Push A","Pull A","Legs A","Push B","Pull B","Legs B"]
+  6:["Push A","Pull A","Legs A","Push B","Pull B","Legs B"],
+  7:["Push A","Pull A","Legs A","Push B","Pull B","Legs B","Full Body"]
 };
-var TRAIN_DAYS={3:["mon","wed","fri"],4:["mon","tue","thu","fri"],5:["mon","tue","wed","thu","fri"],6:["mon","tue","wed","thu","fri","sat"]};
+var TRAIN_DAYS={3:["mon","wed","fri"],4:["mon","tue","thu","fri"],5:["mon","tue","wed","thu","fri"],6:["mon","tue","wed","thu","fri","sat"],7:["mon","tue","wed","thu","fri","sat","sun"]};
 
 function buildCustomPlan(cfg){
   var rand=mulberry32(hashStr(cfg.seed||cfg.id||cfg.name||'x'));
-  var exp=cfg.exp, goal=cfg.goal, freq=Math.max(3,Math.min(6,cfg.freq||3));
+  var exp=cfg.exp, goal=cfg.goal, freq=Math.max(3,Math.min(7,cfg.freq||3));
   var pool=allowedPool(cfg);
   var byPat={}; pool.forEach(function(x){ (byPat[x.pat]=byPat[x.pat]||[]).push(x); });
   Object.keys(byPat).forEach(function(p){ byPat[p]=shuffle(byPat[p],rand); });
@@ -1190,7 +1192,8 @@ function buildCustomPlan(cfg){
       3:{tue:['run','speed','Intervals',runInt],thu:['run','tempo','Easy / Tempo',runEasy],sat:['run','long','Long Run',runLong]},
       4:{mon:['cond','Strength Support'],tue:['run','speed','Intervals',runInt],thu:['run','tempo','Easy / Tempo',runEasy],sat:['run','long','Long Run',runLong]},
       5:{mon:['cond','Strength Support'],tue:['run','speed','Intervals',runInt],thu:['run','tempo','Easy / Tempo',runEasy],fri:['cond','Strength Support'],sat:['run','long','Long Run',runLong]},
-      6:{mon:['cond','Strength Support'],tue:['run','speed','Intervals',runInt],wed:['run','tempo','Easy Run',runEasy],thu:['cond','Strength Support'],fri:['run','tempo','Easy / Tempo',runEasy],sat:['run','long','Long Run',runLong]}
+      6:{mon:['cond','Strength Support'],tue:['run','speed','Intervals',runInt],wed:['run','tempo','Easy Run',runEasy],thu:['cond','Strength Support'],fri:['run','tempo','Easy / Tempo',runEasy],sat:['run','long','Long Run',runLong]},
+      7:{mon:['cond','Strength Support'],tue:['run','speed','Intervals',runInt],wed:['run','tempo','Easy Run',runEasy],thu:['cond','Strength Support'],fri:['run','tempo','Easy / Tempo',runEasy],sat:['run','long','Long Run',runLong],sun:['run','tempo','Recovery Jog',runEasy]}
     }[freq];
     ["mon","tue","wed","thu","fri","sat","sun"].forEach(function(k){
       var s=sched[k];
@@ -1602,7 +1605,7 @@ var BUILDER_OPTS={
   goal:[["stronger","Get stronger"],["muscle","Build muscle"],["general","General fitness"],["fatloss","Lose fat"],["endurance","Endurance (run)"]],
   exp:[["beginner","Beginner"],["intermediate","Intermediate"],["advanced","Advanced"]],
   weeks:[["4","4 weeks"],["6","6 weeks"],["8","8 weeks"],["0","Continuous"]],
-  freq:[["3","3 days"],["4","4 days"],["5","5 days"],["6","6 days"]],
+  freq:[["3","3 days"],["4","4 days"],["5","5 days"],["6","6 days"],["7","7 days"]],
   equip:[["bodyweight","Bodyweight"],["dumbbells","Dumbbells"],["home","Home gym"],["full","Full gym"]],
   limits:[["impact","Low-impact"],["knee","Knee-friendly"],["shoulder","Shoulder-friendly"],["floor","No floor / back"]]
 };
@@ -1710,9 +1713,11 @@ function openBuilder(){
     var plan=buildCustomPlan(previewCfg());
     var days=plan.phaseDays.prog;
     var cards=days.map(function(d,i){
-      return '<button class="pv-day" data-i="'+i+'"><span class="pv-badge '+d.type+'">'+d.type+'</span>'+
-        '<span class="pv-info"><b>'+esc(d.label)+'</b>'+esc(d.title)+
-          (dayLine(d)?'<span class="pv-sub">'+esc(dayLine(d))+'</span>':'')+'</span>'+
+      var sub=dayLine(d)||(d.type==='rest'?'Recover & repair':(d.dur||''));
+      return '<button class="pv-day '+d.type+'" data-i="'+i+'">'+
+        '<span class="pv-daycol"><span class="pv-dl">'+esc(d.label)+'</span><span class="pv-dt">'+d.type+'</span></span>'+
+        '<span class="pv-main"><span class="pv-title">'+esc(d.title)+'</span>'+
+          (sub?'<span class="pv-sub">'+esc(sub)+'</span>':'')+'</span>'+
         '<span class="pv-go">\u25be</span></button>'+
         '<div class="pv-detail" id="pvd-'+i+'" hidden>'+dayDetail(d)+'</div>';
     }).join('');
@@ -3130,15 +3135,19 @@ function ensureEditorCSS(){
     ".opt-card .oc-t{font-size:15px;font-weight:700}"+
     ".opt-card .oc-d{font-size:12.5px;color:var(--ink-dim);margin-top:3px;line-height:1.35}"+
     ".pv-week{margin-top:8px}"+
-    ".pv-day{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel);"+
-      "border:1px solid var(--line);border-radius:9px;padding:11px;margin:7px 0;cursor:pointer;color:var(--ink)}"+
-    ".pv-badge{font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;"+
-      "border-radius:3px;background:rgba(127,127,127,.16);flex:none;min-width:54px;text-align:center}"+
-    ".pv-badge.run{background:rgba(229,83,60,.16);color:var(--run,#e5533c)}"+
-    ".pv-badge.mixed{background:rgba(160,110,240,.16)}"+
-    ".pv-info{flex:1;min-width:0;font-size:13.5px}.pv-info b{margin-right:5px}"+
-    ".pv-sub{display:block;color:var(--ink-dim);font-size:11.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
-    ".pv-go{color:var(--ink-faint)}"+
+    ".pv-day{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:var(--panel);"+
+      "border:1px solid var(--line);border-left:3px solid var(--line-bright);border-radius:10px;padding:12px 13px;margin:8px 0;cursor:pointer;color:var(--ink)}"+
+    ".pv-day.strength{border-left-color:var(--amber)}"+
+    ".pv-day.run{border-left-color:var(--run,#e5533c)}"+
+    ".pv-day.mixed{border-left-color:#a06ef0}"+
+    ".pv-daycol{flex:none;width:46px;display:flex;flex-direction:column;gap:2px}"+
+    ".pv-dl{font-weight:800;font-size:14px}"+
+    ".pv-dt{font-family:var(--mono);font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint)}"+
+    ".pv-day.strength .pv-dt{color:var(--amber)}.pv-day.run .pv-dt{color:var(--run,#e5533c)}.pv-day.mixed .pv-dt{color:#a06ef0}"+
+    ".pv-main{flex:1;min-width:0}"+
+    ".pv-title{display:block;font-size:14.5px;font-weight:600}"+
+    ".pv-sub{display:block;color:var(--ink-dim);font-size:11.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
+    ".pv-go{color:var(--ink-faint);flex:none}"+
     ".pv-detail{padding:2px 4px 10px}"+
     ".pv-exs{font-size:12.5px;color:var(--ink-dim);line-height:1.5}"+
     ".pv-g{margin:6px 0}.pv-gl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px}"+
