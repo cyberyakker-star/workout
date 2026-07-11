@@ -1148,7 +1148,7 @@ var SPLIT_TITLES={
 var TRAIN_DAYS={3:["mon","wed","fri"],4:["mon","tue","thu","fri"],5:["mon","tue","wed","thu","fri"],6:["mon","tue","wed","thu","fri","sat"]};
 
 function buildCustomPlan(cfg){
-  var rand=mulberry32(hashStr(cfg.id||cfg.name||'x'));
+  var rand=mulberry32(hashStr(cfg.seed||cfg.id||cfg.name||'x'));
   var exp=cfg.exp, goal=cfg.goal, freq=Math.max(3,Math.min(6,cfg.freq||3));
   var pool=allowedPool(cfg);
   var byPat={}; pool.forEach(function(x){ (byPat[x.pat]=byPat[x.pat]||[]).push(x); });
@@ -1606,53 +1606,153 @@ var BUILDER_OPTS={
   equip:[["bodyweight","Bodyweight"],["dumbbells","Dumbbells"],["home","Home gym"],["full","Full gym"]],
   limits:[["impact","Low-impact"],["knee","Knee-friendly"],["shoulder","Shoulder-friendly"],["floor","No floor / back"]]
 };
+// richer option copy for the wizard cards ([value, title, one-line description])
+var GOAL_CARDS=[
+  ["muscle","Build muscle","Moderate reps and steady volume for size"],
+  ["stronger","Get stronger","Heavy compound lifts, lower rep ranges"],
+  ["general","General fitness","A balanced mix to move and feel better"],
+  ["fatloss","Lose fat","Higher reps with conditioning finishers"],
+  ["endurance","Endurance / running","Run-focused with supporting strength"]
+];
+var EXP_CARDS=[
+  ["beginner","Beginner","New or returning — simpler moves, more guidance"],
+  ["intermediate","Intermediate","Comfortable with the basics, ~6+ months in"],
+  ["advanced","Advanced","Experienced — more volume and variety"]
+];
+var EQUIP_CARDS=[
+  ["bodyweight","Bodyweight","No equipment — train anywhere"],
+  ["dumbbells","Dumbbells","A pair of dumbbells is all you need"],
+  ["home","Home gym","Dumbbells, bands, a pull-up bar"],
+  ["full","Full gym","Barbells, machines, cables — everything"]
+];
+// step-by-step builder: one decision per screen, then a live preview of the
+// generated week you can shuffle before starting. buildCustomPlan is the engine.
 function openBuilder(){
+  ensureEditorCSS();
   var sel={ name:"", sex:"male", goal:"muscle", exp:"beginner", weeks:"6", freq:"3", equip:"dumbbells", limits:[] };
+  var variant=0, step=0;
   var ov=openOverlay();
-  function chips(field,multi){
-    return '<div class="optgrid" data-field="'+field+'">'+BUILDER_OPTS[field].map(function(o){
-      var on = multi ? sel[field].indexOf(o[0])!==-1 : sel[field]===o[0];
+  var STEPS=[
+    { label:'GOAL', q:'What are you training for?', groups:[{field:'goal',cards:GOAL_CARDS}] },
+    { label:'EXPERIENCE', q:'How much experience do you have?', groups:[{field:'exp',cards:EXP_CARDS}] },
+    { label:'SCHEDULE', q:'Set your schedule', groups:[
+      {field:'freq',title:'Days per week',opts:BUILDER_OPTS.freq},
+      {field:'weeks',title:'Program length',opts:BUILDER_OPTS.weeks}] },
+    { label:'EQUIPMENT', q:'What can you train with?', groups:[
+      {field:'equip',cards:EQUIP_CARDS},
+      {field:'limits',multi:true,title:'Any limitations? (optional)',opts:BUILDER_OPTS.limits}] }
+  ];
+  function previewCfg(){
+    return { id:'__preview__', seed:'plan#'+variant, name:(sel.name||'You').slice(0,18), sex:sel.sex,
+      goal:sel.goal, exp:sel.exp, weeks:parseInt(sel.weeks)||0, freq:parseInt(sel.freq), equip:sel.equip, limits:sel.limits.slice() };
+  }
+  function wireOptions(){
+    ov.querySelectorAll('[data-field]').forEach(function(grp){
+      var field=grp.getAttribute('data-field'), multi=grp.getAttribute('data-multi');
+      grp.querySelectorAll('button[data-val]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var v=btn.getAttribute('data-val');
+          if(multi){ var i=sel[field].indexOf(v); if(i===-1) sel[field].push(v); else sel[field].splice(i,1); btn.classList.toggle('on'); }
+          else { sel[field]=v; grp.querySelectorAll('button[data-val]').forEach(function(x){x.classList.remove('on');}); btn.classList.add('on'); }
+          buzz(10);
+        });
+      });
+    });
+  }
+  function groupHTML(g){
+    var head=g.title?'<div class="wiz-gtitle">'+esc(g.title)+'</div>':'';
+    if(g.cards){
+      return head+'<div data-field="'+g.field+'">'+g.cards.map(function(o){
+        return '<button class="opt-card'+(sel[g.field]===o[0]?' on':'')+'" data-val="'+o[0]+'">'+
+          '<div class="oc-t">'+esc(o[1])+'</div><div class="oc-d">'+esc(o[2])+'</div></button>';
+      }).join('')+'</div>';
+    }
+    return head+'<div class="optgrid" data-field="'+g.field+'"'+(g.multi?' data-multi="1"':'')+'>'+g.opts.map(function(o){
+      var on=g.multi?sel[g.field].indexOf(o[0])!==-1:sel[g.field]===o[0];
       return '<button class="chip'+(on?' on':'')+'" data-val="'+o[0]+'">'+esc(o[1])+'</button>';
     }).join('')+'</div>';
   }
-  function row(label,field,multi){ return '<div class="brow"><div class="blabel mono">'+label+'</div>'+chips(field,multi)+'</div>'; }
-  ov.innerHTML=
-    '<div class="ov-top"><span class="ov-prog">NEW CUSTOM PLAN</span>'+
-    '<button class="ov-x" id="bx">\u2715</button></div>'+
-    '<div class="ov-mid ex" style="gap:2px">'+
-      '<div class="brow"><div class="blabel mono">NAME</div>'+
-        '<input id="bname" class="binput" placeholder="Your name" maxlength="18"></div>'+
-      row('SEX','sex')+row('GOAL','goal')+row('EXPERIENCE','exp')+
-      row('PROGRAM LENGTH','weeks')+row('DAYS / WEEK','freq')+row('EQUIPMENT','equip')+
-      row('LIMITATIONS (optional)','limits',true)+
-    '</div>'+
-    '<div class="ov-actions">'+
-      '<button class="ov-btn" id="bcancel">CANCEL</button>'+
-      '<button class="ov-btn primary" id="bcreate">CREATE PLAN \u2192</button>'+
-    '</div>';
-  ov.querySelector('#bname').addEventListener('input',function(){ sel.name=this.value; });
-  ov.querySelectorAll('.optgrid').forEach(function(g){
-    var field=g.getAttribute('data-field'), multi=field==='limits';
-    g.querySelectorAll('.chip').forEach(function(b){
+  function render(){
+    var s=STEPS[step], total=STEPS.length+1;
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">NEW PLAN</span><button class="ov-x" id="bx">\u2715</button></div>'+
+      '<div class="ov-mid ex" style="text-align:left">'+
+        '<div class="wiz-prog"><i style="width:'+Math.round(((step+1)/total)*100)+'%"></i></div>'+
+        '<div class="wiz-eyebrow">STEP '+(step+1)+' OF '+STEPS.length+' \u00b7 '+esc(s.label)+'</div>'+
+        '<div class="wiz-q">'+esc(s.q)+'</div>'+
+        s.groups.map(groupHTML).join('')+
+      '</div>'+
+      '<div class="ov-actions">'+
+        '<button class="ov-btn" id="bback">'+(step===0?'CANCEL':'\u2190 BACK')+'</button>'+
+        '<button class="ov-btn primary" id="bnext">'+(step===STEPS.length-1?'PREVIEW \u2192':'NEXT \u2192')+'</button>'+
+      '</div>';
+    wireOptions();
+    ov.querySelector('#bx').addEventListener('click',closeOverlay);
+    ov.querySelector('#bback').addEventListener('click',function(){ if(step===0){ closeOverlay(); } else { step--; buzz(10); render(); } });
+    ov.querySelector('#bnext').addEventListener('click',function(){ buzz(15); if(step===STEPS.length-1){ renderPreview(); } else { step++; render(); } });
+  }
+  function dayLine(d){
+    if(d.type==='rest') return '';
+    if(d.type==='run') return (d.run&&d.run.extra)||d.dur||'';
+    var names=[]; (d.groups||[]).forEach(function(g){ if(/warm/i.test(g.label||'')) return; (g.items||[]).forEach(function(x){ names.push(x.name); }); });
+    return names.slice(0,3).join(' \u00b7 ')+(names.length>3?' +'+(names.length-3):'');
+  }
+  function dayDetail(d){
+    if(d.type==='rest') return '<div class="pv-exs">'+(d.rest||['Full rest / recovery']).map(esc).join('<br>')+'</div>';
+    if(d.type==='run'){ var r=d.run||{}; return '<div class="pv-exs">'+
+      (r.warm?'Warm-up: '+esc(r.warm)+'<br>':'')+'Main: '+esc(r.extra||d.title)+(r.cool?'<br>Cool-down: '+esc(r.cool):'')+'</div>'; }
+    return '<div class="pv-exs">'+(d.groups||[]).map(function(g){
+      return '<div class="pv-g">'+(g.label?'<span class="pv-gl">'+esc(g.label)+'</span>':'')+
+        g.items.map(function(x){ return '<div class="pv-exrow"><span>'+esc(x.name)+'</span><span class="pv-sch">'+esc(x.scheme||'')+'</span></div>'; }).join('')+'</div>';
+    }).join('')+'</div>';
+  }
+  function renderPreview(){
+    var plan=buildCustomPlan(previewCfg());
+    var days=plan.phaseDays.prog;
+    var cards=days.map(function(d,i){
+      return '<button class="pv-day" data-i="'+i+'"><span class="pv-badge '+d.type+'">'+d.type+'</span>'+
+        '<span class="pv-info"><b>'+esc(d.label)+'</b>'+esc(d.title)+
+          (dayLine(d)?'<span class="pv-sub">'+esc(dayLine(d))+'</span>':'')+'</span>'+
+        '<span class="pv-go">\u25be</span></button>'+
+        '<div class="pv-detail" id="pvd-'+i+'" hidden>'+dayDetail(d)+'</div>';
+    }).join('');
+    ov.innerHTML=
+      '<div class="ov-top"><span class="ov-prog">YOUR PLAN</span><button class="ov-x" id="bx">\u2715</button></div>'+
+      '<div class="ov-mid ex" style="text-align:left">'+
+        '<div class="wiz-prog"><i style="width:100%"></i></div>'+
+        '<div class="wiz-eyebrow">REVIEW \u00b7 '+esc(GOAL_LABEL[sel.goal]||'')+' \u00b7 '+sel.freq+'\u00d7/wk</div>'+
+        '<div class="wiz-q" style="margin-bottom:12px">Here\u2019s your week</div>'+
+        '<div class="brow"><div class="blabel mono">PLAN NAME</div>'+
+          '<input id="bname" class="binput" placeholder="Your name" maxlength="18" value="'+esc(sel.name)+'"></div>'+
+        '<div class="brow"><div class="blabel mono">STYLE</div><div class="optgrid" data-field="sex">'+
+          BUILDER_OPTS.sex.map(function(o){ return '<button class="chip'+(sel.sex===o[0]?' on':'')+'" data-val="'+o[0]+'">'+esc(o[1])+'</button>'; }).join('')+'</div></div>'+
+        '<div class="pv-week">'+cards+'</div>'+
+        '<button class="ed-add" id="bshuffle" style="margin-top:12px">\ud83c\udfb2 Shuffle exercises</button>'+
+        '<div class="ed-hint" style="margin-top:10px">You can fully edit any day \u2014 swap moves, add a run, change sets \u2014 after you start.</div>'+
+      '</div>'+
+      '<div class="ov-actions">'+
+        '<button class="ov-btn" id="bback">\u2190 BACK</button>'+
+        '<button class="ov-btn primary" id="bstart">START PLAN \u2713</button>'+
+      '</div>';
+    ov.querySelector('#bname').addEventListener('input',function(){ sel.name=this.value; });
+    wireOptions();
+    ov.querySelectorAll('.pv-day').forEach(function(b){
       b.addEventListener('click',function(){
-        var v=b.getAttribute('data-val');
-        if(multi){ var i=sel.limits.indexOf(v); if(i===-1) sel.limits.push(v); else sel.limits.splice(i,1); b.classList.toggle('on'); }
-        else { sel[field]=v; g.querySelectorAll('.chip').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); }
+        var dt=ov.querySelector('#pvd-'+b.getAttribute('data-i'));
+        if(dt){ dt.hidden=!dt.hidden; b.querySelector('.pv-go').textContent=dt.hidden?'\u25be':'\u25b4'; }
       });
     });
-  });
-  ov.querySelector('#bx').addEventListener('click',function(){ closeOverlay(); });
-  ov.querySelector('#bcancel').addEventListener('click',function(){ closeOverlay(); });
-  ov.querySelector('#bcreate').addEventListener('click',function(){
-    var cfg={ id:"custom_"+Date.now(), name:(sel.name||"You").slice(0,18), sex:sel.sex, goal:sel.goal,
-      exp:sel.exp, weeks:parseInt(sel.weeks)||0, freq:parseInt(sel.freq), equip:sel.equip,
-      limits:sel.limits.slice(), start:dateISO(new Date()) };
-    var list=customList(); list.unshift(cfg); customSave(list);
-    ATHLETES[cfg.id]=buildCustomPlan(cfg);
-    renderRoster();
-    closeOverlay();
-    selectUser(cfg.id);
-  });
+    ov.querySelector('#bshuffle').addEventListener('click',function(){ variant++; buzz(15); renderPreview(); });
+    ov.querySelector('#bx').addEventListener('click',closeOverlay);
+    ov.querySelector('#bback').addEventListener('click',function(){ step=STEPS.length-1; buzz(10); render(); });
+    ov.querySelector('#bstart').addEventListener('click',function(){
+      var cfg=previewCfg(); cfg.id='custom_'+Date.now(); cfg.start=dateISO(new Date());
+      var list=customList(); list.unshift(cfg); customSave(list);
+      ATHLETES[cfg.id]=buildCustomPlan(cfg);
+      renderRoster(); closeOverlay(); selectUser(cfg.id);
+    });
+  }
+  render();
 }
 
 /* ---------- exercise picker (swap any exercise for any library move) ---------- */
@@ -3018,7 +3118,32 @@ function ensureEditorCSS(){
     ".pe-edited{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;color:var(--ink-faint);"+
       "border:1px solid var(--line);border-radius:3px;padding:1px 4px;text-transform:uppercase}"+
     ".pe-go{color:var(--ink-faint);font-size:15px}"+
-    ".ov-btn.danger{border-color:var(--run,#e5533c);color:var(--run,#e5533c)}";
+    ".ov-btn.danger{border-color:var(--run,#e5533c);color:var(--run,#e5533c)}"+
+    ".wiz-prog{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:2px 0 16px}"+
+    ".wiz-prog i{display:block;height:100%;background:var(--amber);transition:width .3s ease}"+
+    ".wiz-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink-faint)}"+
+    ".wiz-q{font-size:22px;font-weight:800;margin:6px 0 14px;line-height:1.2;color:var(--ink)}"+
+    ".wiz-gtitle{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--ink-dim);text-transform:uppercase;margin:16px 2px 8px}"+
+    ".opt-card{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);"+
+      "border-radius:10px;padding:13px 14px;margin:8px 0;cursor:pointer;color:var(--ink)}"+
+    ".opt-card.on{border-color:var(--amber);background:rgba(212,175,55,.10)}"+
+    ".opt-card .oc-t{font-size:15px;font-weight:700}"+
+    ".opt-card .oc-d{font-size:12.5px;color:var(--ink-dim);margin-top:3px;line-height:1.35}"+
+    ".pv-week{margin-top:8px}"+
+    ".pv-day{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel);"+
+      "border:1px solid var(--line);border-radius:9px;padding:11px;margin:7px 0;cursor:pointer;color:var(--ink)}"+
+    ".pv-badge{font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;"+
+      "border-radius:3px;background:rgba(127,127,127,.16);flex:none;min-width:54px;text-align:center}"+
+    ".pv-badge.run{background:rgba(229,83,60,.16);color:var(--run,#e5533c)}"+
+    ".pv-badge.mixed{background:rgba(160,110,240,.16)}"+
+    ".pv-info{flex:1;min-width:0;font-size:13.5px}.pv-info b{margin-right:5px}"+
+    ".pv-sub{display:block;color:var(--ink-dim);font-size:11.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
+    ".pv-go{color:var(--ink-faint)}"+
+    ".pv-detail{padding:2px 4px 10px}"+
+    ".pv-exs{font-size:12.5px;color:var(--ink-dim);line-height:1.5}"+
+    ".pv-g{margin:6px 0}.pv-gl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px}"+
+    ".pv-exrow{display:flex;justify-content:space-between;gap:10px;color:var(--ink)}"+
+    ".pv-sch{color:var(--ink-faint);font-family:var(--mono);font-size:11px;flex:none}";
   document.head.appendChild(s);
 }
 function openDayEditor(dayKey){
