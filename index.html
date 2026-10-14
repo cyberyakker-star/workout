@@ -145,7 +145,8 @@ body.theme-celina .today-card.accent .start-btn.alt{background:rgba(255,255,255,
 .today-card.accent .loc-seg{border-color:rgba(0,0,0,.25)}
 .today-card.accent .loc-seg button{color:var(--bg);opacity:.75}
 .today-card.accent .loc-seg button.on{background:var(--bg);color:var(--ink);opacity:1}
-.weekstrip .loc-seg{margin:0 0 0 auto}
+.loc-row{margin:12px 0 4px}
+.loc-row .loc-seg{margin:0}
 /* SI check-in after a session */
 .si-ask{margin-top:14px}
 .si-q{font-size:14px;margin-bottom:8px}
@@ -159,6 +160,17 @@ body.theme-celina .today-card.accent .start-btn.alt{background:rgba(255,255,255,
 .act-tag{display:inline-block;margin-left:6px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;
   padding:2px 6px;border-radius:999px;border:1px solid var(--line-bright);color:var(--ink-dim);vertical-align:middle}
 .act-tag.si3{border-color:var(--danger);color:var(--danger)}
+/* run levels + run card */
+.lvl-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  margin:14px 18px 2px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:10.5px;letter-spacing:.1em;color:var(--ink-dim)}
+.lvl-btns{display:flex;gap:6px}
+.lvl-btns button{padding:7px 12px;border-radius:999px;border:1px solid var(--line-bright);background:none;
+  color:var(--ink);font-size:12.5px;cursor:pointer}
+.lvl-btns button:disabled{opacity:.35;cursor:default}
+.tc-main{font-size:16px;font-weight:600;margin-top:12px;color:var(--ink)}
+.today-card.accent .tc-main{color:var(--bg)}
+.tc-links{display:flex;gap:4px;margin-top:8px}
+.tc-links .tc-link{margin-top:0;font-size:13px;width:auto;flex:1}
 
 /* ---- activity tab ---- */
 .act-head{display:flex;align-items:center;justify-content:space-between}
@@ -793,44 +805,85 @@ body.theme-celina .sess-done .check{border-radius:50%}
 /* ==================================================================
    PLAN DATA - EDIT HERE
    ================================================================== */
-/* Phase 1 week template for Celina — same days, one resolved walk/jog ratio */
-// the Phase-1 booty-band circuit, as its own set of items so every move
-// gets its own row + demo video (returns fresh objects on each call)
-function bandCircuit(){ return [
-  { name:"Squat Side Step", scheme:"× 12", note:"Booty band" },
-  { name:"Glute Bridge Spread", scheme:"× 12" },
-  { name:"Donkey Kicks", scheme:"× 12 / side" },
-  { name:"Kickbacks", scheme:"× 12 / side" },
-  { name:"Lying Leg Abduction", scheme:"× 12" },
-  { name:"Bird Dog", scheme:"× 10 / side" },
-  { name:"Dead Bug", scheme:"× 10 / side" }
-]; }
-function p1Days(ratio){
-  return [
-    { key:"mon", label:"Mon", type:"run", title:"Walk / Run", dur:"20–25 min",
-      run:{ kind:"walkrun", warm:"Stroller totally fine", cool:"Easy cooldown walk",
-        extra:ratio } },
-    { key:"tue", label:"Tue", type:"strength", title:"Booty Bands + Core", dur:"20 min",
-      groups:[{ label:"2 rounds · 12 reps each", items: bandCircuit() }]},
-    { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
-      rest:["Full rest, or an easy stroller walk","Nothing to prove today"] },
-    { key:"thu", label:"Thu", type:"run", title:"Walk / Run", dur:"20–25 min",
-      run:{ kind:"walkrun", warm:"Same as Monday", cool:"Easy walk to finish",
-        extra:ratio } },
-    { key:"fri", label:"Fri", type:"strength", title:"Simple Strength", dur:"20–25 min",
-      groups:[{ label:"2–3 rounds", items:[
-        { name:"Goblet Squat", scheme:"× 10", note:"10–25 lb KB" },
-        { name:"Glute Bridge", scheme:"× 12", note:"Band above knees" },
-        { name:"Kneeling Push-up", scheme:"× 8–10" },
-        { name:"Bent-Over Band Row", scheme:"× 12" },
-        { name:"Side Plank", scheme:"20s / side" }
-      ]}]},
-    { key:"sat", label:"Sat/Sun", type:"mixed", title:"One Session", dur:"30 min",
-      groups:[{ label:"Pick one — other day fully off", items:[
-        { name:"30 min walk / run", scheme:"easy", cues:["Conversational pace","Stroller counts"] },
-        { name:"— or repeat Tuesday's band circuit", scheme:"2 rounds" }
-      ]}]}
+/* Celina's plan: three ~20 min sessions that rotate A -> B -> C on whatever
+   days she trains. Priority 1 is looking great, so two of the three are
+   strength (glutes twice a cycle, plus shoulders, back and arms); the run
+   levels up toward a strong 5K. Strength is done in pairs (alternate the two
+   moves) to fit real training into 20 minutes. Back/joint friendly: no
+   jumping, no heavy carries or loaded twisting.
+   name/scheme/note = HOME version; `gym` = YMCA swap, `min` = bands and
+   bodyweight only. The run's `levels` move up every 3 completed runs. */
+function glowSessions(){
+  var THRUST_CUES=["Upper back on the edge of the bench","Weight on your hips, feet flat","Drive through your heels, ribs down",
+    "Squeeze glutes at the top — don't arch your low back"];
+  var PAIR="alternate the two · rest 30–45s";
+  function walk(w,c){ return { kind:"walkrun", warm:w||"3 min brisk walk", cool:c||"2–3 min easy walk" }; }
+  function lvl(title,dur,main,run){ var r=run||walk(); r.extra=main; return { title:title, dur:dur, run:r }; }
+  var days=[
+    { key:"a", label:"Session A", type:"strength", title:"Glutes & Legs", dur:"20 min",
+      groups:[
+        { label:"Warm-up · booty band", items:[
+          { name:"Glute Bridge", scheme:"× 15", note:"Band above knees · squeeze 2s at the top" },
+          { name:"Squat Side Step", scheme:"10 steps / side", note:"Stay low, small steps" } ]},
+        { label:"Pair 1 · 3 rounds · "+PAIR, items:[
+          { name:"Goblet Squat", scheme:"3 × 10–15", note:"KB or one DB · 3s down · only as deep as feels good",
+            gym:{ name:"Leg Press", scheme:"3 × 10–15", note:"Feet high on the plate for more glutes" },
+            min:{ name:"Double Pulse Squat", scheme:"3 × 12", note:"Booty band above knees" } },
+          { name:"One-Arm DB Row", scheme:"3 × 10–12 / side", note:"Hand and knee on the bench, flat back",
+            gym:{ name:"Seated Cable Row", scheme:"3 × 10–12", note:"" },
+            min:{ name:"Band Row", scheme:"3 × 15", note:"Band around a post or door anchor" } } ]},
+        { label:"Pair 2 · 3 rounds · "+PAIR, items:[
+          { name:"DB Hip Thrust", scheme:"3 × 12–15", note:"Upper back on the bench, DB on your hips", cues:THRUST_CUES,
+            gym:{ name:"Barbell Hip Thrust", scheme:"3 × 10–12", note:"Pad on the bar · or the hip thrust machine" },
+            min:{ name:"Isolated Hip Thrust", scheme:"3 × 15", note:"Booty band above knees · pause 2s at the top" } },
+          { name:"Dead Bug", scheme:"3 × 8 / side", note:"Low back stays flat" } ]},
+        { label:"Finisher", items:[
+          { name:"Kickbacks", scheme:"2 × 15 / side", note:"Booty band · slow and squeeze",
+            gym:{ name:"Cable Kickback", scheme:"2 × 12 / side", note:"" } } ]}
+      ]},
+    { key:"b", label:"Session B", type:"run", title:"Run", dur:"~25 min", perLevel:3,
+      levels:[
+        lvl("Run · Level 1","~25 min","Jog 1 min / walk 2 min × 6"),
+        lvl("Run · Level 2","~25 min","Jog 2 min / walk 2 min × 5"),
+        lvl("Run · Level 3","~25 min","Jog 3 min / walk 2 min × 4"),
+        lvl("Run · Level 4","~25 min","Jog 5 min / walk 2 min × 3"),
+        lvl("Run · Level 5","~25 min","Jog 8 min / walk 2 min × 2"),
+        lvl("Run · Level 6","~25 min","Jog 20 min, easy — you can still talk"),
+        lvl("Run · Level 7","~25 min","6 × (1 min faster / 2 min easy)",walk("5 min easy jog","Easy jog or walk 3 min")),
+        lvl("Run · Level 8","~25 min","Tempo: 5 min easy, 10 min comfortably hard, 5 min easy",walk("Easy jog 3 min","Walk 3 min"))
+      ]},
+    { key:"c", label:"Session C", type:"strength", title:"Upper Body & Glutes", dur:"20 min",
+      groups:[
+        { label:"Warm-up · booty band", items:[
+          { name:"Band Pull-Apart", scheme:"× 15" },
+          { name:"Lying Leg Abduction", scheme:"× 12 / side", note:"Booty band" },
+          { name:"Side Plank", scheme:"20s / side", note:"Knees down is fine" } ]},
+        { label:"Pair 1 · 3 rounds · "+PAIR, items:[
+          { name:"Push-up", scheme:"3 × 8–12", note:"Knees down or hands on the bench is fine",
+            gym:{ name:"Machine Chest Press", scheme:"3 × 10–12", note:"" },
+            min:{ name:"Kneeling Push-up", scheme:"3 × 8–12", note:"" } },
+          { name:"Band Lat Pulldown", scheme:"3 × 12–15", note:"Band over the pull-up bar · elbows to your ribs",
+            gym:{ name:"Lat Pulldown", scheme:"3 × 10–12", note:"" },
+            min:{ note:"Band over a door anchor or sturdy bar" } } ]},
+        { label:"Pair 2 · 3 rounds · "+PAIR, items:[
+          { name:"DB Romanian Deadlift", scheme:"3 × 10–12", note:"Light · hips back, flat back · if your back complains, do Hip Thrusts instead",
+            min:{ name:"Single-Leg Glute Bridge", scheme:"3 × 10 / side", note:"" } },
+          { name:"Seated DB Shoulder Press", scheme:"3 × 10–12", note:"Seated with back support",
+            gym:{ name:"Machine Shoulder Press", scheme:"3 × 10–12", note:"" },
+            min:{ name:"Band Overhead Press", scheme:"3 × 12–15", note:"" } } ]},
+        { label:"Finisher · arms · 2 rounds", items:[
+          { name:"DB Biceps Curl", scheme:"2 × 12", note:"Elbows pinned to your sides",
+            cues:["Elbows stay at your sides","Curl up, squeeze, lower for 3 seconds","No swinging — go lighter if you need to","Wrists straight"],
+            min:{ name:"Band Biceps Curl", scheme:"2 × 15", note:"Stand on the band" } },
+          { name:"Overhead Triceps Extension", scheme:"2 × 12", note:"One DB, both hands, seated",
+            cues:["Hold one DB overhead with both hands","Lower behind your head, elbows pointing up","Extend all the way, squeeze the back of your arms","Ribs down, don't arch your back"],
+            min:{ name:"Band Overhead Triceps Extension", scheme:"2 × 15", note:"Band anchored under your foot" } } ]}
+      ]}
   ];
+  // 10-min version: one warm-up move, then both pairs at 2 rounds
+  days[0].quick=[[0,0],[1,0,2],[1,1,2],[2,0,2],[2,1,2]];
+  days[2].quick=[[0,0],[1,0,2],[1,1,2],[2,0,2],[2,1,2]];
+  return days;
 }
 
 /* Anthony's plan: three ~45 min full-body sessions that rotate A -> B -> C on
@@ -933,7 +986,7 @@ var ATHLETES = {
     rotation:true,   // sessions run in order (A → B → C) on whatever days you train
     perWeek:3,
     quickMin:20,     // the short-on-time version
-    siCheck:true,    // ask how the SI joint felt after each session
+    check:"SI joint", checkTag:"SI", // quick check-in after each session
     locations:{ home:"Home", gym:"YMCA" },
     programWeeks:0,
     phases:[
@@ -944,112 +997,20 @@ var ATHLETES = {
   },
 
   her: {
-    meta:{ name:"CELINA", tag:"", goal:"5K strong \u00b7 12 mo to top 10" },
+    meta:{ name:"CELINA", tag:"", goal:"Look amazing · strong 5K" },
     theme:"fem",
     mode:"phase",
+    rotation:true,   // sessions run in order (A → B → C) on whatever days she trains
+    perWeek:3,
+    quickMin:10,
+    check:"back & joints", checkTag:"JOINTS", // quick check-in after each session
+    locations:{ home:"Home", gym:"YMCA", min:"Minimal" },
+    programWeeks:0,
     phases:[
-      { key:"p1a", label:"Weeks 1\u20132", range:"Phase 1", name:"Build the habit", from:1, to:2 },
-      { key:"p1b", label:"Weeks 3\u20134", range:"Phase 1", name:"Build the habit", from:3, to:4 },
-      { key:"p1c", label:"Weeks 5\u20136", range:"Phase 1", name:"Build the habit", from:5, to:6 },
-      { key:"p2", label:"Weeks 7\u201320", range:"Phase 2", name:"Run continuously", from:7, to:20 },
-      { key:"p3", label:"Weeks 21\u201339", range:"Phase 3", name:"Become a runner", from:21, to:39 },
-      { key:"p4", label:"Weeks 40\u201352", range:"Phase 4", name:"Get fast", from:40, to:99 }
+      { key:"glow", label:"3 × 20 min · any days", range:"Rotation", name:"Strength & 5K", from:1, to:999 }
     ],
-    phaseDays:{
-      p1a:p1Days("Walk 3 min / jog 1 min \u2014 repeat 5\u20136\u00d7"),
-      p1b:p1Days("Walk 2 min / jog 2 min \u2014 repeat 5\u20136\u00d7"),
-      p1c:p1Days("Walk 1 min / jog 3 min \u2014 repeat 5\u20136\u00d7"),
-      p2:[
-        { key:"mon", label:"Mon", type:"run", title:"Run", dur:"~30 min",
-          run:{ kind:"walkrun", warm:"Light warm-up walk", cool:"Easy walk down",
-            extra:"Jog 5 min / walk 1 min \u00d73\u20134 \u00b7 stretch the jog blocks weekly until walking disappears" } },
-        { key:"tue", label:"Tue", type:"strength", title:"Booty Bands + Core", dur:"25 min",
-          groups:[{ label:"3 rounds of the Phase 1 circuit, plus:", items:[
-            { name:"Squat Side Step", scheme:"\u00d7 12", note:"Booty band" },
-            { name:"Glute Bridge Spread", scheme:"\u00d7 12" },
-            { name:"Donkey Kicks", scheme:"\u00d7 12 / side" },
-            { name:"Kickbacks", scheme:"\u00d7 12 / side" },
-            { name:"Isolated Hip Thrust", scheme:"\u00d7 12", note:"Band" },
-            { name:"Double Pulse Squat", scheme:"\u00d7 10" },
-            { name:"Ab Wheel from knees", scheme:"\u00d7 5\u20138" }
-          ]}]},
-        { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
-          rest:["Rest or easy stroller walk"] },
-        { key:"thu", label:"Thu", type:"run", title:"Run", dur:"~30 min",
-          run:{ kind:"walkrun", warm:"Same as Monday", cool:"Easy walk",
-            extra:"Match Monday's jog/walk progression" } },
-        { key:"fri", label:"Fri", type:"strength", title:"Strength", dur:"30 min",
-          groups:[{ label:"3 rounds", items:[
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb" },
-            { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
-            { name:"Push-up", scheme:"\u00d7 8\u201310", note:"Full or kneeling" },
-            { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" },
-            { name:"Suitcase Carry", scheme:"30 steps / side", note:"25\u201335 lb" }
-          ]}]},
-        { key:"sat", label:"Sat", type:"run", title:"Longer Easy Run/Walk", dur:"35\u201345 min",
-          run:{ kind:"long", warm:"Easy start", cool:"Walk it in",
-            extra:"Conversational the whole way" } }
-      ],
-      p3:[
-        { key:"mon", label:"Mon", type:"run", title:"Easy Run", dur:"2\u20133 mi",
-          run:{ kind:"walkrun", warm:"5 min easy", cool:"Walk 5 min", extra:"Conversational pace" } },
-        { key:"tue", label:"Tue", type:"strength", title:"Strength + Bands", dur:"~35 min",
-          groups:[
-            { label:"Band circuit \u00b7 2 rounds", items: bandCircuit() },
-            { label:"Lifts \u00b7 3 rounds", items:[
-              { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb" },
-              { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-              { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
-              { name:"Push-up", scheme:"\u00d7 8\u201310" },
-              { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" }
-            ]}
-          ]},
-        { key:"wed", label:"Wed", type:"rest", title:"Rest / Stroller Walk",
-          rest:["Rest or easy stroller walk"] },
-        { key:"thu", label:"Thu", type:"run", title:"Intervals", dur:"~30 min",
-          run:{ kind:"speed", warm:"5\u201310 min easy jog", cool:"Easy jog / walk down",
-            extra:"6\u00d7 (1 min faster / 2 min easy jog)" } },
-        { key:"fri", label:"Fri", type:"strength", title:"Strength", dur:"30 min",
-          groups:[{ label:"3 rounds \u00b7 add weight/reps when easy", items:[
-            { name:"Goblet Squat", scheme:"\u00d7 10", note:"25\u201335 lb" },
-            { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-            { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
-            { name:"Push-up", scheme:"\u00d7 8\u201310" },
-            { name:"KB Row", scheme:"\u00d7 10 / side", note:"25 lb" },
-            { name:"Suitcase Carry", scheme:"30 steps / side", note:"25\u201335 lb" }
-          ]}]},
-        { key:"sat", label:"Sat", type:"run", title:"Long Run", dur:"build 3 \u2192 5 mi",
-          run:{ kind:"long", warm:"Easy start", cool:"Walk + stretch",
-            extra:"Around week 26\u201330: enter a low-key local 5K. Note your time + the 10th-place woman's time \u2014 that's the gap." } },
-        { key:"sun", label:"Sun", type:"rest", title:"Off", rest:["Full rest day"] }
-      ],
-      p4:[
-        { key:"mon", label:"Mon", type:"run", title:"Easy Run", dur:"3 mi",
-          run:{ kind:"walkrun", warm:"5 min easy", cool:"Walk down", extra:"Conversational" } },
-        { key:"tue", label:"Tue", type:"run", title:"Speed", dur:"~35 min",
-          run:{ kind:"speed", warm:"10 min easy + strides", cool:"Easy jog down",
-            extra:"6\u20138\u00d7 400m hard (~90s) w/ 2 min recovery \u2014 OR 5\u00d7 (2 min hard / 2 min easy)" } },
-        { key:"wed", label:"Wed", type:"strength", title:"Strength + Bands", dur:"~30 min",
-          groups:[
-            { label:"Maintain \u2014 don't chase progress, running's the priority", items:[
-              { name:"Goblet Squat", scheme:"\u00d7 10", note:"Keep it moderate" },
-              { name:"Single-Leg Glute Bridge", scheme:"\u00d7 8 / side" },
-              { name:"Romanian Deadlift", scheme:"\u00d7 10", note:"35 lb KB" },
-              { name:"Push-up", scheme:"\u00d7 8\u201310" }
-            ]},
-            { label:"Band circuit \u00b7 2 rounds", items: bandCircuit() }
-          ]},
-        { key:"thu", label:"Thu", type:"run", title:"Tempo", dur:"~4 mi",
-          run:{ kind:"tempo", warm:"Easy mile", cool:"Easy mile down",
-            extra:"2 mi at comfortably hard, easy mile before + after" } },
-        { key:"fri", label:"Fri", type:"rest", title:"Rest", rest:["Full rest \u2014 you've earned the speed"] },
-        { key:"sat", label:"Sat", type:"run", title:"Long Run", dur:"4\u20135 mi easy",
-          run:{ kind:"long", warm:"Easy start", cool:"Walk + stretch", extra:"Keep it easy" } },
-        { key:"sun", label:"Sun", type:"rest", title:"Off", rest:["Full rest day"] }
-      ]
-    },
-    foot:"<b>The 10-minute rule.</b> On any day you don't feel like it, do just 10 minutes \u2014 you're allowed to stop after, and it still counts as a \u2705. Never miss twice. Baby counts as equipment."
+    phaseDays:{ glow:glowSessions() },
+    foot:"<b>Short and steady wins.</b> Add a rep each time until you reach the top of the range, then go a little heavier. Stroller walks and runs count — log them for your week. Running with baby: a jogging stroller with a locking front wheel, smooth paths, and most guidance says baby 6+ months. Effort is good; joint pain isn't — swap anything that hurts."
   }
 };
 
@@ -1386,6 +1347,10 @@ var CUE_LIB = {
   "clamshell":["Lie on your side, knees bent","Open the top knee against the band","Keep the hips stacked","Lower with control"],
   "doorway pec stretch":["Forearm on the door frame, elbow at shoulder height","Step through gently until you feel the chest open","Ribs down, don't arch your low back","Breathe slowly — easy stretch, no pain"],
   "face pull":["Rope at forehead height","Pull toward your face, elbows high and wide","Squeeze your shoulder blades together","Slow return, stay tall"],
+  "hip thrust":["Upper back on the edge of the bench","Drive through your heels, ribs down","Squeeze glutes at the top \u2014 don't arch your low back","Chin tucked, eyes forward"],
+  "band row":["Band anchored at chest height","Pull your elbows back past your ribs","Squeeze your shoulder blades together","Slow return"],
+  "biceps curl":["Elbows stay at your sides","Curl up, squeeze, lower for 3 seconds","No swinging \u2014 go lighter if you need to","Wrists straight"],
+  "triceps extension":["Elbows point up and stay close to your head","Lower behind your head with control","Extend all the way and squeeze","Ribs down, don't arch your back"],
   "adductor squeeze":["Lie on your back, knees bent, ball or pillow between your knees","Squeeze at about 70% effort and hold — keep breathing","Low back stays relaxed, no arching","Feel it in the inner thighs, never in the back"],
   "donkey kick":["On all fours, band in place","Drive the heel toward the ceiling","Squeeze the glute at the top","Keep the back flat"],
   "bird dog":["Opposite arm and leg extend","Keep the hips level","Reach long, don't arch","Return under control"],
@@ -2016,9 +1981,12 @@ function buildPlanChrome(id){
       // custom plans have one repeating template \u2014 static label, no dropdown
       var p0=a.phases[0];
       strip2.innerHTML='<label>PLAN</label><span class="plan-static mono">'+esc(p0.name)+'</span>'+
-        (a.locations?locToggleHTML(id):'<span class="phase">'+esc(p0.label)+'</span>');
+        '<span class="phase">'+esc(p0.label)+'</span>';
       slot.appendChild(strip2);
-      wireLocToggle(strip2,id,function(){ buildPlanChrome(id); renderTabs(); renderDay(); });
+      if(a.locations){ // where you're training, on its own row under the plan name
+        var lr=el('div','loc-row',locToggleHTML(id)); slot.appendChild(lr);
+        wireLocToggle(lr,id,function(){ buildPlanChrome(id); renderTabs(); renderDay(); });
+      }
     } else {
       var sel2='<label>PLAN</label><select id="ctx-sel">';
       a.phases.forEach(function(p){
@@ -2100,7 +2068,8 @@ function renderHome(){
   var sk=store.key(id,current.ctx,d.key);
   var st=store.get(sk);
   var total=dayTotal(d);
-  var complete=d.type!=='rest' && total>0 && dayDone(d,st)>=total;
+  // a session logged today counts too (e.g. a run logged from Nike Run Club)
+  var complete=d.type!=='rest' && total>0 && (dayDone(d,st)>=total || (a.rotation && rotationState(id).doneToday));
   var log=logGet(id), now=new Date(), wk=isoWeek(now);
   var thisWeek=Object.keys(log).filter(function(x){ return isoWeek(parseDate(x))===wk; }).length;
   var target=weeklyTarget(id);
@@ -2113,10 +2082,10 @@ function renderHome(){
   var todayE=log[dateISO(now)], prev=prevLog(id);
   // coming back after 3+ days off is the workout that matters most
   var comeback=!todayE && d.type!=='rest' && prev && prev.gap>=3;
-  var siFlare=a.siCheck && prev && prev.entry && prev.entry.si===3;
+  var siFlare=a.check && prev && prev.entry && prev.entry.si===3;
   var nudge = todayE ? (todayE.t==='run' && !complete ? "Run logged. Lifting today is a bonus, not a must."
       : todayE.cb ? "Comeback done. That's the one that counts most." : "Done for today. That's how it's built.")
-    : siFlare ? "Your SI joint flared last time — go lighter today and swap anything that pinches."
+    : siFlare ? "Your "+a.check+" flared up last time — go lighter today and swap anything that hurts."
     : comeback ? (prev.gap>=14 ? "Welcome back. Start easy — the "+quickLabel(id)+" version is perfect today."
                                : "Comeback day. The workout after a break matters most — even the short version counts.")
     : d.type==='rest' ? "Rest day. Recovery is part of the plan."
@@ -2131,16 +2100,18 @@ function renderHome(){
     var after='';
     if(a.rotation){ var r=rotationState(id); after=r.days[(r.next+1)%r.days.length].title; }
     var si='';
-    if(a.siCheck && todayE){
-      si = todayE.si ? '<div class="si-done mono">SI JOINT: '+SI_LABEL[todayE.si].toUpperCase()+' ✓</div>'
-        : '<div class="si-ask"><div class="si-q">How did your SI joint feel?</div><div class="si-opts">'+
+    if(a.check && todayE){
+      si = todayE.si ? '<div class="si-done mono">'+esc(a.check.toUpperCase())+': '+SI_LABEL[todayE.si].toUpperCase()+' ✓</div>'
+        : '<div class="si-ask"><div class="si-q">How did your '+esc(a.check)+' feel?</div><div class="si-opts">'+
             [1,2,3].map(function(n){ return '<button data-si="'+n+'">'+titleCase(SI_LABEL[n])+'</button>'; }).join('')+'</div></div>';
     }
     body='<div class="tc-next">Nice work.'+(after?' Next time: <b>'+esc(after)+'</b>':'')+'</div>'+si+
       '<button class="tc-link" id="hm-review">Review today\'s session ▸</button>';
   } else if(d.type==='run'){
-    body='<div class="today-actions"><button class="start-btn big" id="hm-timer">▶ START TIMER</button></div>'+
-      '<button class="tc-link" id="hm-log">Ran with Nike? Log it instead</button>';
+    body=(d.run&&d.run.extra?'<div class="tc-main">'+esc(d.run.extra)+'</div>':'')+
+      '<div class="today-actions"><button class="start-btn big" id="hm-timer">▶ START TIMER</button></div>'+
+      '<div class="tc-links"><button class="tc-link" id="hm-mini">10-min version</button>'+
+      '<button class="tc-link" id="hm-log">Log a Nike run</button></div>';
   } else if(d.type==='rest'){
     body='<div class="tc-rest">'+(d.rest||['Rest and recover']).map(esc).join('<br>')+'</div>';
   } else {
@@ -2160,7 +2131,7 @@ function renderHome(){
         (complete?'<span class="tc-done">DONE ✓</span>':comeback?'<span class="tc-done">COMEBACK</span>':'')+'</div>'+
       '<div class="tc-title">'+esc(d.title)+'</div>'+
       '<div class="tc-chips">'+chips+'</div>'+
-      (d.type!=='rest'&&!complete?locToggleHTML(id):'')+
+      (d.groups&&!complete?locToggleHTML(id):'')+
       body+
     '</div>'+
     (d.type==='run'?'':'<button class="hm-quiet" id="hm-log">Went for a run? Log it ▸</button>');
@@ -2170,9 +2141,13 @@ function renderHome(){
   function on(sel,fn){ var b=v.querySelector(sel); if(b) b.addEventListener('click',fn); }
   on('#hm-timer',function(){ current.day=d.key; openTimer(d,a,sk); refreshHome(); });
   on('#hm-play',function(){ openPlayer(d,sk); refreshHome(); });
-  on('#hm-mini',function(){ openPlayer(d,sk,{items:miniItems(d,store.get(sk)),rest:30,mini:true}); refreshHome(); });
+  on('#hm-mini',function(){
+    if(d.type==='run'){ current.day=d.key; openTimer(d,a,sk,{countdown:600,label:'EASY PACE',mini:true}); }
+    else openPlayer(d,sk,{items:miniItems(d,store.get(sk)),rest:30,mini:true});
+    refreshHome();
+  });
   on('#hm-review',function(){ current.day=d.key; showTab('plan'); });
-  on('#hm-log',function(){ openAddRun(); refreshHome(); });
+  on('#hm-log',function(){ openAddRun(d.type==='run'?d:null); refreshHome(); });
   on('#hm-avatar',function(){ showTab('profile'); });
   // the Plan tab has its own copy of the switch, so keep it in step
   wireLocToggle(v,id,function(){ buildPlanChrome(id); renderHome(); });
@@ -2196,7 +2171,7 @@ function renderActivity(){
     var e=log[iso];
     return '<div class="act-row click" data-iso="'+iso+'"><span class="ad">'+fmtDate(parseDate(iso))+'</span>'+
       '<span class="at">'+esc(e.title)+(e.cb?'<span class="act-tag">↺ COMEBACK</span>':'')+
-        (e.si?'<span class="act-tag si'+e.si+'">SI '+SI_LABEL[e.si].toUpperCase()+'</span>':'')+'</span>'+
+        (e.si?'<span class="act-tag si'+e.si+'">'+(ATHLETES[current.athlete].checkTag||'SI')+' '+SI_LABEL[e.si].toUpperCase()+'</span>':'')+'</span>'+
       (e.run?'<span class="ar">'+e.run.dist+' '+esc(e.run.unit)+' · '+esc(e.run.pace)+'</span>':'')+
       '<button class="act-share" data-iso="'+iso+'" aria-label="Share">↗</button>'+
       '</div>';
@@ -2329,7 +2304,12 @@ function openExerciseHistory(name){
 }
 
 // manual entry, Nike-style: date, distance, duration -> pace computed
-function openAddRun(){
+function openAddRun(forDay){
+  if(!forDay||!forDay.key) forDay=null; // also used directly as a click handler
+  // logging today's run counts as the plan's run session when one is up next
+  if(!forDay && current.athlete && ATHLETES[current.athlete].rotation){
+    var nx=todayFor(current.athlete,current.ctx); if(nx && nx.type==='run') forDay=nx;
+  }
   var ov=openOverlay();
   var u=unitsFor(current.athlete);
   var today=dateISO(new Date());
@@ -2384,8 +2364,13 @@ function openAddRun(){
     var secs=Math.round(parseFloat(ov.querySelector('#ar-dur').value)*60);
     var name=(ov.querySelector('#ar-name').value||'').trim()||'Run';
     var log=logGet(current.athlete);
-    log[iso]=mergeDay(log[iso],{t:'run',title:name+' · '+dist.toFixed(1)+' '+u,
-      run:{dist:dist,unit:u,secs:secs,pace:fmtPace(secs/dist),manual:true}});
+    var entry={t:'run',title:name+' · '+dist.toFixed(1)+' '+u,
+      run:{dist:dist,unit:u,secs:secs,pace:fmtPace(secs/dist),manual:true}};
+    if(forDay && iso===today){
+      var tagged=logEntry(current.athlete,forDay,forDay.title+' · '+dist.toFixed(1)+' '+u);
+      tagged.run=entry.run; entry=tagged;
+    }
+    log[iso]=mergeDay(log[iso],entry);
     logSet(current.athlete,log);
     closeOverlay(); renderActivity(); confetti();
   }
@@ -2606,7 +2591,7 @@ function ctxFor(id){
    today (it scopes checkmarks to one occurrence), `next` is the session up. */
 function rotationState(id){
   var a=ATHLETES[id], pk=a.phases[0].key;
-  var days=applyPlanEdits(id,pk,a.phaseDays[pk]);
+  var days=applyLevels(id,applyPlanEdits(id,pk,a.phaseDays[pk]));
   var log=logGet(id), today=dateISO(new Date());
   function idx(e){
     if(!e||e.rot!==pk) return -1;
@@ -2645,11 +2630,11 @@ function locGet(id){
   var l=cfgGet(id).loc; return a.locations[l]?l:'home';
 }
 function locSet(id,l){ var c=cfgGet(id); c.loc=l; cfgSet(id,c); }
-// swap each exercise to its version for the chosen location (item.gym holds a
-// name or {name, scheme, note}); keys and positions stay put, so checkmarks
-// survive switching mid-session
+// swap each exercise to its version for the chosen location (item[loc], e.g.
+// item.gym, holds a name or {name, scheme, note}); keys and positions stay
+// put, so checkmarks survive switching mid-session
 function applyLocation(id,days){
-  var loc=locGet(id);
+  var loc=locGet(id), locs=ATHLETES[id].locations;
   if(!loc||loc==='home') return days;
   return days.map(function(d){
     if(!d.groups) return d;
@@ -2657,9 +2642,9 @@ function applyLocation(id,days){
     c.groups=d.groups.map(function(g){
       var gc={}; for(var k in g) gc[k]=g[k];
       gc.items=g.items.map(function(it){
-        if(!it.gym) return it;
-        var v=typeof it.gym==='string'?{name:it.gym}:it.gym, o={};
-        for(var k in it) if(k!=='gym') o[k]=it[k];
+        if(!it[loc]) return it;
+        var v=typeof it[loc]==='string'?{name:it[loc]}:it[loc], o={};
+        for(var k in it) if(!(k in locs)) o[k]=it[k];
         if(v.name&&v.name!==it.name){ o.name=v.name; delete o.cues; if(v.note===undefined) delete o.note; }
         if(v.scheme) o.scheme=v.scheme;
         if(v.note!==undefined){ if(v.note) o.note=v.note; else delete o.note; }
@@ -2681,6 +2666,26 @@ function locToggleHTML(id){
 function wireLocToggle(root,id,after){
   root.querySelectorAll('.loc-seg [data-loc]').forEach(function(b){
     b.addEventListener('click',function(){ locSet(id,b.getAttribute('data-loc')); buzz(10); after(); });
+  });
+}
+/* Sessions with `levels` (Celina's run) move up one level every `perLevel`
+   completions, counted before today so a finished session keeps its level
+   until tomorrow. Easier/Harder moves it by hand (stored as an offset). */
+function lvlSet(id,key,target,base){ var c=cfgGet(id); c.lvl=c.lvl||{}; c.lvl[key]=target-base; cfgSet(id,c); }
+function applyLevels(id,days){
+  var a=ATHLETES[id]; if(!a.rotation) return days;
+  var pk=a.phases[0].key, today=dateISO(new Date()), log=null, off=cfgGet(id).lvl||{};
+  return days.map(function(d){
+    if(!d.levels||d.edited) return d;
+    if(!log) log=logGet(id);
+    var done=0;
+    Object.keys(log).forEach(function(t){ var e=log[t]; if(t<today && e && e.rot===pk && e.k===d.key) done++; });
+    var per=d.perLevel||3, n=d.levels.length, base=Math.floor(done/per);
+    var i=Math.max(0,Math.min(n-1,base+(off[d.key]||0))), L=d.levels[i], c={};
+    for(var k in d) if(k!=='levels') c[k]=d[k];
+    c.title=L.title; c.dur=L.dur||d.dur; c.run=L.run;
+    c.level={ i:i, n:n, base:base, inLevel:done%per, per:per };
+    return c;
   });
 }
 // sessions per week the Today screen counts toward
@@ -2817,7 +2822,7 @@ function raceLine(id,a){
 function planDays(){
   var a=ATHLETES[current.athlete];
   var base=a.mode==="week"?a.days:a.phaseDays[current.ctx];
-  return applyPlanEdits(current.athlete,current.ctx,base);
+  return applyLevels(current.athlete,applyPlanEdits(current.athlete,current.ctx,base));
 }
 // what you see and train: the plan swapped to where you are today
 function activeDays(){ return applyLocation(current.athlete,planDays()); }
@@ -2925,6 +2930,18 @@ function renderDay(){
     }
   }
 
+  if(d.level){
+    var L=d.level, lb=el('div','lvl-bar');
+    lb.innerHTML='<span class="mono">LEVEL '+(L.i+1)+' OF '+L.n+' · RUN '+(L.inLevel+1)+' OF '+L.per+' HERE</span>'+
+      '<span class="lvl-btns"><button data-lv="-1"'+(L.i===0?' disabled':'')+'>Easier</button>'+
+      '<button data-lv="1"'+(L.i===L.n-1?' disabled':'')+'>Harder</button></span>';
+    lb.querySelectorAll('[data-lv]').forEach(function(b){
+      b.addEventListener('click',function(){
+        lvlSet(current.athlete,d.key,L.i+(+b.getAttribute('data-lv')),L.base); buzz(10); renderTabs(); renderDay();
+      });
+    });
+    sess.appendChild(lb);
+  }
   // run blocks: a day can carry several, and can pair them with strength below
   var runBlocks = d.runs ? d.runs : (d.run ? [d.run] : (d.type==="run" ? [{}] : []));
   runBlocks.forEach(function(run,ri){
