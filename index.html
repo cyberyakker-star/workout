@@ -562,6 +562,19 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .ov-title{font-size:30px;font-weight:700;line-height:1.15;margin:2px 0;color:var(--ink)}
 .ov-scheme{font-family:var(--mono);font-size:17px;color:var(--amber)}
 .ov-note{font-size:14px;color:var(--ink-dim)}
+/* hold timer for timed moves (planks, holds, stretches) */
+.hold{display:flex;flex-direction:column;align-items:center;gap:8px;margin:8px 0 4px;padding:14px;
+  border:1px solid var(--line-bright);border-radius:14px;text-align:center}
+.hold-lab{font-size:10.5px;letter-spacing:.16em;color:var(--ink-dim)}
+.hold-clock{font-size:56px;font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.hold .start-btn{width:100%;flex:none}
+.hold.ready .hold-clock{color:var(--ink-dim)}
+.hold.run{border-color:var(--amber)}
+.hold.run .hold-clock,.hold.run .hold-lab{color:var(--amber)}
+.hold.fin{border-color:var(--lime)}
+.hold.fin .hold-lab{color:var(--lime)}
+#pl-done.pulse{animation:hold-pulse 1s ease-in-out 3}
+@keyframes hold-pulse{50%{transform:scale(1.04)}}
 /* ---- in-workout set logger ---- */
 .pr-line{display:flex;gap:10px;align-items:center;margin:2px 0 4px;flex-wrap:wrap}
 .pr-badge{font-size:10.5px;letter-spacing:.1em;color:var(--amber);border:1px solid var(--amber);border-radius:999px;padding:4px 11px}
@@ -3286,6 +3299,55 @@ function tryHint(hist,sr,scheme){
   return '<span class="pr-try">'+(l.r>=top ? 'TOP OF RANGE → ADD WEIGHT OR SLOW IT DOWN'
     : 'TRY '+(l.w?l.w+'×':'')+(l.r+1)+' TODAY')+'</span>';
 }
+// timed moves ("20s / side", "30s", "5 × 10s hold", "40s on / 20s off × 4",
+// "3 min") -> the phases for the player's hold timer, or null
+function parseHold(scheme){
+  var s=String(scheme||''), m, work=0, reps=1, rest=0;
+  if((m=s.match(/(\d+)\s*s\s*on\s*\/\s*(\d+)\s*s\s*off\s*[×x]\s*(\d+)/i))){ work=+m[1]; rest=+m[2]; reps=+m[3]; }
+  else if((m=s.match(/(?:(\d+)\s*[×x]\s*)?(\d+)\s*s\b/i))){ work=+m[2]; if(m[1]){ reps=+m[1]; rest=5; } }
+  else if((m=s.match(/^\s*(\d+)(?:\s*[–-]\s*\d+)?\s*min\b/i))){ work=+m[1]*60; }
+  if(!work||work>1800||reps>20) return null;
+  var sides=/\/\s*side/i.test(s)?2:1, ph=[{lab:'GET READY',secs:3,ready:true}];
+  for(var r=0;r<reps;r++){
+    for(var sd=0;sd<sides;sd++){
+      if(sd) ph.push({lab:'SWITCH SIDES',secs:5,ready:true});
+      ph.push({lab:(reps>1?'ROUND '+(r+1)+' OF '+reps:'GO')+(sides>1?' · SIDE '+(sd+1):''),secs:work});
+    }
+    if(r<reps-1&&rest) ph.push({lab:'REST',secs:rest,ready:true});
+  }
+  return ph;
+}
+// run a hold timer inside the player: 3s get-ready, beeps for the last 3s,
+// switch sides / rest between rounds, pause + resume. Uses the overlay's
+// interval slot so leaving the exercise always stops it.
+function runHold(ov,phases,onDone){
+  var i=-1, end=0, left=0, paused=false, pausedLeft=0;
+  var box=ov.querySelector('#hold'), lab=ov.querySelector('#hd-lab'), clk=ov.querySelector('#hd-clock'), go=ov.querySelector('#hd-go');
+  function stop(){ if(ovInt){ clearInterval(ovInt); ovInt=null; } }
+  function show(){ clk.textContent=fmtSecs(Math.max(0,left)); }
+  function next(){
+    i++;
+    if(i>=phases.length){
+      stop(); i=-1; lab.textContent='DONE ✓'; go.textContent='↺ AGAIN';
+      box.classList.remove('run','ready'); box.classList.add('fin');
+      beep(1040,320); buzz([200,100,200]); if(onDone) onDone(); return;
+    }
+    var p=phases[i]; lab.textContent=p.lab; left=p.secs; end=Date.now()+left*1000;
+    box.classList.toggle('ready',!!p.ready); box.classList.toggle('run',!p.ready);
+    if(i>0){ beep(p.ready?520:880,200); buzz(p.ready?80:200); }
+    show();
+  }
+  function tick(){
+    var l=Math.ceil((end-Date.now())/1000);
+    if(l!==left){ left=l; if(left>0&&left<=3) beep(660,90); show(); }
+    if(left<=0) next();
+  }
+  go.addEventListener('click',function(){
+    if(i===-1){ box.classList.remove('fin'); go.textContent='❚❚ PAUSE'; stop(); next(); ovInt=setInterval(tick,200); return; }
+    if(!paused){ paused=true; pausedLeft=end-Date.now(); stop(); go.textContent='▶ RESUME'; }
+    else { paused=false; end=Date.now()+pausedLeft; go.textContent='❚❚ PAUSE'; ovInt=setInterval(tick,200); }
+  });
+}
 function parseSetsReps(scheme){
   if(!scheme) return null;
   var s=String(scheme);
@@ -3633,6 +3695,7 @@ function openPlayer(d,storeKey,opts){
     if(dayDone(d,s)>=dayTotal(d)) logSession(d,opts.mini?' · '+quickLabel(current.athlete):'');
   }
   function showExercise(){
+    stopInt();
     if(idx>=flat.length){ finish(); return; }
     var it=flat[idx], ex=it.ex, nm=it.nm||ex.name;
     var cues=(nm===ex.name&&ex.cues)?ex.cues:autoCues(nm);
@@ -3711,6 +3774,13 @@ function openPlayer(d,storeKey,opts){
         setsHTML+
         '</div>'
       : '<div class="ov-scheme">'+esc(ex.scheme)+'</div>';
+    var hold=sr?null:parseHold(ex.scheme);
+    if(hold){
+      var firstWork=hold.filter(function(p){ return !p.ready; })[0].secs;
+      schemeHTML+='<div class="hold" id="hold"><div class="hold-lab mono" id="hd-lab">TAP START · 3s TO GET SET</div>'+
+        '<div class="hold-clock mono" id="hd-clock">'+fmtSecs(firstWork)+'</div>'+
+        '<button class="start-btn" id="hd-go">▶ START TIMER</button></div>';
+    }
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
       '<span style="display:flex;gap:8px;align-items:center">'+muteBtnHTML()+
@@ -3743,6 +3813,7 @@ function openPlayer(d,storeKey,opts){
       });
     }
     wireMuteBtn(ov);
+    if(hold) runHold(ov,hold,function(){ var b=ov.querySelector('#pl-done'); if(b) b.classList.add('pulse'); });
     ov.querySelector('#pl-x').addEventListener('click',exit);
     ov.querySelector('#pl-skip').addEventListener('click',function(){ idx++; showExercise(); });
     function completeExercise(){
@@ -3845,6 +3916,7 @@ function openPlayer(d,storeKey,opts){
     });
   }
   function showRest(secs){
+    stopInt();
     var left=secs;
     ov.innerHTML=
       '<div class="ov-top"><span class="ov-prog">'+(idx+1)+' / '+flat.length+'</span>'+
