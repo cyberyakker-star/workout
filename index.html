@@ -548,6 +548,11 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .ov-mid.ex{justify-content:flex-start;padding-top:6px}
 .ov-video{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;margin:8px 0}
 .ov-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vf{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:#000;cursor:pointer}
+.vf-img{width:100%;height:100%;object-fit:cover;display:block}
+.vf-play{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;
+  background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.vf-play svg{width:26px;height:26px;fill:#fff;margin-left:4px}
 .ov-yt-link{align-self:flex-start;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
   color:var(--ink-dim);margin:6px 0 2px;text-decoration:none}
 .ov-yt-link:hover{color:var(--amber)}
@@ -1455,7 +1460,7 @@ var VIDEO_LIB = {
   "bent-over kb row":["IyQAMOV0WAc","vjM-TVScoao","BTSSM1iEhug"],
   "kb row":["IyQAMOV0WAc","vjM-TVScoao","BTSSM1iEhug"],
   "bent-over band row":["tcMmJ3c5P8c","YJiwzLHHKp8","vR9KcvzLqVo"],
-  "band row":["tcMmJ3c5P8c","YJiwzLHHKp8"],
+  "band row":["qykwviNOIyc"],
   "band face pull":["AlTGQrDOd98","OIMUU2Q-upU","DvjmJdEswQ4"],
   "tibialis raise":["O8ZcXfwFuqs","mmLnKYwdDMM","RXC7tE6IQcc"],
   "slant board fhl calf raise":["p4Nv3VBkWho","GDVlVr6yWbg"],
@@ -1484,7 +1489,7 @@ var VIDEO_LIB = {
   "reverse lunge":["u_zSfK5ZFU4","94AXT7D3bKY"],
   "lateral lunge":["liFeq7swKfc","gwWv7aPcD88","qCA8E-dF8cI"],
   "step-up":["9ZknEYboBOQ","tqECKZxlCKE"],
-  "db bench press":["5Y3VZsLb1Ys","pKZMNVbfUzQ"],
+  "db bench press":["AuNRCrdhquE"],
   "barbell bench press":["CayG6UYqL8g"],
   "band chest press":["4B6O2dHDjBw","F_A2aa9anT0"],
   "machine chest press":["sqNwDkUU_Ps","pLofEAcfsO8","zgP-UCKGe24"],
@@ -1500,12 +1505,12 @@ var VIDEO_LIB = {
   "table row":["EIFEKZe4Wm8","FKKZRwBJDxE","jjSaYXeKiNk"],
   "inverted row":["Fl0UMfdEzsE","ytFnYaoIkSg"],
   "doorway row":["g8wWFlr2gQU","ytEalkENNiQ"],
-  "seated cable row":["7BkgqzC6WsM","OeLb503NZHk"],
+  "seated cable row":["0R9ZQd3aM6s"],
   "machine row":["k0cTJCfxa0Y"],
   "band lat pulldown":["SkT4rqrmH-M"],
-  "lat pulldown":["SALxEARiMkw","CAwf7n6Luuc"],
+  "lat pulldown":["CAwf7n6Luuc"],
   "standing hip abduction":["xUxWsvWj3Go","4qr26RNU3EQ"],
-  "cable kickback":["5jJNfIlKTmg","VSgMyiOu0uE"],
+  "cable kickback":["NVcdnjBfOIE"],
   "standing knee raise":["D0GwAezTvtg","lR3cpCVBjPM"],
   "standing anti-rotation press":["dBAmQ9bx3JA","P16SQlmWj1o"],
   "plank":["A2b2EmIg0dA","mwlp75MS6Rg"],
@@ -1540,6 +1545,37 @@ function videoIds(name){
   return null;
 }
 function videoId(name){ var v=videoIds(name); return v?v[0]:null; }
+/* Previews show a frame from the middle of the video (YouTube's auto-made
+   hq2.jpg), not the creator's thumbnail art, so you see the actual posture
+   rather than "STOP DOING THIS". Tapping starts it muted, which lets it play
+   in a single tap on iPhone; unmute in the player. */
+function vidFrameHTML(v,cls){ return '<img class="'+cls+'" alt="" data-vid="'+v+'" src="https://i.ytimg.com/vi/'+v+'/hq2.jpg">'; }
+function vidFacadeHTML(v){
+  return '<button class="vf" data-vid="'+v+'" aria-label="Play demo video">'+vidFrameHTML(v,'vf-img')+
+    '<span class="vf-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></button>';
+}
+function wireVideos(root){
+  // a missing frame comes back as YouTube's tiny grey placeholder: try the frames
+  // from 25% and 75% through, and only then the creator's own thumbnail
+  var FRAMES=['hq1','hq3','mqdefault'];
+  root.querySelectorAll('img[data-vid]').forEach(function(img){
+    function fallback(){
+      var i=+(img.dataset.fb||0); if(i>=FRAMES.length) return;
+      img.dataset.fb=i+1; img.src='https://i.ytimg.com/vi/'+img.getAttribute('data-vid')+'/'+FRAMES[i]+'.jpg';
+    }
+    img.addEventListener('load',function(){ if(img.naturalWidth<=120) fallback(); });
+    img.addEventListener('error',fallback);
+    if(img.complete && img.naturalWidth && img.naturalWidth<=120) fallback();
+  });
+  root.querySelectorAll('.vf').forEach(function(b){
+    b.addEventListener('click',function(){
+      var f=document.createElement('iframe');
+      f.src='https://www.youtube-nocookie.com/embed/'+b.getAttribute('data-vid')+'?rel=0&playsinline=1&modestbranding=1&autoplay=1&mute=1';
+      f.setAttribute('allow','autoplay; encrypted-media; picture-in-picture'); f.setAttribute('allowfullscreen','');
+      b.replaceWith(f);
+    });
+  });
+}
 
 var CHECK = document.createElement('template');
 CHECK.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#12140f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
@@ -1917,13 +1953,14 @@ function openPicker(storeKey,id,origName){
       body+='<div class="pk-cat">'+esc(CAT_LABEL[cat]||cat)+'</div>';
       items.forEach(function(x){
         var v=(videoIds(x.name)||[])[0];
-        var thumb=v?'<img class="pk-thumb" alt="" src="https://i.ytimg.com/vi/'+v+'/mqdefault.jpg">':'<span class="pk-thumb pk-noimg"></span>';
+        var thumb=v?vidFrameHTML(v,'pk-thumb'):'<span class="pk-thumb pk-noimg"></span>';
         body+='<button class="pk-row'+(x.name===curName?' cur':'')+'" data-name="'+esc(x.name)+'">'+
           thumb+'<span class="pk-nm">'+esc(x.name)+'</span><span class="pk-eq mono">'+esc(EQ_LABEL[x.eq]||x.eq)+'</span></button>';
       });
     });
     if(!body) body='<div class="pk-empty">No matches</div>';
     ov.querySelector('#pk-list').innerHTML=body;
+    wireVideos(ov.querySelector('#pk-list'));
     ov.querySelectorAll('.pk-row').forEach(function(b){
       b.addEventListener('click',function(){ choose(b.getAttribute('data-name')); });
       var im=b.querySelector('img'); if(im) im.addEventListener('error',function(){ im.replaceWith(document.createElement('span')); });
@@ -2510,7 +2547,7 @@ function renderLibrary(){
   });
   var rows=items.map(function(x){
     var vid=(videoIds(x.name)||[])[0];
-    var thumb=vid?'<img class="pk-thumb" alt="" src="https://i.ytimg.com/vi/'+vid+'/mqdefault.jpg">'
+    var thumb=vid?vidFrameHTML(vid,'pk-thumb')
                  :'<span class="pk-thumb pk-noimg"></span>';
     return '<button class="pk-row lib-row" data-name="'+esc(x.name)+'">'+thumb+
       '<span class="pk-nm">'+esc(x.name)+'<span class="lib-cat mono">'+esc(CAT_LABEL[x.pat]||x.pat)+'</span></span>'+
@@ -2532,6 +2569,7 @@ function renderLibrary(){
   v.querySelectorAll('.lib-chips .chip').forEach(function(b){
     b.addEventListener('click',function(){ libCat=b.getAttribute('data-c'); renderLibrary(); });
   });
+  wireVideos(v);
   v.querySelectorAll('.lib-row').forEach(function(b){
     b.addEventListener('click',function(){ openMoveDetail(b.getAttribute('data-name')); });
     var im=b.querySelector('img'); if(im) im.addEventListener('error',function(){ im.replaceWith(document.createElement('span')); });
@@ -2545,10 +2583,7 @@ function openMoveDetail(name){
   var vids=videoIds(name)||[], search=demoURL(name);
   var cues=autoCues(name);
   var hist=current.athlete?setsGet(current.athlete)[name]:null;
-  var videoHTML=vids.length
-    ? '<div class="ov-video"><iframe src="https://www.youtube-nocookie.com/embed/'+vids[0]+
-      '?rel=0&playsinline=1&modestbranding=1" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>'
-    : '';
+  var videoHTML=vids.length ? '<div class="ov-video">'+vidFacadeHTML(vids[0])+'</div>' : '';
   var eyebrow = mv ? (CAT_LABEL[mv.pat]||mv.pat).toUpperCase() : 'EXERCISE';
   var eqBadge = mv ? '<span class="pk-eq mono" style="border:1px solid var(--line);border-radius:999px;padding:4px 11px">'+esc(EQ_LABEL[mv.eq]||mv.eq)+'</span>' : '';
   var histRows=(hist&&hist.hist?hist.hist:[]).slice().reverse().map(function(h){
@@ -2569,7 +2604,7 @@ function openMoveDetail(name){
       '<div class="ov-title">'+esc(name)+'</div>'+
       (eqBadge?'<div class="pr-line mono">'+eqBadge+'</div>':'')+
       videoHTML+
-      '<a class="ov-yt-link" href="'+search+'" target="_blank" rel="noopener">'+(vids.length?'Open on YouTube ↗':'Search a demo on YouTube ↗')+'</a>'+
+      (vids.length?'':'<a class="ov-yt-link" href="'+search+'" target="_blank" rel="noopener">Search a demo on YouTube ↗</a>')+
       '<div class="ov-cues"><ul>'+cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
       '<div class="md-hist" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">'+
         '<div class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--ink-faint)">HISTORY</div>'+
@@ -2577,6 +2612,7 @@ function openMoveDetail(name){
       '</div>'+
     '</div>'+
     '<div class="ov-actions"><button class="ov-btn" id="md-close">CLOSE</button></div>';
+  wireVideos(ov);
   ov.querySelector('#md-x').addEventListener('click',closeOverlay);
   ov.querySelector('#md-close').addEventListener('click',closeOverlay);
 }
@@ -3705,12 +3741,8 @@ function openPlayer(d,storeKey,opts){
     var vids=videoIds(nm)||[], search=demoURL(nm);
     var demoBtn='<a class="demo-btn" style="align-self:flex-start;margin-top:4px" href="'+search+'" target="_blank" rel="noopener">'+
       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>WATCH DEMO</a>';
-    // load the real YouTube player directly (single tap on YouTube's own play button;
-    // a custom facade would need a second tap because the gesture can't cross into the iframe)
-    function iframeHTML(v){ return '<iframe src="https://www.youtube-nocookie.com/embed/'+v+
-      '?rel=0&playsinline=1&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>'; }
     // one demo per move (the first in VIDEO_LIB is the chosen one)
-    var videoHTML = vids.length ? '<div class="ov-video" id="ov-video">'+iframeHTML(vids[0])+'</div>' : demoBtn;
+    var videoHTML = vids.length ? '<div class="ov-video" id="ov-video">'+vidFacadeHTML(vids[0])+'</div>' : demoBtn;
     // set logger: strength schemes like "4 × 8" get per-set weight/reps rows;
     // the prescription itself is editable (tap the scheme) and sticks per athlete
     var ed=editsGet(current.athlete)[nm];
@@ -3795,6 +3827,7 @@ function openPlayer(d,storeKey,opts){
         '<button class="ov-btn primary" id="pl-done">DONE →</button>'+
       '</div>';
     wireMuteBtn(ov);
+    wireVideos(ov);
     if(hold) runHold(ov,hold,function(){ var b=ov.querySelector('#pl-done'); if(b) b.classList.add('pulse'); });
     ov.querySelector('#pl-x').addEventListener('click',exit);
     ov.querySelector('#pl-skip').addEventListener('click',function(){ idx++; showExercise(); });
