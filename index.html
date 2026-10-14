@@ -2060,7 +2060,7 @@ function buildPlanChrome(id){
 var activeTab='home';
 var onOverlayClose=null;
 function showTab(t){
-  if(t==='run'){ openRunTab(); return; }
+  if(t==='run'){ openAddRun(); return; } // runs live in Nike Run Club; log them here
   if(!current.athlete && t!=='profile' && t!=='library') t='profile';
   activeTab=t;
   ['home','plan','activity','library','profile'].forEach(function(k){
@@ -2077,24 +2077,6 @@ function showTab(t){
   else if(t==='library') renderLibrary();
   else if(t==='profile') renderProfile();
   window.scrollTo(0,0);
-}
-// Run is an action tab: opens the GPS tracker for today's run (or a free run)
-function openRunTab(){
-  if(!current.athlete){ showTab('profile'); return; }
-  var a=ATHLETES[current.athlete];
-  var today=todayFor(current.athlete,current.ctx);
-  var d=(today&&today.type==='run')?today
-    :{key:'free_'+todayKey(),type:'run',title:'Free Run',
-      run:{kind:'walkrun',warm:'',cool:''}};
-  var sk=store.key(current.athlete,current.ctx,d.key);
-  openGpsRun(d,a,sk);
-  // highlight Run while the tracker is up, restore the real tab after
-  // (set after openGpsRun: opening an overlay first closes any previous one,
-  // which would have fired this hook immediately)
-  document.querySelectorAll('.tabbar .tb').forEach(function(b){
-    b.classList.toggle('active',b.getAttribute('data-tab')==='run');
-  });
-  onOverlayClose=function(){ showTab(activeTab); };
 }
 
 /* ---- Home tab ("Today"): one screen, one decision ---- */
@@ -2132,7 +2114,8 @@ function renderHome(){
   // coming back after 3+ days off is the workout that matters most
   var comeback=!todayE && d.type!=='rest' && prev && prev.gap>=3;
   var siFlare=a.siCheck && prev && prev.entry && prev.entry.si===3;
-  var nudge = todayE ? (todayE.cb ? "Comeback done. That's the one that counts most." : "Done for today. That's how it's built.")
+  var nudge = todayE ? (todayE.t==='run' && !complete ? "Run logged. Lifting today is a bonus, not a must."
+      : todayE.cb ? "Comeback done. That's the one that counts most." : "Done for today. That's how it's built.")
     : siFlare ? "Your SI joint flared last time — go lighter today and swap anything that pinches."
     : comeback ? (prev.gap>=14 ? "Welcome back. Start easy — the "+quickLabel(id)+" version is perfect today."
                                : "Comeback day. The workout after a break matters most — even the short version counts.")
@@ -2156,8 +2139,8 @@ function renderHome(){
     body='<div class="tc-next">Nice work.'+(after?' Next time: <b>'+esc(after)+'</b>':'')+'</div>'+si+
       '<button class="tc-link" id="hm-review">Review today\'s session ▸</button>';
   } else if(d.type==='run'){
-    body='<div class="today-actions"><button class="start-btn big" id="hm-gps">▶ START RUN</button></div>'+
-      '<button class="tc-link" id="hm-timer">Or use a simple timer</button>';
+    body='<div class="today-actions"><button class="start-btn big" id="hm-timer">▶ START TIMER</button></div>'+
+      '<button class="tc-link" id="hm-log">Ran with Nike? Log it instead</button>';
   } else if(d.type==='rest'){
     body='<div class="tc-rest">'+(d.rest||['Rest and recover']).map(esc).join('<br>')+'</div>';
   } else {
@@ -2180,18 +2163,16 @@ function renderHome(){
       (d.type!=='rest'&&!complete?locToggleHTML(id):'')+
       body+
     '</div>'+
-    (d.type==='run'?'':'<button class="hm-quiet" id="hm-freerun">'+
-      (d.type==='rest'?'Feel like moving? Track a walk ▸':'Rather walk or run? Track it ▸')+'</button>');
+    (d.type==='run'?'':'<button class="hm-quiet" id="hm-log">Went for a run? Log it ▸</button>');
 
   // arm AFTER opening: openOverlay() closes any prior overlay, which fires the hook
   function refreshHome(){ onOverlayClose=function(){ if(activeTab==='home') renderHome(); }; }
   function on(sel,fn){ var b=v.querySelector(sel); if(b) b.addEventListener('click',fn); }
-  on('#hm-gps',function(){ openGpsRun(d,a,sk); refreshHome(); });
   on('#hm-timer',function(){ current.day=d.key; openTimer(d,a,sk); refreshHome(); });
   on('#hm-play',function(){ openPlayer(d,sk); refreshHome(); });
   on('#hm-mini',function(){ openPlayer(d,sk,{items:miniItems(d,store.get(sk)),rest:30,mini:true}); refreshHome(); });
   on('#hm-review',function(){ current.day=d.key; showTab('plan'); });
-  on('#hm-freerun',function(){ showTab('run'); });
+  on('#hm-log',function(){ openAddRun(); refreshHome(); });
   on('#hm-avatar',function(){ showTab('profile'); });
   // the Plan tab has its own copy of the switch, so keep it in step
   wireLocToggle(v,id,function(){ buildPlanChrome(id); renderHome(); });
@@ -2222,7 +2203,7 @@ function renderActivity(){
   }).join('');
   v.innerHTML=
     '<div class="act-head"><p class="eyebrow" style="margin:0">History</p>'+
-      '<button class="act-add mono" id="act-add">＋ ADD RUN</button></div>'+
+      '<button class="act-add mono" id="act-add">＋ LOG RUN</button></div>'+
     '<div class="statsbar mono" style="margin-top:10px"><span>TOTAL <b>'+dates.length+'</b> SESSIONS'+
       (rt.runs?' · <b>'+rt.runs+'</b> RUNS':'')+'</span></div>'+
     calendarHTML(log,rt)+
@@ -2353,11 +2334,11 @@ function openAddRun(){
   var u=unitsFor(current.athlete);
   var today=dateISO(new Date());
   ov.innerHTML=
-    '<div class="ov-top"><span class="ov-prog">ADD RUN</span>'+
+    '<div class="ov-top"><span class="ov-prog">LOG A RUN</span>'+
     '<button class="ov-x" id="ar-x">✕</button></div>'+
     '<div class="ov-mid ex" style="gap:4px">'+
       '<div class="brow"><div class="blabel mono">NAME (OPTIONAL)</div>'+
-        '<input id="ar-name" class="binput" placeholder="Morning run" maxlength="24"></div>'+
+        '<input id="ar-name" class="binput" placeholder="Nike run" maxlength="24"></div>'+
       '<div class="brow"><div class="blabel mono">DATE</div>'+
         '<input id="ar-date" type="date" class="binput" value="'+today+'" max="'+today+'"></div>'+
       '<div class="brow"><div class="blabel mono">DISTANCE · '+u.toUpperCase()+'</div>'+
@@ -2403,14 +2384,16 @@ function openAddRun(){
     var secs=Math.round(parseFloat(ov.querySelector('#ar-dur').value)*60);
     var name=(ov.querySelector('#ar-name').value||'').trim()||'Run';
     var log=logGet(current.athlete);
-    log[iso]={t:'run',title:name+' · '+dist.toFixed(1)+' '+u,
-      run:{dist:dist,unit:u,secs:secs,pace:fmtPace(secs/dist),manual:true}};
+    log[iso]=mergeDay(log[iso],{t:'run',title:name+' · '+dist.toFixed(1)+' '+u,
+      run:{dist:dist,unit:u,secs:secs,pace:fmtPace(secs/dist),manual:true}});
     logSet(current.athlete,log);
     closeOverlay(); renderActivity(); confetti();
   }
   ov.querySelector('#ar-save').addEventListener('click',function(){
     var iso=ov.querySelector('#ar-date').value;
-    if(logGet(current.athlete)[iso]) confirmTap(this,'REPLACE EXISTING?',doSaveRun);
+    // a lifting day just gains the run; only a second run on one day replaces
+    var ex=logGet(current.athlete)[iso];
+    if(ex && (ex.run||ex.t==='run')) confirmTap(this,'REPLACE THAT DAY\'S RUN?',doSaveRun);
     else doSaveRun();
   });
 }
@@ -2423,10 +2406,10 @@ function renderProfile(){
   var menu=document.getElementById('prof-menu');
   menu.innerHTML=current.athlete?
     '<button class="menu-row" id="mn-lib"><span>Exercise library</span><span>▸</span></button>'+
-    '<button class="menu-row" id="mn-run"><span>Track a walk or run</span><span>▸</span></button>':'';
+    '<button class="menu-row" id="mn-run"><span>Log a run</span><span>▸</span></button>':'';
   if(current.athlete){
     menu.querySelector('#mn-lib').addEventListener('click',function(){ showTab('library'); });
-    menu.querySelector('#mn-run').addEventListener('click',function(){ showTab('run'); });
+    menu.querySelector('#mn-run').addEventListener('click',openAddRun);
   }
   renderRoster();
   var ex=document.getElementById('prof-extra');
@@ -2873,13 +2856,22 @@ function dayDone(d,state){
   for(var i=0;i<runBlockCount(d);i++){ if(state["run_"+i]) c++; }
   return c;
 }
+// History keeps one entry per day, so a run logged on a lifting day joins
+// that day's entry instead of replacing it (and vice versa)
+function runBit(r){ return 'run '+(+r.dist).toFixed(1)+' '+r.unit; }
+function mergeDay(old,neu){
+  if(!old) return neu;
+  if(neu.run && !old.run && old.t!=='run'){ old.run=neu.run; old.title+=' + '+runBit(neu.run); return old; }
+  if(!neu.run && old.run){ neu.run=old.run; neu.title+=' + '+runBit(old.run); return neu; }
+  return neu;
+}
 function logSession(d,suffix,extra){
   var log=logGet(current.athlete);
   var t=dateISO(new Date());
   var isNew=!log[t];
   var entry=logEntry(current.athlete,d,d.title+(suffix||''));
   if(extra) for(var k in extra) entry[k]=extra[k];
-  log[t]=entry;
+  log[t]=mergeDay(log[t],entry);
   logSet(current.athlete,log);
   renderStats();
   if(isNew) confetti();
@@ -2888,7 +2880,9 @@ function unlogSession(d){
   var log=logGet(current.athlete);
   var t=dateISO(new Date());
   if(log[t] && log[t].title.indexOf(d.title)===0){
-    delete log[t];
+    var r=log[t].t!=='run' && log[t].run; // keep a run that was logged alongside
+    if(r) log[t]={t:'run',title:'Run · '+(+r.dist).toFixed(1)+' '+r.unit,run:r};
+    else delete log[t];
     logSet(current.athlete,log);
     renderStats();
   }
@@ -2937,15 +2931,14 @@ function renderDay(){
     sess.appendChild(runBrief(d,a,run));
     var rid='run_'+ri, rdone=!!state[rid];
     var rbar=el('div','startbar');
-    rbar.innerHTML='<button class="start-btn" data-gps="'+ri+'">'+
-      '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START GPS RUN</button>'+
-      '<div class="startbar-sub"><button class="start-btn alt" data-rtimer="'+ri+'">⏱ Timer</button>'+
+    rbar.innerHTML='<button class="start-btn" data-rtimer="'+ri+'">'+
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>START TIMER</button>'+
+      '<div class="startbar-sub">'+
       '<button class="start-btn alt" data-rmini="'+ri+'">⏱ 10-min</button>'+
       '<button class="sess-done'+(rdone?' on':'')+'" data-rdone="'+ri+'">'+
       '<span class="check">'+CHECK.innerHTML+'</span><span class="sd-label">'+
       (rdone?'RUN DONE':'MARK RUN DONE')+'</span></button></div>';
     sess.appendChild(rbar);
-    rbar.querySelector('[data-gps]').addEventListener('click',function(){ openGpsRun(d,a,storeKey); });
     rbar.querySelector('[data-rtimer]').addEventListener('click',function(){ openTimer(d,a,storeKey); });
     rbar.querySelector('[data-rmini]').addEventListener('click',function(){ openTimer(d,a,storeKey,{countdown:600,label:'EASY PACE',mini:true}); });
     rbar.querySelector('[data-rdone]').addEventListener('click',function(){
@@ -4068,17 +4061,10 @@ function openTimer(d,a,storeKey,opts){
   }
 }
 
-/* ================= GPS run tracker ================= */
+/* ================= runs: units, pace, past-route maps ================= */
 var UNIT_M={mi:1609.344,km:1000};
 function unitsFor(a){ try{ return localStorage.getItem('trainops:units:'+a)||'mi'; }catch(e){ return 'mi'; } }
 function unitsSave(a,u){ try{ localStorage.setItem('trainops:units:'+a,u); }catch(e){} }
-function haversine(a,b){ // meters between two {lat,lon}
-  var R=6371000,rad=Math.PI/180;
-  var dLat=(b.lat-a.lat)*rad, dLon=(b.lon-a.lon)*rad;
-  var s=Math.sin(dLat/2)*Math.sin(dLat/2)+
-        Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLon/2)*Math.sin(dLon/2);
-  return 2*R*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
-}
 function fmtPace(sPerUnit){
   if(!isFinite(sPerUnit)||sPerUnit<=0||sPerUnit>3599) return "--:--";
   return Math.floor(sPerUnit/60)+":"+pad2(Math.round(sPerUnit)%60);
@@ -4113,331 +4099,6 @@ function gpsToast(msg){
 function accentColor(){
   var c=(getComputedStyle(document.body).getPropertyValue('--amber')||'').trim();
   return c||'#FF4D00';
-}
-
-function openGpsRun(d,a,storeKey){
-  var ov=openOverlay();
-  var unit=unitsFor(current.athlete);
-  // interval prescription -> optional phase cues on top of live stats
-  var text = a.mode==="week"
-    ? (a.runTable[parseInt(current.ctx.slice(1))]||{})[d.key]
-    : (d.run && d.run.extra);
-  var icfg=parseIntervals(text||"");
-  var schedule=null;
-  if(icfg){
-    schedule=[];
-    for(var r=0;r<icfg.rounds;r++){
-      var pair=icfg.startEasy
-        ? [{lab:icfg.easyLab,cls:'easy',secs:icfg.easy},{lab:icfg.workLab,cls:'work',secs:icfg.work}]
-        : [{lab:icfg.workLab,cls:'work',secs:icfg.work},{lab:icfg.easyLab,cls:'easy',secs:icfg.easy}];
-      schedule=schedule.concat(pair);
-    }
-  }
-
-  var watchId=null, map=null, poly=null, marker=null, mapReady=false;
-  var readyMap=null, readyMarker=null;
-  var run={ movingMs:0, dist:0, last:null, track:[], splits:[], recent:[],
-            manualPause:false, autoPause:false, lastProgress:null, finished:false,
-            elevGain:0, lastAlt:null };
-  var lastTickAt=null;
-
-  function stopWatch(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(e){} watchId=null; } }
-  function stopInt(){ if(ovInt){ clearInterval(ovInt); ovInt=null; } }
-  function exit(){ stopWatch(); stopInt(); killReadyMap(); closeOverlay(); renderDay(); }
-  function paused(){ return run.manualPause||run.autoPause; }
-  function distU(){ return run.dist/UNIT_M[unit]; }
-  function avgPace(){ return distU()>0.02 ? (run.movingMs/1000)/distU() : NaN; }
-  function curPace(){ // rolling ~30s of moving time
-    var rc=run.recent;
-    while(rc.length>1 && run.movingMs-rc[0].t>30000) rc.shift();
-    if(rc.length<2) return NaN;
-    var dt=(run.movingMs-rc[0].t)/1000, dd=(run.dist-rc[0].d)/UNIT_M[unit];
-    return dd>0.003 ? dt/dd : NaN;
-  }
-
-  function onFix(pos){
-    var c=pos.coords;
-    var p={lat:c.latitude,lon:c.longitude,acc:c.accuracy==null?99:c.accuracy,t:Date.now()};
-    var accEl=document.getElementById('gps-acc');
-    if(accEl){
-      accEl.textContent=p.acc<=30?'GPS READY · ±'+Math.round(p.acc)+'m':'ACQUIRING GPS · ±'+Math.round(p.acc)+'m';
-      accEl.classList.toggle('ok',p.acc<=30);
-      var go=document.getElementById('gps-go');
-      if(go && p.acc<=30) go.disabled=false;
-    }
-    var chip=document.getElementById('gps-chip');
-    if(chip){
-      chip.classList.toggle('ok',p.acc<=50);
-      var lab=chip.querySelector('.gc-lab'); if(lab) lab.textContent='GPS ±'+Math.round(p.acc)+'m';
-    }
-    if(run.finished) return;
-    if(p.acc>100) return;                          // unusable fix
-    run.lastFixAt=Date.now(); run.lastAcc=p.acc;
-    if(!run.started){ run.last=p; ensureReadyMap(); return; } // pre-start: remember for map seed
-    // any usable fix keeps the marker honest, even before a counted step
-    if(mapReady){ marker.setLatLng([p.lat,p.lon]); }
-    if(run.manualPause){ run.last=p; return; }
-    if(p.acc>50) return;                           // track position, but too fuzzy for distance
-    if(run.last){
-      var step=haversine(run.last,p);
-      var dt=(p.t-run.last.t)/1000;
-      if(dt>0 && step/dt>12){ return; }            // GPS jump — discard point
-      // adaptive threshold: anchor stays put on rejected steps, so walking
-      // accumulates once real movement outgrows the jitter radius
-      if(step>=Math.max(3,p.acc*0.6)){
-        run.dist+=step;
-        run.track.push([p.lat,p.lon]);
-        run.autoPause=false;
-        run.lastProgress=Date.now();
-        run.recent.push({t:run.movingMs,d:run.dist});
-        // elevation gain from real altitude when the device provides it
-        if(c.altitude!=null){
-          if(run.lastAlt!=null){
-            var up=c.altitude-run.lastAlt;
-            if(up>0.5&&up<15) run.elevGain+=up; // ignore noise + spikes
-          }
-          run.lastAlt=c.altitude;
-        }
-        // split alert each whole mile/km
-        var target=(run.splits.length+1)*UNIT_M[unit];
-        if(run.dist>=target){
-          var prev=0; for(var i=0;i<run.splits.length;i++) prev+=run.splits[i];
-          var sp=Math.round(run.movingMs/1000-prev);
-          run.splits.push(sp);
-          beep(880,300); buzz([200,100,200]);
-          gpsToast((unit==='mi'?'Mile ':'Km ')+run.splits.length+' — '+fmtSecs(sp)+'. Keep it up!');
-        }
-        if(mapReady){ poly.addLatLng([p.lat,p.lon]);
-          map.panTo([p.lat,p.lon],{animate:true,duration:.6}); }
-        run.last=p;                                 // advance anchor only on accepted movement
-      }
-    } else {
-      run.track.push([p.lat,p.lon]);
-      if(mapReady){ map.setView([p.lat,p.lon],16); }
-      run.last=p;
-    }
-  }
-  // Nike-style ready screen: your surroundings, washed, behind the controls
-  function ensureReadyMap(){
-    if(!run.last||run.started||run.finished) return;
-    if(readyMap){
-      try{ readyMarker.setLatLng([run.last.lat,run.last.lon]);
-           readyMap.setView([run.last.lat,run.last.lon],15,{animate:false}); }catch(e){}
-      return;
-    }
-    if(!document.getElementById('gps-ready-bg')) return;
-    loadLeaflet().then(function(ok){
-      var mel=document.getElementById('gps-ready-bg');
-      if(!ok||!mel||readyMap||run.started||run.finished||!run.last) return;
-      try{
-        readyMap=L.map(mel,{zoomControl:false,attributionControl:false,
-          dragging:false,touchZoom:false,scrollWheelZoom:false});
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(readyMap);
-        readyMarker=L.circleMarker([run.last.lat,run.last.lon],
-          {radius:8,fillColor:accentColor(),color:'#fff',weight:2,fillOpacity:1}).addTo(readyMap);
-        readyMap.setView([run.last.lat,run.last.lon],15);
-      }catch(e){ readyMap=null; }
-    });
-  }
-  function killReadyMap(){
-    if(readyMap){ try{ readyMap.remove(); }catch(e){} readyMap=null; readyMarker=null; }
-  }
-  function startWatch(){
-    if(!navigator.geolocation){ var g=document.getElementById('gps-acc'); if(g) g.textContent='NO GPS ON THIS DEVICE'; return; }
-    try{
-      watchId=navigator.geolocation.watchPosition(onFix,function(err){
-        var g=document.getElementById('gps-acc');
-        if(g) g.textContent=err&&err.code===1?'LOCATION PERMISSION DENIED':'WAITING FOR GPS…';
-      },{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
-    }catch(e){}
-  }
-
-  /* ---- ready screen ---- */
-  function readyScreen(){
-    ov.innerHTML=
-      '<div class="gps-readybg" id="gps-ready-bg"></div>'+
-      '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
-      '<span style="display:flex;gap:8px;align-items:center">'+
-      '<span class="gps-chip" id="gps-chip"><span class="dot"></span><span class="gc-lab">GPS</span></span>'+
-      '<button class="ov-x" id="gx">✕</button></span></div>'+
-      '<div class="ov-mid" style="text-align:center">'+
-        '<div class="ov-eyebrow">'+(icfg?'INTERVALS · '+esc(text):'FREE RUN')+'</div>'+
-        '<div class="ov-title">Ready to run?</div>'+
-        (d.run&&d.run.warm?'<div class="ov-note">Warm-up: '+esc(d.run.warm)+'</div>':'')+
-        '<div class="gps-units">'+
-          '<button class="chip'+(unit==='mi'?' on':'')+'" data-u="mi">Miles</button>'+
-          '<button class="chip'+(unit==='km'?' on':'')+'" data-u="km">Kilometers</button>'+
-        '</div>'+
-        '<div class="gps-acc" id="gps-acc">ACQUIRING GPS…</div>'+
-        '<div class="ov-rest-hint">Keep the screen on while you run — the app tracks only while it\'s awake.</div>'+
-      '</div>'+
-      '<div class="ov-actions"><button class="ov-btn primary" id="gps-go" disabled>START RUN →</button></div>';
-    ov.querySelector('#gx').addEventListener('click',exit);
-    ov.querySelectorAll('.gps-units .chip').forEach(function(b){
-      b.addEventListener('click',function(){
-        unit=b.getAttribute('data-u'); unitsSave(current.athlete,unit);
-        ov.querySelectorAll('.gps-units .chip').forEach(function(x){ x.classList.toggle('on',x===b); });
-      });
-    });
-    ov.querySelector('#gps-go').addEventListener('click',liveScreen);
-    startWatch();
-  }
-
-  /* ---- live screen ---- */
-  function liveScreen(){
-    killReadyMap();
-    run.started=true; run.lastProgress=Date.now(); lastTickAt=Date.now();
-    ov.innerHTML=
-      '<div class="ov-top"><span class="ov-prog">GPS RUN · '+esc(d.title)+'</span>'+
-      '<span style="display:flex;gap:8px;align-items:center">'+
-      '<span class="gps-chip ok" id="gps-chip"><span class="dot"></span><span class="gc-lab">GPS</span></span>'+
-      '<button class="ov-x" id="gx">✕</button></span></div>'+
-      '<div class="gps-banner" id="gps-banner">'+(schedule?'':'FREE RUN')+'</div>'+
-      '<div class="gps-eyebrow">ELAPSED TIME</div>'+
-      '<div class="gps-clock" id="gps-clock">0:00</div>'+
-      '<div class="gps-grid">'+
-        '<div class="gps-stat"><div class="l">DISTANCE</div><div class="v"><span id="gv-dist">0.00</span><span class="u">'+unit+'</span></div></div>'+
-        '<div class="gps-stat"><div class="l">CUR PACE</div><div class="v"><span id="gv-pace">--:--</span><span class="u">/'+unit+'</span></div></div>'+
-        '<div class="gps-stat"><div class="l">AVG PACE</div><div class="v"><span id="gv-avg">--:--</span><span class="u">/'+unit+'</span></div></div>'+
-      '</div>'+
-      '<div class="gps-grid two">'+
-        '<div class="gps-stat"><div class="l">CALORIES · EST</div><div class="v"><span id="gv-cal">0</span></div></div>'+
-        '<div class="gps-stat"><div class="l">ELEV GAIN</div><div class="v"><span id="gv-elev">—</span><span class="u">'+(unit==='mi'?'ft':'m')+'</span></div></div>'+
-      '</div>'+
-      '<div id="gps-map" class="off"><div class="gps-maptag"><span class="dot"></span>LIVE ROUTE</div></div>'+
-      '<div class="gps-splits" id="gps-splits" style="display:none"></div>'+
-      '<div class="ov-actions" id="gps-actions">'+
-        '<button class="ov-btn primary" id="gps-pause">PAUSE</button>'+
-        '<button class="ov-btn danger" id="gps-end">END RUN</button>'+
-      '</div>';
-    ov.querySelector('#gx').addEventListener('click',function(){
-      if(run.dist>10) confirmTap(this,'END?',finishScreen);
-      else exit();
-    });
-    ov.querySelector('#gps-pause').addEventListener('click',function(){
-      run.manualPause=!run.manualPause;
-      this.textContent=run.manualPause?'RESUME':'PAUSE';
-      updateBanner();
-    });
-    ov.querySelector('#gps-end').addEventListener('click',finishScreen);
-    // map (graceful when offline / blocked)
-    loadLeaflet().then(function(ok){
-      var mel=document.getElementById('gps-map');
-      if(!ok||!mel||run.finished) return;
-      mel.classList.remove('off');
-      try{
-        var acc=accentColor();
-        map=L.map(mel,{zoomControl:false,attributionControl:true});
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-        // seed from the freshest position we have: counted track, else the
-        // pre-start fix — the world view is only for "no fix ever arrived"
-        var seed=run.track.length?run.track[run.track.length-1]:(run.last?[run.last.lat,run.last.lon]:null);
-        poly=L.polyline(run.track.length?run.track:[],
-          {color:acc,weight:5,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(map);
-        marker=L.circleMarker(seed||[0,0],
-          {radius:7,fillColor:acc,color:'#fff',weight:2,fillOpacity:1}).addTo(map);
-        if(seed) map.setView(seed,16); else map.setView([0,0],2);
-        mapReady=true;
-      }catch(e){ mel.classList.add('off'); }
-    });
-    ovInt=setInterval(tick250,250);
-  }
-  function updateBanner(){
-    var b=document.getElementById('gps-banner'); if(!b) return;
-    if(run.manualPause){ b.textContent='PAUSED'; b.className='gps-banner paused'; return; }
-    // stale signal beats auto-pause labeling: say what's actually wrong
-    if(run.started&&(!run.lastFixAt||Date.now()-run.lastFixAt>8000)){
-      b.textContent='WEAK GPS — MOVE TO OPEN SKY'; b.className='gps-banner paused'; return; }
-    if(run.autoPause){ b.textContent='AUTO-PAUSED'; b.className='gps-banner paused'; return; }
-    if(!schedule){ b.textContent='FREE RUN'; b.className='gps-banner'; return; }
-    var s=Math.floor(run.movingMs/1000), acc=0;
-    for(var i=0;i<schedule.length;i++){
-      acc+=schedule[i].secs;
-      if(s<acc){
-        b.textContent=schedule[i].lab+' · '+fmtSecs(acc-s)+' · ROUND '+(Math.floor(i/2)+1)+'/'+icfg.rounds;
-        b.className='gps-banner '+schedule[i].cls;
-        if(run.seg!==i){ if(run.seg!=null){ beep(schedule[i].cls==='work'?880:520,350); buzz([250,80,250]); } run.seg=i; }
-        return;
-      }
-    }
-    b.textContent='INTERVALS DONE · CRUISE'; b.className='gps-banner easy';
-  }
-  function tick250(){
-    var now=Date.now();
-    // auto-pause: armed only once real movement has been recorded (GPS warm),
-    // then 12s without forward progress
-    if(run.started&&!run.manualPause&&!run.autoPause&&run.dist>0&&
-       run.lastProgress&&now-run.lastProgress>12000){
-      run.autoPause=true; buzz(100);
-    }
-    if(!paused()) run.movingMs+=now-lastTickAt;
-    lastTickAt=now;
-    var c=document.getElementById('gps-clock'); if(c) c.textContent=fmtClock(run.movingMs/1000);
-    var dv=document.getElementById('gv-dist'); if(dv) dv.textContent=distU().toFixed(2);
-    var pv=document.getElementById('gv-pace'); if(pv) pv.textContent=paused()?'--:--':fmtPace(curPace());
-    var av=document.getElementById('gv-avg'); if(av) av.textContent=fmtPace(avgPace());
-    var cv=document.getElementById('gv-cal'); if(cv) cv.textContent=Math.round(run.dist/UNIT_M.mi*105);
-    var ev=document.getElementById('gv-elev');
-    if(ev) ev.textContent=run.lastAlt==null?'—':Math.round(unit==='mi'?run.elevGain*3.28084:run.elevGain);
-    updateBanner();
-  }
-
-  /* ---- finish screen (keeps the map + final route) ---- */
-  function finishScreen(){
-    run.finished=true; stopWatch(); stopInt();
-    var secs=Math.round(run.movingMs/1000), dist=distU();
-    var pace=fmtPace(avgPace());
-    var b=document.getElementById('gps-banner');
-    if(b){ b.textContent='RUN COMPLETE'; b.className='gps-banner easy'; }
-    var c=document.getElementById('gps-clock'); if(c) c.textContent=fmtClock(secs);
-    var pv=document.getElementById('gv-pace'); if(pv) pv.textContent=pace;
-    var av=document.getElementById('gv-avg'); if(av) av.textContent=pace;
-    if(mapReady&&run.track.length>1){ try{ map.fitBounds(poly.getBounds(),{padding:[20,20]}); }catch(e){} }
-    var sp=document.getElementById('gps-splits');
-    if(sp&&run.splits.length){
-      sp.style.display='block';
-      sp.innerHTML=run.splits.map(function(s,i){
-        return '<div class="sp"><span class="n">'+(unit==='mi'?'MILE ':'KM ')+(i+1)+'</span><span>'+fmtSecs(s)+'</span></div>';
-      }).join('');
-    }
-    var cal=Math.round(run.dist/UNIT_M.mi*105);
-    var summary='🏃 '+d.title+' — '+dist.toFixed(2)+' '+unit+' in '+fmtClock(secs)+' ('+pace+' /'+unit+') · ~'+cal+' cal'+
-      (run.elevGain>1?' · '+Math.round(unit==='mi'?run.elevGain*3.28084:run.elevGain)+(unit==='mi'?' ft':' m')+' climb':'')+
-      (run.splits.length?'\nSplits: '+run.splits.map(fmtSecs).join(', '):'');
-    var act=document.getElementById('gps-actions');
-    act.innerHTML=
-      '<button class="ov-btn" id="gps-share">SHARE</button>'+
-      '<button class="ov-btn primary" id="gps-done">MARK DONE ✓</button>';
-    act.querySelector('#gps-share').addEventListener('click',function(){
-      var btn=this;
-      if(navigator.share){ navigator.share({text:summary}).catch(function(){}); }
-      else if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(summary).then(function(){ btn.textContent='COPIED ✓'; }).catch(function(){});
-      }
-    });
-    act.querySelector('#gps-done').addEventListener('click',function(){
-      var s=store.get(storeKey); s.session=true; store.set(storeKey,s);
-      closeOverlay(); renderDay();
-      // keep splits + a downsampled route (≤200 pts) so history can replay the run
-      var slim=[];
-      if(run.track.length>1){
-        var stepN=Math.max(1,run.track.length/200);
-        for(var ti=0;ti<run.track.length;ti+=stepN){
-          var pt=run.track[Math.floor(ti)];
-          slim.push([+pt[0].toFixed(5),+pt[1].toFixed(5)]);
-        }
-        var lastPt=run.track[run.track.length-1];
-        slim.push([+lastPt[0].toFixed(5),+lastPt[1].toFixed(5)]);
-      }
-      logSession(d,' · '+dist.toFixed(1)+' '+unit,
-        {run:{dist:+dist.toFixed(2),unit:unit,secs:secs,pace:pace,cal:cal,
-              elev:run.elevGain>1?Math.round(run.elevGain):0,
-              splits:run.splits.slice(),track:slim}});
-    });
-  }
-
-  readyScreen();
 }
 
 /* ================= gym wall-board ================= */
