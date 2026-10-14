@@ -548,13 +548,6 @@ body.theme-celina .badge.mixed{background:rgba(143,172,106,.16)}
 .ov-mid.ex{justify-content:flex-start;padding-top:6px}
 .ov-video{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;margin:8px 0}
 .ov-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.ov-vstrip{display:flex;gap:8px;margin:8px 0 2px}
-.ov-vthumb{flex:1 1 0;min-width:0;aspect-ratio:16/9;border-radius:6px;overflow:hidden;padding:0;
-  border:2px solid transparent;background:#000;cursor:pointer;position:relative}
-.ov-vthumb img{width:100%;height:100%;object-fit:cover;display:block;opacity:.6;transition:opacity .12s}
-.ov-vthumb.active{border-color:var(--amber)}
-.ov-vthumb.active img{opacity:1}
-.ov-vthumb:active img{opacity:.85}
 .ov-yt-link{align-self:flex-start;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
   color:var(--ink-dim);margin:6px 0 2px;text-decoration:none}
 .ov-yt-link:hover{color:var(--amber)}
@@ -1423,30 +1416,40 @@ function autoCues(name){
 }
 
 
-/* curated form-check videos (YouTube IDs), 2-3 per movement so the player
-   can offer alternates. Longest-substring match, like autoCues.
-   Unmatched exercises fall back to a YouTube search link. */
+/* form-check videos (YouTube IDs), longest-substring match like autoCues.
+   The first ID is the one the player shows; where NASM's "How to do a ___"
+   series covers a move, that's the one used. Unmatched exercises fall back
+   to a YouTube search link. */
 var VIDEO_LIB = {
-  "single-leg romanian deadlift":["Nenu2LI9_dw","Zfr6wizR8rs","iS7atZhcRnw"],
-  "romanian deadlift":["aa57T45iFSE","IJdUtnxAmNo","hQgFixeXdZo"],
-  "goblet squat":["gm4ln6PO4rc","BR4tlEE_A98","6mf0oa2GGUc"],
+  "band overhead triceps extension":["8GVCO0oklnI"],
+  "triceps extension":["dxdr8iSRLA8"],
+  "band biceps curl":["oXAMW-LNX_Q"],
+  "biceps curl":["ykJmrZ5v0Oo"],
+  "adductor squeeze":["vF4Q-pQUQRo"],
+  "doorway pec stretch":["069o76BafTk"],
+  "incline db press":["JKnpHchOWPU"],
+  "face pull":["eTCBSFlCJ_s"],
+  "barbell romanian deadlift":["xgusDooVfKU"],
+  "single-leg romanian deadlift":["6pEL3KxnlEo"],
+  "romanian deadlift":["QFbZevA7dps"],
+  "goblet squat":["nfX7IFK9UNI"],
   "atg split squat":["j9Jy5RRMTrw","qfpkwZlG-cs","4qPJUSczLcM"],
-  "split squat":["qfpkwZlG-cs","4qPJUSczLcM","oVGns3iOxVw"],
+  "split squat":["jXSwAIu70sc"],
   "kb swing":["pAWaNCsncZA","alFXWtV3VcE","1Qi0NQW89Oc"],
   "swing":["pAWaNCsncZA","alFXWtV3VcE","1Qi0NQW89Oc"],
   "banded lateral walk":["y_bqFDQZSHQ","9MuZrYJddcQ","cbDudaLroVs"],
   "ab wheel":["NbudTqiwguk","ikkOq5mHaho","j6lR4u193gE"],
   "suitcase carry":["y-hn_Ha1-RE","WhxtwWqb2BQ","eM7u45iNOEU"],
   "carry":["y-hn_Ha1-RE","WhxtwWqb2BQ","eM7u45iNOEU"],
-  "side plank":["44ND4bOB-T0","iNbH7_edNI8","XeN4pEZZJNI"],
+  "side plank":["44ND4bOB-T0"],
   "chin-up":["T78xCiw_R6g","c8G0_NEJ-yA","e1YSApl-QcM"],
   "band-assisted pull-up":["4yE-XGDWJPg","ZHllQTJf7eA"],
   "negative pull-up":["ELOKABEA1mU","IXBHLLl3hbg","DGSm56-FixA"],
-  "pull-up":["MhokcbRLP5w","6zyx46Vpato","yl_owH54iH0"],
+  "pull-up":["9yVGh3XbJ34"],
   "pike push-up":["pHR5yG6xBps","paCOGgmLCA0","fXgou2W10ok"],
-  "kneeling push-up":["z8nUnCdZXQI","utzhPQuXWcA","1nAsgpufzhc"],
+  "kneeling push-up":["PDr5B2jLUOw"],
   "incline push-up":["0JUrOH--Kdk","49jfZ_z7-us","cfns5VDVVvk"],
-  "push-up":["WDIpL0pjun0","mECzqUIDWfU","IODxDxX7oi4"],
+  "push-up":["WDIpL0pjun0"],
   "single-arm kb press":["bqDq1RXrTGg","gjr-QAdsq4o","X-uFqWtjpGI"],
   "renegade row":["F68p7cJFtOI","0ANhSr-Vk9M","4qEIChzM4ZA"],
   "bent-over kb row":["IyQAMOV0WAc","vjM-TVScoao","BTSSM1iEhug"],
@@ -1461,28 +1464,28 @@ var VIDEO_LIB = {
   "seated calf raise":["ORY-ke6vcgk","M5Pb5C7PgPc","71lLP3aglGQ"],
   "single-leg calf raise":["qhGe_FynFnQ","mFTQo8k1IIU"],
   "calf raise":["97NbelB5yvQ","KRJIKsY02nE","SVtg-1loH4c"],
-  "bird dog":["ZdAHe9_HeEw","biN8oIV1umA","wGh2fZU20-M"],
-  "dead bug":["bxn9FBrt4-A","3eqodmkpkfA","lqnuY3wiBzA"],
-  "single-leg glute bridge":["VUl8R0kn6v4","18GVqjfHy-M","HkF61M6StlY"],
-  "glute bridge":["nbjJjSa0cKo","Q_Bpj91Yiis","OUgsJ8-Vi0E"],
+  "bird dog":["ZdAHe9_HeEw"],
+  "dead bug":["bxn9FBrt4-A"],
+  "single-leg glute bridge":["lHXShY-FivU"],
+  "glute bridge":["Z3cY3d3BBo4"],
   "isolated hip thrust":["z8WwUC_UA4w","pF17m_CXfL0","pBH7pKHn-dI"],
   "hip thrust":["z8WwUC_UA4w","pF17m_CXfL0","pBH7pKHn-dI"],
   "donkey kick":["KgghFOMKnkE","pF9eoC4LGIc","sbE6kb7ZtTU"],
   "kickback":["KgghFOMKnkE","pF9eoC4LGIc","sbE6kb7ZtTU"],
-  "clamshell":["aQVApsdOLSI","Cigb7cbcNxs","09YaaN9hG2I"],
+  "clamshell":["Cn09FlW5Zfs"],
   // ---- custom library coverage ----
   "bodyweight squat":["P-yaD24bUE8","R0vJBTrzLac"],
   "slant board squat":["P-yaD24bUE8","R0vJBTrzLac"],
   "wall sit":["JaZNYM3zAP0","sT0jUNnb9dk"],
   "barbell back squat":["CWl0apMgshk","8PMjqgR8Wa8"],
-  "leg press":["8nm863C0c60","P-FZknD_DxM"],
+  "leg press":["cDGOn-yfKJA"],
   "barbell deadlift":["NVpwlMFrB3I","VG64cp5KTNo"],
-  "back extension":["gLT-WLH84B4","qtjJUWCnDyE"],
+  "back extension":["F6xrarzGl-g"],
   "reverse lunge":["u_zSfK5ZFU4","94AXT7D3bKY"],
   "lateral lunge":["liFeq7swKfc","gwWv7aPcD88","qCA8E-dF8cI"],
   "step-up":["9ZknEYboBOQ","tqECKZxlCKE"],
   "db bench press":["5Y3VZsLb1Ys","pKZMNVbfUzQ"],
-  "barbell bench press":["Pp8rHcFVIYg","gRVjAtPip0Y","BkC7bIGqgjs"],
+  "barbell bench press":["CayG6UYqL8g"],
   "band chest press":["4B6O2dHDjBw","F_A2aa9anT0"],
   "machine chest press":["sqNwDkUU_Ps","pLofEAcfsO8","zgP-UCKGe24"],
   "bench press":["5Y3VZsLb1Ys","pKZMNVbfUzQ"],
@@ -1493,12 +1496,12 @@ var VIDEO_LIB = {
   "machine shoulder press":["3R14MnZbcpw","e5gJP7quyGk","BAZkFGeUy5U"],
   "overhead press":["M2rwvNhTOu0","Did01dFR3Lk"],
   "shoulder press":["M2rwvNhTOu0","Did01dFR3Lk"],
-  "db row":["gfUg6qWohTk","tLnlWj7LQ34"],
+  "db row":["nNpxG9fGHoM"],
   "table row":["EIFEKZe4Wm8","FKKZRwBJDxE","jjSaYXeKiNk"],
   "inverted row":["Fl0UMfdEzsE","ytFnYaoIkSg"],
   "doorway row":["g8wWFlr2gQU","ytEalkENNiQ"],
   "seated cable row":["7BkgqzC6WsM","OeLb503NZHk"],
-  "machine row":["0tzaCqk7_6s","TeFo51Q_Nsc","QOLEucenxn8"],
+  "machine row":["k0cTJCfxa0Y"],
   "band lat pulldown":["SkT4rqrmH-M"],
   "lat pulldown":["SALxEARiMkw","CAwf7n6Luuc"],
   "standing hip abduction":["xUxWsvWj3Go","4qr26RNU3EQ"],
@@ -3706,15 +3709,8 @@ function openPlayer(d,storeKey,opts){
     // a custom facade would need a second tap because the gesture can't cross into the iframe)
     function iframeHTML(v){ return '<iframe src="https://www.youtube-nocookie.com/embed/'+v+
       '?rel=0&playsinline=1&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>'; }
-    var strip = vids.length>1
-      ? '<div class="ov-vstrip" id="ov-vstrip">'+vids.slice(0,3).map(function(v,i){
-          return '<button class="ov-vthumb'+(i===0?' active':'')+'" data-vid="'+v+'">'+
-            '<img alt="" src="https://i.ytimg.com/vi/'+v+'/mqdefault.jpg"></button>'; }).join('')+'</div>'
-      : '';
-    var videoHTML = vids.length
-      ? '<div class="ov-video" id="ov-video">'+iframeHTML(vids[0])+'</div>'+strip+
-        '<a class="ov-yt-link" id="ov-yt" href="'+search+'" target="_blank" rel="noopener">Open on YouTube ↗</a>'
-      : demoBtn;
+    // one demo per move (the first in VIDEO_LIB is the chosen one)
+    var videoHTML = vids.length ? '<div class="ov-video" id="ov-video">'+iframeHTML(vids[0])+'</div>' : demoBtn;
     // set logger: strength schemes like "4 × 8" get per-set weight/reps rows;
     // the prescription itself is editable (tap the scheme) and sticks per athlete
     var ed=editsGet(current.athlete)[nm];
@@ -3798,20 +3794,6 @@ function openPlayer(d,storeKey,opts){
         '<button class="ov-btn" id="pl-skip">SKIP</button>'+
         '<button class="ov-btn primary" id="pl-done">DONE →</button>'+
       '</div>';
-    if(vids.length){
-      var curVid=vids[0];
-      function markActive(){
-        ov.querySelectorAll('.ov-vthumb').forEach(function(b){ b.classList.toggle('active',b.getAttribute('data-vid')===curVid); });
-      }
-      ov.querySelectorAll('.ov-vthumb').forEach(function(b){
-        // a dead alternate's thumbnail just drops out of the strip
-        b.querySelector('img').addEventListener('error',function(){ b.remove(); });
-        b.addEventListener('click',function(){
-          curVid=b.getAttribute('data-vid'); markActive();
-          var wrap=ov.querySelector('#ov-video'); if(wrap) wrap.innerHTML=iframeHTML(curVid);
-        });
-      });
-    }
     wireMuteBtn(ov);
     if(hold) runHold(ov,hold,function(){ var b=ov.querySelector('#pl-done'); if(b) b.classList.add('pulse'); });
     ov.querySelector('#pl-x').addEventListener('click',exit);
