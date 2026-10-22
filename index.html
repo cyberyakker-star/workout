@@ -834,16 +834,16 @@ function glowSessions(){
     { key:"a", label:"Session A", type:"strength", title:"Glutes & Legs", dur:"20 min",
       groups:[
         { label:"Warm-up · booty band", items:[
-          { name:"Glute Bridge", scheme:"× 15", note:"Band above knees · squeeze 2s at the top" },
+          { name:"Banded Glute Bridge", scheme:"× 15", note:"Band above knees · squeeze 2s at the top" },
           { name:"Squat Side Step", scheme:"10 steps / side", note:"Stay low, small steps" } ]},
-        { label:"Pair 1 · 3 rounds · "+PAIR, items:[
+        { label:"Pair 1 · "+PAIR, items:[
           { name:"Goblet Squat", scheme:"3 × 10–15", note:"KB or one DB · 3s down · only as deep as feels good",
             gym:{ name:"Leg Press", scheme:"3 × 10–15", note:"Feet high on the plate for more glutes" },
             min:{ name:"Double Pulse Squat", scheme:"3 × 12", note:"Booty band above knees" } },
           { name:"One-Arm DB Row", scheme:"3 × 10–12 / side", note:"Hand and knee on the bench, flat back",
             gym:{ name:"Seated Cable Row", scheme:"3 × 10–12", note:"" },
             min:{ name:"Band Row", scheme:"3 × 15", note:"Band around a post or door anchor" } } ]},
-        { label:"Pair 2 · 3 rounds · "+PAIR, items:[
+        { label:"Pair 2 · "+PAIR, items:[
           { name:"DB Hip Thrust", scheme:"3 × 12–15", note:"Upper back on the bench, DB on your hips", cues:THRUST_CUES,
             gym:{ name:"Barbell Hip Thrust", scheme:"3 × 10–12", note:"Pad on the bar · or the hip thrust machine" },
             min:{ name:"Isolated Hip Thrust", scheme:"3 × 15", note:"Booty band above knees · pause 2s at the top" } },
@@ -869,20 +869,20 @@ function glowSessions(){
           { name:"Band Pull-Apart", scheme:"× 15" },
           { name:"Lying Leg Abduction", scheme:"× 12 / side", note:"Booty band" },
           { name:"Side Plank", scheme:"20s / side", note:"Knees down is fine" } ]},
-        { label:"Pair 1 · 3 rounds · "+PAIR, items:[
+        { label:"Pair 1 · "+PAIR, items:[
           { name:"Push-up", scheme:"3 × 8–12", note:"Knees down or hands on the bench is fine",
             gym:{ name:"Machine Chest Press", scheme:"3 × 10–12", note:"" },
             min:{ name:"Kneeling Push-up", scheme:"3 × 8–12", note:"" } },
           { name:"Band Lat Pulldown", scheme:"3 × 12–15", note:"Band over the pull-up bar · elbows to your ribs",
             gym:{ name:"Lat Pulldown", scheme:"3 × 10–12", note:"" },
             min:{ note:"Band over a door anchor or sturdy bar" } } ]},
-        { label:"Pair 2 · 3 rounds · "+PAIR, items:[
+        { label:"Pair 2 · "+PAIR, items:[
           { name:"DB Romanian Deadlift", scheme:"3 × 10–12", note:"Light · hips back, flat back · if your back complains, do Hip Thrusts instead",
             min:{ name:"Single-Leg Glute Bridge", scheme:"3 × 10 / side", note:"" } },
           { name:"Seated DB Shoulder Press", scheme:"3 × 10–12", note:"Seated with back support",
             gym:{ name:"Machine Shoulder Press", scheme:"3 × 10–12", note:"" },
             min:{ name:"Band Overhead Press", scheme:"3 × 12–15", note:"" } } ]},
-        { label:"Finisher · arms · 2 rounds", items:[
+        { label:"Finisher · arms", items:[
           { name:"DB Biceps Curl", scheme:"2 × 12", note:"Elbows pinned to your sides",
             cues:["Elbows stay at your sides","Curl up, squeeze, lower for 3 seconds","No swinging — go lighter if you need to","Wrists straight"],
             min:{ name:"Band Biceps Curl", scheme:"2 × 15", note:"Stand on the band" } },
@@ -891,7 +891,7 @@ function glowSessions(){
             min:{ name:"Band Overhead Triceps Extension", scheme:"2 × 15", note:"Band anchored under your foot" } } ]}
       ]}
   ];
-  // 10-min version: one warm-up move, then both pairs at 2 rounds
+  // 10-min version: one warm-up move, then both pairs at 2 sets
   days[0].quick=[[0,0],[1,0,2],[1,1,2],[2,0,2],[2,1,2]];
   days[2].quick=[[0,0],[1,0,2],[1,1,2],[2,0,2],[2,1,2]];
   return days;
@@ -910,16 +910,16 @@ function fullBodySessions(){
     "Stop at a straight line — don't arch past it","Lower slowly"];
   var THRUST_CUES=["Upper back on the edge of the bench","Weight on your hips, feet flat","Drive through your heels, ribs down",
     "Squeeze glutes at the top — don't arch your low back"];
-  function prep(items){ return { label:"Warm-up · hips, core & posture · 2 rounds", items:items }; }
+  function prep(items){ return { label:"Warm-up · hips, core & posture", items:items }; }
   function sessions(){ return [
     { key:"a", label:"Session A", type:"strength", title:"Squat & Bench", dur:"45 min",
       groups:[
         prep([
-          { name:"Bird Dog", scheme:"× 6 / side", note:"Slow · hold 2s · hips stay level" },
-          { name:"Side Plank", scheme:"20s / side", note:"Knees down is fine" },
-          { name:"Clamshell", scheme:"× 12 / side", note:"Booty band above knees" },
-          { name:"Glute Bridge", scheme:"× 12", note:"Squeeze 2s at the top" },
-          { name:"Band Pull-Apart", scheme:"× 15" } ]),
+          { name:"Bird Dog", scheme:"2 × 6 / side", note:"Slow · hold 2s · hips stay level" },
+          { name:"Side Plank", scheme:"2 × 20s / side", note:"Knees down is fine" },
+          { name:"Clamshell", scheme:"2 × 12 / side", note:"Booty band above knees" },
+          { name:"Glute Bridge", scheme:"2 × 12", note:"Squeeze 2s at the top" },
+          { name:"Band Pull-Apart", scheme:"2 × 15" } ]),
         { label:"Strength · 3 sets each", items:[
           { name:"Goblet Squat", scheme:"3 × 10–15", note:"KB or one DB · 3s down · only as deep as feels good",
             gym:{ name:"Leg Press", scheme:"3 × 10–12", note:"Moderate depth — keep your hips down on the pad" } },
@@ -929,19 +929,19 @@ function fullBodySessions(){
             gym:{ name:"Lat Pulldown", scheme:"3 × 10–12", note:"" } },
           { name:"One-Arm DB Row", scheme:"3 × 10–15 / side", note:"Hand and knee on the bench, flat back",
             gym:{ name:"Seated Cable Row", scheme:"3 × 10–12", note:"" } } ]},
-        { label:"Finisher · 2 rounds", items:[
+        { label:"Finisher", items:[
           { name:"Back Extension", scheme:"2 × 12–15", note:"Glute-focused · bodyweight to start", cues:BACK_EXT_CUES },
           { name:"Band Face Pull", scheme:"2 × 15", gym:{ name:"Cable Face Pull", note:"" } },
-          { name:"Doorway Pec Stretch", scheme:"30s / side", note:"Opens up the chest for posture" } ]}
+          { name:"Doorway Pec Stretch", scheme:"2 × 30s / side", note:"Opens up the chest for posture" } ]}
       ]},
     { key:"b", label:"Session B", type:"strength", title:"Hinge & Overhead", dur:"45 min",
       groups:[
         prep([
-          { name:"Dead Bug", scheme:"× 8 / side", note:"Low back stays flat" },
-          { name:"Side Plank", scheme:"20s / side", note:"Knees down is fine" },
-          { name:"Banded Lateral Walk", scheme:"10 steps / side", note:"Booty band · small steps" },
+          { name:"Dead Bug", scheme:"2 × 8 / side", note:"Low back stays flat" },
+          { name:"Side Plank", scheme:"2 × 20s / side", note:"Knees down is fine" },
+          { name:"Banded Lateral Walk", scheme:"2 × 10 steps / side", note:"Booty band · small steps" },
           { name:"Adductor Squeeze", scheme:"5 × 10s hold", note:"Ball or pillow between your knees" },
-          { name:"Band Pull-Apart", scheme:"× 15" } ]),
+          { name:"Band Pull-Apart", scheme:"2 × 15" } ]),
         { label:"Strength · 3 sets each", items:[
           { name:"DB Romanian Deadlift", scheme:"3 × 10–15", note:"Hips back, flat back, DBs close to your legs",
             gym:{ name:"Barbell Romanian Deadlift", scheme:"3 × 8–10", note:"Moderate weight — stop before your back rounds" } },
@@ -951,7 +951,7 @@ function fullBodySessions(){
             gym:{ name:"Assisted Chin-up", scheme:"3 × 8–10", note:"Assist machine — less help as you get stronger" } },
           { name:"Band Row", scheme:"3 × 15", note:"Band anchored at chest height · squeeze shoulder blades",
             gym:{ name:"Chest-Supported Machine Row", scheme:"3 × 10–12", note:"" } } ]},
-        { label:"Finisher · 2 rounds", items:[
+        { label:"Finisher", items:[
           { name:"DB Hip Thrust", scheme:"2 × 12–15", note:"Upper back on the bench, DB on your hips", cues:THRUST_CUES,
             gym:{ name:"Barbell Hip Thrust", scheme:"2 × 10–12", note:"Pad on the bar" } },
           { name:"Standing Anti-Rotation Press", scheme:"2 × 10 / side", note:"Pallof press · band at chest height",
@@ -961,11 +961,11 @@ function fullBodySessions(){
     { key:"c", label:"Session C", type:"strength", title:"Split Squat & Push", dur:"45 min",
       groups:[
         prep([
-          { name:"Bird Dog", scheme:"× 6 / side", note:"Slow · hold 2s · hips stay level" },
-          { name:"Side Plank", scheme:"20s / side", note:"Knees down is fine" },
-          { name:"Lying Leg Abduction", scheme:"× 12 / side", note:"Booty band for more" },
-          { name:"Glute Bridge Spread", scheme:"× 12", note:"Booty band · press knees out at the top" },
-          { name:"Band Pull-Apart", scheme:"× 15" } ]),
+          { name:"Bird Dog", scheme:"2 × 6 / side", note:"Slow · hold 2s · hips stay level" },
+          { name:"Side Plank", scheme:"2 × 20s / side", note:"Knees down is fine" },
+          { name:"Lying Leg Abduction", scheme:"2 × 12 / side", note:"Booty band for more" },
+          { name:"Glute Bridge Spread", scheme:"2 × 12", note:"Booty band · press knees out at the top" },
+          { name:"Band Pull-Apart", scheme:"2 × 15" } ]),
         { label:"Strength · 3 sets each", items:[
           { name:"Split Squat", scheme:"3 × 8–10 / side", note:"Short stance · hold the bench for balance · if your SI complains, do Goblet Squats",
             gym:{ note:"Hold DBs when bodyweight is easy · short stance" } },
@@ -975,15 +975,15 @@ function fullBodySessions(){
             gym:{ name:"Lat Pulldown", scheme:"3 × 10–12", note:"" } },
           { name:"KB Row", scheme:"3 × 12–15 / side", note:"25 lb KB · hand on the bench",
             gym:{ name:"Seated Cable Row", scheme:"3 × 10–12", note:"" } } ]},
-        { label:"Finisher · 2 rounds", items:[
+        { label:"Finisher", items:[
           { name:"Back Extension", scheme:"2 × 12–15", note:"Glute-focused · hold a weight when bodyweight is easy", cues:BACK_EXT_CUES },
           { name:"Ab Wheel Rollout", scheme:"2 × 8", note:"From your knees · short range — skip if your back or SI complains" },
-          { name:"Doorway Pec Stretch", scheme:"30s / side", note:"Opens up the chest for posture" } ]}
+          { name:"Doorway Pec Stretch", scheme:"2 × 30s / side", note:"Opens up the chest for posture" } ]}
       ]}
   ]; }
-  // 20-min version: first 3 warm-up moves once, then the 4 main lifts at 2 sets
+  // 20-min version: first 3 warm-up moves (1 set), then the 4 main lifts at 2 sets
   return sessions().map(function(d){
-    d.quick=[[0,0],[0,1],[0,2],[1,0,2],[1,1,2],[1,2,2],[1,3,2]];
+    d.quick=[[0,0,1],[0,1,1],[0,2,1],[1,0,2],[1,1,2],[1,2,2],[1,3,2]];
     return d;
   });
 }
@@ -1426,6 +1426,8 @@ function autoCues(name){
    series covers a move, that's the one used. Unmatched exercises fall back
    to a YouTube search link. */
 var VIDEO_LIB = {
+  "glute bridge spread":["4QyXyg_pg8M"],
+  "banded glute bridge":["91uayvdKAQY"],
   "band overhead triceps extension":["8GVCO0oklnI"],
   "triceps extension":["dxdr8iSRLA8"],
   "band biceps curl":["oXAMW-LNX_Q"],
@@ -3112,7 +3114,10 @@ function miniItems(d,state){
     var ex=gs[gi].items[xi], id=gi+"_"+xi;
     if(sets && /^\s*\d+\s*×/.test(ex.scheme||'')){
       var c={}; for(var k in ex) c[k]=ex[k];
-      c.scheme=ex.scheme.replace(/^\s*\d+\s*×/,sets+' ×'); ex=c;
+      var rest=ex.scheme.replace(/^\s*\d+\s*×\s*/,'');
+      // one set: "2 × 6 / side" -> "× 6 / side", "2 × 20s / side" -> "20s / side"
+      c.scheme = sets>1 ? sets+' × '+rest : (/^\d+\s*(s\b|min|steps)/.test(rest) ? rest : '× '+rest);
+      ex=c;
     }
     out.push({ id:id, gi:gi, label:gs[gi].label||"", ex:ex, nm:state["swap_"+id]||ex.name });
   }
@@ -3342,15 +3347,16 @@ function tryHint(hist,sr,scheme){
 // "3 min") -> the phases for the player's hold timer, or null
 function parseHold(scheme){
   var s=String(scheme||''), m, work=0, reps=1, rest=0;
-  if((m=s.match(/(\d+)\s*s\s*on\s*\/\s*(\d+)\s*s\s*off\s*[×x]\s*(\d+)/i))){ work=+m[1]; rest=+m[2]; reps=+m[3]; }
-  else if((m=s.match(/(?:(\d+)\s*[×x]\s*)?(\d+)\s*s\b/i))){ work=+m[2]; if(m[1]){ reps=+m[1]; rest=5; } }
+  var unit=/hold/i.test(s)?'HOLD':'SET';
+  if((m=s.match(/(\d+)\s*s\s*on\s*\/\s*(\d+)\s*s\s*off\s*[×x]\s*(\d+)/i))){ work=+m[1]; rest=+m[2]; reps=+m[3]; unit='ROUND'; }
+  else if((m=s.match(/(?:(\d+)\s*[×x]\s*)?(\d+)\s*s\b/i))){ work=+m[2]; if(m[1]){ reps=+m[1]; rest=unit==='HOLD'?5:10; } }
   else if((m=s.match(/^\s*(\d+)(?:\s*[–-]\s*\d+)?\s*min\b/i))){ work=+m[1]*60; }
   if(!work||work>1800||reps>20) return null;
   var sides=/\/\s*side/i.test(s)?2:1, ph=[{lab:'GET READY',secs:3,ready:true}];
   for(var r=0;r<reps;r++){
     for(var sd=0;sd<sides;sd++){
       if(sd) ph.push({lab:'SWITCH SIDES',secs:5,ready:true});
-      ph.push({lab:(reps>1?'ROUND '+(r+1)+' OF '+reps:'GO')+(sides>1?' · SIDE '+(sd+1):''),secs:work});
+      ph.push({lab:(reps>1?unit+' '+(r+1)+' OF '+reps:'GO')+(sides>1?' · SIDE '+(sd+1):''),secs:work});
     }
     if(r<reps-1&&rest) ph.push({lab:'REST',secs:rest,ready:true});
   }
