@@ -188,7 +188,7 @@ function applyLevels(id, days) {
     var per = d.perLevel || 3, n = d.levels.length, base = Math.floor(done / per);
     var i = Math.max(0, Math.min(n - 1, base + (off[d.key] || 0))), L = d.levels[i], c = {};
     for (var k in d) if (k !== 'levels') c[k] = d[k];
-    c.title = L.title; c.dur = L.dur || d.dur; c.run = L.run;
+    c.title = 'Run day'; c.dur = L.dur || d.dur; c.run = L.run;
     c.level = { i: i, n: n, base: base, inLevel: done % per, per: per };
     return c;
   });
@@ -606,7 +606,7 @@ function routineLevel(id, rid) { var c = cfgGet(id).rlvl || {}; return Math.max(
 function setRoutineLevel(id, rid, n) { var c = cfgGet(id); c.rlvl = c.rlvl || {}; c.rlvl[rid] = Math.max(1, Math.min(4, n)); cfgSet(id, c); }
 function scaleScheme(s, f) { return String(s).replace(/(\d+)\s*s\b/, function (all, n) { return Math.max(10, Math.round(+n * f / 5) * 5) + 's'; }); }
 function levelMoves(id, r, lvl) {
-  lvl = lvl || routineLevel(id, r.id);
+  lvl = lvl || (r.mine ? 1 : routineLevel(id, r.id));
   var base = r.levels && r.levels[lvl - 1] ? r.levels[lvl - 1] : r.moves.map(function (m) {
     var name = lvl >= 3 && HARDER[m[0]] ? HARDER[m[0]] : m[0], sch = lvl > 1 ? scaleScheme(m[1], LEVEL_SCALE[lvl - 1]) : m[1];
     if (name !== m[0] && /single-leg|split squat/i.test(name) && !/side/.test(sch))      // one-leg version: time each side

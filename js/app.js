@@ -63,39 +63,50 @@ function renderToday(v) {
   if (nudge) html += '<p class="nudge' + (flare ? ' warn' : '') + '">' + esc(nudge) + '</p>';
   html += heroHTML(id, d, rot, todayE);
 
-  // stretch + quick strength library
+  // stretch + quick strength library: 4 each, "See all" for the rest
   var pick = stretchPickId(id), all = allRoutines(id);
   var stretches = all.filter(function (r) { return r.kind === 'stretch'; });
-  stretches.sort(function (x, y) { return (y.id === pick) - (x.id === pick); });
+  stretches.sort(function (x, y) { return (y.id === pick) - (x.id === pick) || (y.mine ? 1 : 0) - (x.mine ? 1 : 0); });
   var strength = all.filter(function (r) { return r.kind === 'strength'; });
-  html += '<div class="sec"><h2>Stretch</h2></div><div class="grid">' + stretches.map(function (r) { return tileHTML(r, r.id === pick); }).join('') +
-    '<button class="tile card add" data-act="make" aria-label="Make your own routine"><span class="plus">' + I.plus + '</span><span class="n">Make your own</span></button></div>';
-  html += '<div class="sec"><h2>Quick strength</h2></div><div class="grid">' + strength.map(function (r) { return tileHTML(r, false); }).join('') +
-    '<button class="tile card add" data-act="make-strength" aria-label="Make your own strength routine"><span class="plus">' + I.plus + '</span><span class="n">Make your own</span></button></div>';
+  strength.sort(function (x, y) { return (y.mine ? 1 : 0) - (x.mine ? 1 : 0); });
+  App.seeAll = App.seeAll || {};
+  function section(key, title, list) {
+    var open = App.seeAll[key], shown = open ? list : list.slice(0, 4);
+    return '<div class="sec"><h2>' + title + '</h2>' + (list.length > 4 ? '<button class="link" data-all="' + key + '" style="padding:6px 0">' + (open ? 'Show less' : 'See all ' + list.length) + '</button>' : '') + '</div>' +
+      '<div class="grid">' + shown.map(function (r) { return tileHTML(r, r.id === pick && key === 'stretch'); }).join('') + '</div>';
+  }
+  html += section('stretch', 'Stretch', stretches) + section('strength', 'Quick strength', strength);
+  html += '<button class="card li" data-act="make" style="margin-top:14px;padding:14px 16px"><span class="plusdot">' + I.plus + '</span>' +
+    '<span class="grow"><b style="display:block;font-size:17px">Make your own</b><small>Pick the stretches or moves you like</small></span><span class="chev">' + I.chev + '</span></button>';
   v.innerHTML = html;
 
+  function startPlan(short) {
+    Sound.unlock();
+    var p = progGet(id), res = p && p.src && p.src.type === 'plan' && p.src.key === d.key && !!p.short === !!short ? p : null;
+    startPlayer({ type: 'plan', key: d.key }, resolveDay(id, d, { short: short }), { loc: null, short: short }, res, renderTab);
+  }
   on(v, '[data-act="people"]', 'click', openPeople);
-  on(v, '[data-act="start"]', 'click', function () { openOverview({ type: 'plan', key: d.key }); });
+  on(v, '[data-act="start"]', 'click', function () { startPlan(false); });
+  on(v, '[data-act="short"]', 'click', function () { startPlan(true); });
+  on(v, '[data-act="peek"]', 'click', function () { openOverview({ type: 'plan', key: d.key }); });
   on(v, '[data-act="change"]', 'click', function () { openSessionPicker(id); });
   on(v, '[data-act="ran"]', 'click', function () { logRunFlow(d, false); });
-  on(v, '[data-act="intervals"]', 'click', function () { openRunTimer(d); });
   on(v, '[data-act="runmore"]', 'click', function () { runMenu(d); });
   on(v, '[data-act="make"]', 'click', function () { openBuilder(null, 'stretch'); });
-  on(v, '[data-act="make-strength"]', 'click', function () { openBuilder(null, 'strength'); });
+  on(v, '[data-all]', 'click', function (e, b) { App.seeAll[b.dataset.all] = !App.seeAll[b.dataset.all]; renderTab(); });
   on(v, '[data-si]', 'click', function (e, b) { logCheck(id, +b.dataset.si); renderTab(); });
   $$('.tile[data-rid]', v).forEach(function (t) {
-    var r = routineById(id, t.dataset.rid);
-    holdable(t, function () { routineMenu(r); });
-    t.addEventListener('click', function () { openOverview({ type: 'routine', rid: r.id }); });
+    t.addEventListener('click', function () { openOverview({ type: 'routine', rid: t.dataset.rid }); });
   });
-  var hero = $('.hero[data-hold]', v);
-  if (hero) holdable(hero, function () { openSessionPicker(id); });
+}
+function levelCap(id, r) {
+  var lv = r.mine ? 1 : routineLevel(id, r.id), mins = routineMinutes(levelMoves(id, r));
+  return (lv > 1 ? 'Level ' + lv + ' · ' : '') + mins + ' minutes';
 }
 function tileHTML(r, today) {
-  var mins = routineMinutes(levelMoves(App.id, r)), lv = routineLevel(App.id, r.id);
   return '<button class="tile card" data-rid="' + esc(r.id) + '">' + (today ? '<span class="badge">Today</span>' : r.mine ? '<span class="badge">Yours</span>' : '') +
     FIG.svg(POSES[r.pose] || POSES[poseFor(r.moves[0][0])], { size: 64, hair: personHair(App.id), bg: r.bg }) +
-    '<span class="n">' + esc(r.title) + (lv > 1 ? ' ' + ['', 'I', 'II', 'III', 'IV'][lv] : '') + '</span><span class="cap">' + mins + ' minutes</span></button>';
+    '<span class="n">' + esc(r.title) + '</span><span class="cap">' + levelCap(App.id, r) + '</span></button>';
 }
 function heroHTML(id, d, rot, todayE) {
   var a = ATHLETES[id];
@@ -110,22 +121,23 @@ function heroHTML(id, d, rot, todayE) {
   }
   if (d.type === 'run') {
     var run = d.run || {}, L = d.level;
-    return '<div class="card hero" data-hold="1"><div class="hero-top">' + figHTML('Run', 112, id, { pose: 'run' }) + '<div style="flex:1">' +
-      '<span class="eyebrow">Next up' + (sessionTag(d) ? ' · ' + esc(sessionTag(d)) : '') + '</span><div class="t">Run day</div>' +
+    return '<div class="card hero"><div class="hero-top">' + figHTML('Run', 112, id, { pose: 'run' }) + '<div style="flex:1">' +
+      '<span class="eyebrow">Next up</span><div class="t">Run day</div>' +
       '<div class="s">' + (L ? 'Level ' + (L.i + 1) + ' of ' + L.n : '') + (d.dur ? ' · ' + esc(d.dur) : '') + '</div></div>' +
-      '<button class="icon-btn" data-act="runmore" aria-label="Run options">' + I.more + '</button></div>' +
+      '<button class="icon-btn" data-act="runmore" aria-label="Run options: timer, easier, harder">' + I.more + '</button></div>' +
       '<div style="background:var(--soft);border-radius:18px;padding:12px 14px"><div style="font-size:17px;font-weight:700">' + esc(run.extra || d.title) + '</div>' +
       (run.warm ? '<div class="muted" style="font-size:14px;margin-top:4px">Warm up: ' + esc(run.warm) + ' · Cool down: ' + esc(run.cool || '') + '</div>' : '') + '</div>' +
       '<button class="btn" data-act="ran">' + I.check + 'I did my run</button>' +
-      '<div class="row2"><button class="link" data-act="intervals">Use the interval timer</button></div>' +
-      '<p class="muted" style="font-size:13px;margin:-10px 0 0;text-align:center">Track it in Nike Run Club like normal, then tap above.</p></div>';
+      '<div class="row2"><button class="link" data-act="change">Do a different workout</button></div></div>';
   }
   var rd = resolveDay(id, d, {}), prog = progGet(id);
   var resume = prog && prog.src && prog.src.type === 'plan' && prog.src.key === d.key ? prog : null;
-  return '<div class="card hero" data-hold="1"><div class="hero-top">' + figHTML(repName(d), 112, id) + '<div>' +
-    '<span class="eyebrow">Next up</span><div class="t">' + esc(d.title) + '</div>' + (sessionTag(d) ? '<div class="s">' + esc(sessionTag(d)) + '</div>' : '') +
-    '<div class="cap m">' + dayMinutes(id, d) + ' min · ' + dayMoves(rd) + ' moves</div></div></div>' +
-    '<button class="btn" data-act="start">' + I.play + (resume ? 'Resume · ' + (resume.mi + 1) + ' of ' + resume.moves : 'Start') + '</button>' +
+  return '<div class="card hero"><button class="hero-top" data-act="peek" aria-label="See the moves in ' + esc(d.title) + '" style="border:0;background:none;padding:0;text-align:left;color:inherit;cursor:pointer;width:100%">' +
+    figHTML(repName(d), 112, id) + '<span style="display:block;flex:1">' +
+    '<span class="eyebrow">Next up</span><span class="t" style="display:block">' + esc(d.title) + '</span>' + (sessionTag(d) ? '<span class="s" style="display:block">' + esc(sessionTag(d)) + '</span>' : '') +
+    '<span class="cap m" style="display:block">' + dayMinutes(id, d) + ' min · ' + dayMoves(rd) + ' moves · see all ›</span></span></button>' +
+    '<div style="display:flex;gap:10px"><button class="btn" data-act="start" style="flex:2">' + I.play + (resume && !resume.short ? 'Resume' : 'Start') + '</button>' +
+    '<button class="btn soft" data-act="short" style="flex:1;font-size:17px" aria-label="Short version, ' + (a.quickMin || 10) + ' minutes">' + (resume && resume.short ? 'Resume' : 'Short') + '</button></div>' +
     '<div class="row2"><button class="link" data-act="change">Do a different workout</button></div></div>';
 }
 
@@ -149,6 +161,8 @@ function openSessionPicker(id) {
     }).join(''));
   on(el, '[data-key]', 'click', function (e, b) {
     pickSession(id, b.dataset.key); Sheet.close(); renderTab();
+    var picked = sessions(id).filter(function (x) { return x.key === b.dataset.key; })[0];
+    if (picked && picked.type !== 'run') openOverview({ type: 'plan', key: picked.key });
     var r = rotationState(id), nx = r.days[(r.next + 1) % r.days.length];
     var cur = r.days[r.next];
     toast('Today: ' + (cur ? cur.title : '') + '. Next time: ' + nx.title + '.');
@@ -157,7 +171,7 @@ function openSessionPicker(id) {
 function routineMenu(r) {
   var el = Sheet.open('<div style="display:flex;gap:14px;align-items:center">' + FIG.svg(POSES[r.pose] || POSES[poseFor(r.moves[0][0])], { size: 60, hair: personHair(App.id), bg: r.bg }) +
     '<div><h2>' + esc(r.title) + '</h2><div class="muted" style="font-size:15px">' + routineMinutes(levelMoves(App.id, r)) + ' min · ' + levelMoves(App.id, r).length + ' moves</div></div></div>' +
-    '<div style="margin-top:10px"><button class="opt" data-a="start">' + I.play + 'Start</button>' +
+    '<div style="margin-top:10px">' +
     (r.mine ? '<button class="opt" data-a="edit">' + I.edit + 'Edit</button><button class="opt danger" data-a="del">' + I.trash + 'Delete</button>'
       : '<button class="opt" data-a="copy">' + I.copy + 'Make my own version</button>') + '</div>');
   on(el, '[data-a="start"]', 'click', function () { Sheet.close(); openOverview({ type: 'routine', rid: r.id }); });
@@ -282,19 +296,23 @@ function renderHistory(v) {
   if (lastWk) rows += '</div>';
   v.innerHTML = '<div class="top"><h1 style="font-weight:900;font-size:32px">History</h1><button class="btn sm" style="width:auto;padding:0 18px" data-act="logrun">' + I.plus + 'Log a run</button></div>' +
     '<div style="margin-top:16px">' + cal + '</div>' + (rows || '<p class="muted" style="margin-top:20px;text-align:center">Nothing yet — today’s a good day to start.</p>') +
-    (rows ? '<p class="muted" style="font-size:13px;text-align:center;margin-top:14px">Press and hold an entry to delete it.</p>' : '');
+    '';
   on(v, '[data-act="logrun"]', 'click', function () { logRunFlow(null, false); });
   on(v, '[data-cal]', 'click', function (e, b) { var mm = App.calMonth[1] + +b.dataset.cal, yy = App.calMonth[0]; if (mm < 0) { mm = 11; yy--; } if (mm > 11) { mm = 0; yy++; } App.calMonth = [yy, mm]; renderTab(); });
   $$('[data-iso]', v).forEach(function (row) {
-    var iso = row.dataset.iso;
-    holdable(row, function () { confirmDelete(iso); });
-    row.addEventListener('click', function () { entryDetail(iso); });
+    row.addEventListener('click', function () { entryDetail(row.dataset.iso); });
   });
   $$('[data-st]', v).forEach(function (row) {
-    holdable(row, function () {
-      var p = row.dataset.st.split('|'), s = stretchLogGet(id), before = clone(s);
-      s[p[0]].splice(+p[1], 1); if (!s[p[0]].length) delete s[p[0]]; stretchLogSet(id, s); renderTab();
-      toast('Deleted stretch', 'Undo', function () { stretchLogSet(id, before); renderTab(); });
+    row.addEventListener('click', function () {
+      var p = row.dataset.st.split('|'), s0 = stretchLogGet(id)[p[0]][+p[1]];
+      var sh = Sheet.open('<span class="cap">' + fmtDay(p[0]) + '</span><h2 style="margin-top:4px">' + esc(s0.title) + '</h2><p class="muted" style="margin:6px 0 0">' + s0.mins + ' minutes</p>' +
+        '<button class="opt danger" style="margin-top:12px" data-a="del">' + I.trash + 'Delete</button><button class="btn soft sm" style="margin-top:10px" data-a="close">Close</button>');
+      on(sh, '[data-a="close"]', 'click', function () { Sheet.close(); });
+      on(sh, '[data-a="del"]', 'click', function () {
+        var s = stretchLogGet(id), before = clone(s);
+        s[p[0]].splice(+p[1], 1); if (!s[p[0]].length) delete s[p[0]]; stretchLogSet(id, s); Sheet.close(); renderTab();
+        toast('Deleted', 'Undo', function () { stretchLogSet(id, before); renderTab(); });
+      });
     });
   });
 }
@@ -321,15 +339,19 @@ function entryDetail(iso) {
   if (lines.length) html += '<div class="card list" style="margin-top:12px">' + lines.map(function (l) {
     return '<div class="li" style="cursor:default">' + figHTML(l.n, 40, id) + '<span class="grow">' + esc(l.n) + '<small>' + l.h.sets + ' set' + (l.h.sets > 1 ? 's' : '') + ' · best ' + (l.h.w ? l.h.w + ' lb × ' : '') + l.h.r + '</small></span></div>';
   }).join('') + '</div>';
-  html += '<button class="btn soft sm" style="margin-top:16px" data-a="close">Close</button>';
+  html += '<button class="opt danger" style="margin-top:12px" data-a="del">' + I.trash + 'Delete this entry</button><button class="btn soft sm" style="margin-top:10px" data-a="close">Close</button>';
   var el = Sheet.open(html); on(el, '[data-a="close"]', 'click', function () { Sheet.close(); });
+  on(el, '[data-a="del"]', 'click', function () {
+    var before = clone(e); deleteLog(id, iso); Sheet.close(); renderTab();
+    toast('Deleted', 'Undo', function () { var l = logGet(id); l[iso] = before; logSet(id, l); renderTab(); });
+  });
 }
 
 /* ---------- Me ---------- */
 function renderMe(v) {
   var id = App.id, g = goalInfo(id), days = sessions(id);
   var html = '<div class="top"><div style="display:flex;align-items:center;gap:14px">' + avatarHTML(id, 56) + '<div class="hello"><b style="font-size:30px">' + esc(personName(id)) + '</b></div></div>' +
-    '<button class="btn ghost sm" style="width:auto;padding:0 16px" data-act="people">Switch</button></div>';
+    '</div>';
   html += '<button class="card li" style="margin-top:18px;padding:16px 18px" data-act="goal"><span style="width:44px;height:44px;border-radius:14px;background:var(--warn-tint);color:var(--warn);display:flex;align-items:center;justify-content:center">' + I.flag + '</span>' +
     '<span class="grow"><span class="cap">Your goal</span><b style="display:block;font-size:17px;margin-top:2px">' + (g && !g.past ? esc(g.name) + (g.when ? ' · ' + esc(g.when) : '') : g && g.past ? esc(g.name) + ' ✓ — set your next one' : 'Set a goal') + '</b></span><span class="chev">' + I.chev + '</span></button>';
   html += '<div class="sec"><h2>Your plan</h2><button class="link" data-act="days" style="padding:6px 0">' + weeklyTarget(id) + ' days a week ' + I.edit.replace('<svg', '<svg width="16" height="16" style="vertical-align:-2px"') + '</button></div><div class="card list">' + days.map(function (d) {
@@ -337,7 +359,6 @@ function renderMe(v) {
   }).join('') + '</div><p class="muted" style="font-size:13px;margin:8px 4px 0">Open a workout and press and hold any move to swap it or change sets and reps.</p>';
   html += '<div class="sec"><h2>More</h2></div><div class="card list">' +
     '<button class="li" data-act="library">' + I.book + '<span class="grow">Exercise library</span><span class="chev">' + I.chev + '</span></button>' +
-    '<button class="li" data-act="logrun">' + I.run + '<span class="grow">Log a run</span><span class="chev">' + I.chev + '</span></button>' +
     '<button class="li" data-act="people">' + I.users + '<span class="grow">People<small>Switch, add or remove</small></span><span class="chev">' + I.chev + '</span></button>' +
     '<button class="li" data-act="sound">' + (Sound.on() ? I.sound : I.mute) + '<span class="grow">Beeps<small>' + (Sound.on() ? 'On — plays over your music' : 'Off') + '</small></span></button>' +
     '<button class="li" data-act="voice">' + (Sound.voice() ? I.sound : I.mute) + '<span class="grow">Voice cues<small>' + (Sound.voice() ? 'On — music may pause while it talks' : 'Off') + '</small></span></button>' +
@@ -345,7 +366,6 @@ function renderMe(v) {
     '<button class="li" data-act="backup">' + I.download + '<span class="grow">Back up my data<small>Saves a file you can restore later</small></span></button>' +
     '<button class="li" data-act="restore">' + I.upload + '<span class="grow">Restore from backup</span></button>' +
     (['anthony', 'her'].indexOf(id) === -1 ? '<button class="li" data-act="remove" style="color:#B3261E">' + I.trash + '<span class="grow">Remove ' + esc(personName(id)) + '</span></button>' : '') +
-    '<a class="li" href="classic.html" style="text-decoration:none">' + I.old + '<span class="grow">Open the old version</span><span class="chev">' + I.chev + '</span></a>' +
     '</div><p class="muted" style="font-size:12px;text-align:center;margin-top:18px">Version ' + esc(window.BUILD || '') + '</p>' +
     '<input type="file" id="restore-file" accept="application/json,.json" class="hidden">';
   v.innerHTML = html;

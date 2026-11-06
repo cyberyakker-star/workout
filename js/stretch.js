@@ -115,7 +115,7 @@ var COOLDOWNS = {
 // which routine "Today's stretch" suggests, by person (cycles by day)
 var STRETCH_PICKS = {
   anthony: ["hips", "wake", "posture", "back"],
-  her: ["wake", "full", "hips", "bed"],
+  her: ["wake", "full", "run", "bed"],
   "default": ["wake", "full", "posture", "bed"]
 };
 
