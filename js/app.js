@@ -92,10 +92,10 @@ function renderToday(v) {
   if (hero) holdable(hero, function () { openSessionPicker(id); });
 }
 function tileHTML(r, today) {
-  var mins = routineMinutes(r.moves.map(function (m) { return [m[0], schemeWithEdits(App.id, m[0], m[1])]; }));
+  var mins = routineMinutes(levelMoves(App.id, r)), lv = routineLevel(App.id, r.id);
   return '<button class="tile card" data-rid="' + esc(r.id) + '">' + (today ? '<span class="badge">Today</span>' : r.mine ? '<span class="badge">Yours</span>' : '') +
     FIG.svg(POSES[r.pose] || POSES[poseFor(r.moves[0][0])], { size: 64, hair: personHair(App.id), bg: r.bg }) +
-    '<span class="n">' + esc(r.title) + '</span><span class="cap">' + mins + ' minutes</span></button>';
+    '<span class="n">' + esc(r.title) + (lv > 1 ? ' ' + ['', 'I', 'II', 'III', 'IV'][lv] : '') + '</span><span class="cap">' + mins + ' minutes</span></button>';
 }
 function heroHTML(id, d, rot, todayE) {
   var a = ATHLETES[id];
@@ -156,7 +156,7 @@ function openSessionPicker(id) {
 }
 function routineMenu(r) {
   var el = Sheet.open('<div style="display:flex;gap:14px;align-items:center">' + FIG.svg(POSES[r.pose] || POSES[poseFor(r.moves[0][0])], { size: 60, hair: personHair(App.id), bg: r.bg }) +
-    '<div><h2>' + esc(r.title) + '</h2><div class="muted" style="font-size:15px">' + routineMinutes(r.moves) + ' min · ' + r.moves.length + ' moves</div></div></div>' +
+    '<div><h2>' + esc(r.title) + '</h2><div class="muted" style="font-size:15px">' + routineMinutes(levelMoves(App.id, r)) + ' min · ' + levelMoves(App.id, r).length + ' moves</div></div></div>' +
     '<div style="margin-top:10px"><button class="opt" data-a="start">' + I.play + 'Start</button>' +
     (r.mine ? '<button class="opt" data-a="edit">' + I.edit + 'Edit</button><button class="opt danger" data-a="del">' + I.trash + 'Delete</button>'
       : '<button class="opt" data-a="copy">' + I.copy + 'Make my own version</button>') + '</div>');

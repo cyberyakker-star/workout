@@ -65,8 +65,14 @@ var ROUTINES = [
     blurb: "Booty band burner",
     moves: [["Glute Bridge", "40s"], ["Clamshell", "30s / side"], ["Banded Lateral Walk", "40s"], ["Kickbacks", "30s / side"], ["Lying Leg Abduction", "30s / side"], ["Single-Leg Glute Bridge", "20s / side"], ["Glute Bridge Spread", "40s"]] },
   { id: "planks", kind: "strength", title: "Planks", pose: "sidePlank", bg: "#93688A",
-    blurb: "Four minutes, rock-solid middle",
-    moves: [["Plank", "30s"], ["Side Plank", "20s / side"], ["Bird Dog", "30s"], ["Plank", "40s"]] },
+    blurb: "A rock-solid middle — level up as you go",
+    moves: [["Plank", "20s"], ["Side Plank", "15s / side"], ["Bird Dog", "30s"], ["Plank", "20s"]],
+    levels: [
+      [["Plank", "20s"], ["Side Plank", "15s / side"], ["Bird Dog", "30s"], ["Plank", "20s"]],
+      [["Plank", "30s"], ["Side Plank", "20s / side"], ["Bird Dog", "30s"], ["Plank", "40s"]],
+      [["Plank", "45s"], ["Side Plank", "30s / side"], ["Mountain Climber", "30s"], ["Bird Dog", "40s"], ["Plank", "45s"]],
+      [["Plank", "60s"], ["Side Plank", "40s / side"], ["Mountain Climber", "40s"], ["Dead Bug", "40s"], ["Side Plank", "30s / side"], ["Plank", "60s"]]
+    ] },
   { id: "legs", kind: "strength", title: "Legs", pose: "splitSquat", bg: "#5560A8",
     blurb: "Bodyweight legs, anywhere",
     moves: [["Bodyweight Squat", "40s"], ["Reverse Lunge", "30s / side"], ["Wall Sit", "30s"], ["Calf Raise", "40s"], ["Glute Bridge", "40s"], ["Bodyweight Squat", "30s"]] },

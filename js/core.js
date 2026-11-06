@@ -593,6 +593,23 @@ function allRoutines(id) {
   return ROUTINES.concat(myRoutinesGet(id).map(function (r) { r.mine = true; r.kind = r.kind || 'stretch'; return r; }));
 }
 function routineById(id, rid) { return allRoutines(id).filter(function (r) { return r.id === rid; })[0]; }
+/* Levels 1–4 (like Bend's Planks I–IV): a routine can list its own `levels`;
+   otherwise each level holds longer and, from level 3, swaps in harder versions. */
+var LEVEL_SCALE = [1, 1.25, 1.5, 1.75];
+var HARDER = { "Kneeling Push-up": "Push-up", "Glute Bridge": "Single-Leg Glute Bridge", "Bodyweight Squat": "Split Squat", "Banded Glute Bridge": "Single-Leg Glute Bridge" };
+function routineLevel(id, rid) { var c = cfgGet(id).rlvl || {}; return Math.max(1, Math.min(4, +c[rid] || 1)); }
+function setRoutineLevel(id, rid, n) { var c = cfgGet(id); c.rlvl = c.rlvl || {}; c.rlvl[rid] = Math.max(1, Math.min(4, n)); cfgSet(id, c); }
+function scaleScheme(s, f) { return String(s).replace(/(\d+)\s*s\b/, function (all, n) { return Math.max(10, Math.round(+n * f / 5) * 5) + 's'; }); }
+function levelMoves(id, r, lvl) {
+  lvl = lvl || routineLevel(id, r.id);
+  var base = r.levels && r.levels[lvl - 1] ? r.levels[lvl - 1] : r.moves.map(function (m) {
+    var name = lvl >= 3 && HARDER[m[0]] ? HARDER[m[0]] : m[0], sch = lvl > 1 ? scaleScheme(m[1], LEVEL_SCALE[lvl - 1]) : m[1];
+    if (name !== m[0] && /single-leg|split squat/i.test(name) && !/side/.test(sch))      // one-leg version: time each side
+      sch = sch.replace(/(\d+)\s*s\b/, function (a, n) { return Math.max(15, Math.round(+n * 0.6 / 5) * 5) + 's / side'; });
+    return [name, sch];
+  });
+  return base.map(function (m) { return [m[0], schemeWithEdits(id, m[0], m[1])]; });
+}
 function stretchPickId(id) {
   var picks = STRETCH_PICKS[id] || STRETCH_PICKS['default'];
   var log = logGet(id)[todayISO()];
@@ -603,8 +620,8 @@ function stretchPickId(id) {
 // a routine as a "day" the player understands
 function routineDay(id, r) {
   return { key: 'r:' + r.id, title: r.title, type: 'routine', routine: r.id, groups: [{ label: r.kind === 'stretch' ? 'Stretch' : 'Moves',
-    kind: 'flow', title: r.title, gi: 0, items: r.moves.map(function (m, i) {
-      return { id: 'm_' + i, base: m[0], name: m[0], scheme: schemeWithEdits(id, m[0], m[1]), note: '', cues: null };
+    kind: 'flow', title: r.title, gi: 0, items: levelMoves(id, r).map(function (m, i) {
+      return { id: 'm_' + i, base: m[0], name: m[0], scheme: m[1], note: '', cues: null };
     }) }] };
 }
 

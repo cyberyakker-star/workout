@@ -67,7 +67,7 @@ function openOverview(src) {
     var rd = day(); if (!rd) { Layers.pop(); return; }
     var r = src.type === 'routine' ? routineById(id, src.rid) : null;
     if (rd.type === 'run') { renderRun(rd); return; }
-    var mins = r ? routineMinutes(r.moves.map(function (m) { return [m[0], schemeWithEdits(id, m[0], m[1])]; })) : dayMinutes(id, rd, st.short);
+    var mins = r ? routineMinutes(levelMoves(id, r)) : dayMinutes(id, rd, st.short);
     var prog = progGet(id), resume = prog && prog.src && sameSrc(prog.src, src) && prog.loc === st.loc && !!prog.short === st.short ? prog : null;
     var locs = locsOf(id), html = '';
     html += '<div class="lwrap"><div class="lhead"><button class="icon-btn" data-act="back" aria-label="Back">' + I.back + '</button>' +
@@ -76,6 +76,11 @@ function openOverview(src) {
       '<span class="eyebrow">' + esc(sessionTag(rd) || 'Workout') + '</span>') +
       '<div style="display:flex;align-items:flex-start;gap:8px"><h1 style="flex:1">' + esc(r ? r.title : rd.title) + '</h1>' +
       (!r ? '<button class="icon-btn" data-act="rename" aria-label="Rename this workout" style="margin-top:14px">' + I.edit + '</button>' : '') + '</div><p>' + mins + ' min · ' + dayMoves(rd) + ' moves' + (r && r.blurb ? ' · ' + esc(r.blurb) : '') + '</p></div>';
+    if (r) {
+      var lv = routineLevel(id, r.id);
+      html += '<div class="segs"><div class="seg" role="group" aria-label="Level">' + [1, 2, 3, 4].map(function (n) {
+        return '<button data-lvl="' + n + '" aria-pressed="' + (n === lv) + '" class="' + (n === lv ? 'on' : '') + '">Level ' + ['', 'I', 'II', 'III', 'IV'][n] + '</button>'; }).join('') + '</div></div>';
+    }
     if (!r) {
       html += '<div class="segs">';
       if (locs) html += '<div class="seg" role="group" aria-label="Where are you?">' + Object.keys(locs).map(function (k) {
@@ -105,6 +110,7 @@ function openOverview(src) {
     on(lay, '[data-act="tip"]', 'click', function () { store.setRaw('trainops:tip:hold', '1'); render(); });
     on(lay, '[data-loc]', 'click', function (e, b) { st.loc = b.dataset.loc; locSet(id, st.loc); render(); });
     on(lay, '[data-short]', 'click', function (e, b) { st.short = b.dataset.short === '1'; render(); });
+    on(lay, '[data-lvl]', 'click', function (e, b) { setRoutineLevel(id, src.rid, +b.dataset.lvl); progClear(id); render(); });
     on(lay, '[data-act="start"]', 'click', function () {
       Sound.unlock();
       var p = progGet(id), res = p && p.src && sameSrc(p.src, src) && p.loc === st.loc && !!p.short === st.short ? p : null;
@@ -231,7 +237,11 @@ function openMoveSheet(ctx, item, mode) {
 // the plan's own scheme for an item (before personal sets/reps edits)
 function itemBaseScheme(ctx, item) {
   try {
-    if (ctx.src.type === 'routine') { var r = routineById(ctx.id, ctx.src.rid); var m = r.moves[+String(item.id).split('_')[1]]; return m && m[1]; }
+    if (ctx.src.type === 'routine') {
+      var r = routineById(ctx.id, ctx.src.rid), lv = routineLevel(ctx.id, r.id), i = +String(item.id).split('_')[1];
+      var raw = r.levels && r.levels[lv - 1] ? r.levels[lv - 1][i] : r.moves[i];
+      return raw && (r.levels && r.levels[lv - 1] ? raw[1] : (lv > 1 ? scaleScheme(raw[1], LEVEL_SCALE[lv - 1]) : raw[1]));
+    }
     if (item.cool) { var cd = COOLDOWNS[ctx.id + ':' + ctx.rd.key] || COOLDOWNS['default:strength']; return cd[+item.id.split('_')[1]][1]; }
     var d = sessions(ctx.id).filter(function (x) { return x.key === ctx.rd.key; })[0];
     var raw = d.groups[item.gi].items[item.xi];
@@ -465,18 +475,20 @@ function showFinish(src, rd, st) {
   var id = App.id, a = ATHLETES[id], isPlan = src.type === 'plan';
   var r = !isPlan ? routineById(id, src.rid) : null;
   if (isPlan) logSession(id, rd, { short: st.short, loc: st.loc });
-  else addStretchLog(id, r.id, r.title, routineMinutes(r.moves));
+  else addStretchLog(id, r.id, r.title + (routineLevel(id, r.id) > 1 ? ' ' + ['', 'I', 'II', 'III', 'IV'][routineLevel(id, r.id)] : ''), routineMinutes(levelMoves(id, r)));
   Sound.done(); Sound.say(isPlan ? 'Workout done. Nice work!' : 'All done. Nice!');
   var n = weekCount(id), T = weeklyTarget(id), rot = rotationState(id);
+  var lvNow = r ? routineLevel(id, r.id) : 1, lvUp = false, ROMAN = ['', 'I', 'II', 'III', 'IV'];
   var nxt = isPlan && rot.days.length ? rot.days[(rot.next + 1) % rot.days.length] : null;
   var el = h('<div></div>');
   function render() {
     var e = logGet(id)[todayISO()] || {};
     el.innerHTML = '<div class="lwrap fin"><div class="bigcheck"><i>' + I.check.replace('stroke="currentColor"', 'stroke="#fff"') + '</i></div>' +
       '<h1>Nice work, ' + esc(personName(id)) + '!</h1>' +
-      '<p style="text-align:center;margin:-6px 0 0;font-size:17px;color:var(--ink2)">' + esc(isPlan ? rd.title + ' done' : r.title + ' done · ' + routineMinutes(r.moves) + ' min') +
+      '<p style="text-align:center;margin:-6px 0 0;font-size:17px;color:var(--ink2)">' + esc(isPlan ? rd.title + ' done' : r.title + ' done · ' + routineMinutes(levelMoves(id, r)) + ' min') +
       (isPlan ? ' · ' + n + ' of ' + T + ' this week' : '') + '</p>' +
       (isPlan ? '<div style="display:flex;justify-content:center">' + dotsHTML(n, T) + '</div>' : '') +
+      (!isPlan && lvNow < 4 ? '<button class="btn ghost sm" data-act="lvlup">' + (lvUp ? '✓ Level ' + ROMAN[lvNow + 1] + ' next time' : 'Felt easy? Try Level ' + ROMAN[lvNow + 1] + ' next time') + '</button>' : '') +
       (isPlan && a.check ? '<div class="card" style="padding:18px"><div style="font-size:18px;font-weight:700;text-align:center;margin-bottom:12px">How’s your ' + esc(a.check) + '?</div>' +
         '<div class="choices">' + [1, 2, 3].map(function (k) { return '<button class="choice' + (e.si === k ? ' on' : '') + '" data-si="' + k + '">' + CHECK_LABELS[k] + '</button>'; }).join('') + '</div></div>' : '') +
       (nxt ? '<div class="card" style="display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px">' + figHTML(repName(nxt), 52, id) +
@@ -484,6 +496,7 @@ function showFinish(src, rd, st) {
       '</div><div class="foot"><div class="in"><button class="btn" data-act="fin">Finish</button></div></div>';
     on(el, '[data-si]', 'click', function (ev, b) { logCheck(id, +b.dataset.si); render(); if (+b.dataset.si === 3) toast('Noted — next time goes easier on it'); });
     on(el, '[data-act="fin"]', 'click', function () { Layers.closeAll(); App.tab = 'today'; renderTab(); });
+    on(el, '[data-act="lvlup"]', 'click', function () { lvUp = !lvUp; setRoutineLevel(id, r.id, lvUp ? lvNow + 1 : lvNow); render(); });
   }
   Layers.closeAll();
   Layers.push(el, { onClose: function () { renderTab(); } });
