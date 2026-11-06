@@ -154,3 +154,105 @@ var POSE_RULES = [
   [/plank/i, "plank"], [/calf/i, "calfRaise"], [/bug/i, "deadBug"], [/abduct|clam/i, "lyingAbduction"], [/run|jog|sprint/i, "run"],
   [/walk|march|carry/i, "walk"]
 ];
+
+/* ---------- Knees Over Toes, functional strength and power moves ----------
+   Added from two research passes. Jumps carry the "impact" flag so they never
+   show up as swaps; anything that loads a rounded spine was left out. */
+EX_DB.push(
+  { name: "Lateral Step-Down", pat: "lunge", eq: "bw", flags: [] },
+  { name: "Patrick Step", pat: "lunge", eq: "bw", flags: [] },
+  { name: "Poliquin Step-Up", pat: "lunge", eq: "bw", flags: [] },
+  { name: "Tibialis Raise", pat: "calf", eq: "bw", flags: [] },
+  { name: "Backward Walk", pat: "cond", eq: "bw", flags: [] },
+  { name: "Backward Sled Drag", pat: "cond", eq: "machine", flags: [] },
+  { name: "Nordic Curl", pat: "hinge", eq: "bw", flags: [] },
+  { name: "Reverse Nordic", pat: "squat", eq: "bw", flags: [] },
+  { name: "Seated Pike Leg Lift", pat: "core", eq: "bw", flags: [] },
+  { name: "KB Halo", pat: "core", eq: "kb", flags: [] },
+  { name: "Suitcase March", pat: "core", eq: "kb", flags: [] },
+  { name: "Farmer Carry", pat: "core", eq: "db", flags: [] },
+  { name: "Overhead Carry", pat: "core", eq: "db", flags: ["overhead"] },
+  { name: "KB Deadlift", pat: "hinge", eq: "kb", flags: [] },
+  { name: "Half Turkish Get-up", pat: "core", eq: "kb", flags: ["overhead"] },
+  { name: "Bear Crawl", pat: "core", eq: "bw", flags: ["floor"] },
+  { name: "Half-Kneeling Band Chop", pat: "core", eq: "band", flags: [] },
+  { name: "Copenhagen Plank", pat: "hip", eq: "bw", flags: [] },
+  { name: "Dead Hang", pat: "pullV", eq: "bar", flags: [] },
+  { name: "Pogo Hops", pat: "cond", eq: "bw", flags: ["impact"] },
+  { name: "A-Skip", pat: "cond", eq: "bw", flags: ["impact"] },
+  { name: "Skater Hop", pat: "cond", eq: "bw", flags: ["impact"] },
+  { name: "Broad Jump", pat: "cond", eq: "bw", flags: ["impact"] },
+  { name: "Med-Ball Chest Pass", pat: "pushH", eq: "machine", flags: [] },
+  { name: "Sled Push", pat: "cond", eq: "machine", flags: [] }
+);
+STRETCHES["Couch Stretch"] = { pose: "couchStretch", cues: ["Back knee down by a wall, shin up the wall", "Squeeze the back glute and tuck your pelvis", "Stay tall — no arching your low back"] };
+STRETCHES["Elephant Walk"] = { pose: "elephantWalk", cues: ["Fold forward, palms on the floor (or a bench)", "Bend one knee as the other straightens", "Keep it slow and easy on the hamstrings"] };
+Object.assign(CUE_LIB, {
+  "lateral step-down": ["Stand side-on on a step", "Slowly lower until your heel just kisses the floor — 3 seconds", "Knee tracks over your second toe", "Push back up through the standing foot"],
+  "patrick step": ["Stand on a low step, heel stays down", "Drive your knee forward past your toes", "Free leg straight — tap its heel in front"],
+  "poliquin step-up": ["Front heel propped up on a wedge or plate", "Push the knee forward, then straighten fully", "Lower slowly"],
+  "tibialis raise": ["Back against a wall, heels 1–2 feet out", "Pull your toes up toward your shins", "Pause at the top, lower slowly"],
+  "backward walk": ["Walk backward reaching onto your toes", "Chest up, short steps", "Feel the front of your thighs work"],
+  "backward sled drag": ["Hold the straps with long arms, lean back slightly", "Walk backward on your toes", "Knees travel forward over your toes"],
+  "nordic curl": ["Ankles locked under the pad, squeeze your glutes", "Straight line from knees to head", "Lower as slowly as you can — catch yourself with your hands"],
+  "reverse nordic": ["Kneel tall, glutes tight", "Lean back in one straight line — no bending at the hips", "Only go as far as you can control"],
+  "seated pike leg lift": ["Sit tall, legs straight, hands beside your knees", "Lift both heels an inch off the floor", "Toes pointed — small lifts are plenty"],
+  "kb halo": ["Hold the bell upside-down by the horns", "Circle it slowly around your head, close to your head", "Ribs down, glutes tight — 5 each way"],
+  "suitcase march": ["One bell at your side, stand tall", "Lift a knee to hip height, slowly", "Don't lean toward the bell"],
+  "farmer carry": ["A weight in each hand, stand tall", "Shoulders down and back", "Short, quiet steps"],
+  "overhead carry": ["Lock the weight straight overhead, biceps by your ear", "Ribs down — don't lean back", "Walk slowly"],
+  "kb deadlift": ["Bell between your feet", "Hips back, flat back, grab the handle", "Stand up by squeezing your glutes"],
+  "half turkish get-up": ["Arm straight up, eyes on the bell", "Roll to your elbow, then to your hand", "Reverse slowly"],
+  "bear crawl": ["Hands and toes, knees an inch off the floor", "Back flat as a table", "Move opposite hand and foot slowly"],
+  "band chop": ["Half-kneeling, band from a high anchor", "Pull high to low across your body", "Hips and chest stay square — only the arms move"],
+  "copenhagen plank": ["Side plank with the top knee on a bench", "Straight line from head to knee", "Start short — 10 to 15 seconds"],
+  "dead hang": ["Full grip on the bar", "Let your body hang long, breathe", "Drop down before your grip fails"],
+  "pogo hops": ["Small, quick bounces off the balls of your feet", "Stiff ankles, soft and quiet", "Stop if your back or knees complain"],
+  "a-skip": ["Knee to hip height, toes up", "Land under your hip on the ball of the foot", "Opposite arm drives forward"],
+  "skater hop": ["Push off sideways onto one leg", "Hold the landing for a second", "Knee over toes, chest forward"],
+  "broad jump": ["Swing your arms and jump out, not up", "Land soft with bent knees", "Hold the landing 2 seconds, walk back"],
+  "chest pass": ["Stand facing a wall", "Step and push the ball hard from your chest", "Catch soft and reset"],
+  "sled push": ["Hands on the poles, body at 45°", "Long arms, drive your knees", "Short powerful steps"]
+});
+// no matching demo video yet: show the "Find a video" link instead of a wrong one
+["lateral step-down", "patrick step", "poliquin step-up", "tibialis raise", "backward walk", "backward sled drag", "nordic curl", "reverse nordic",
+ "seated pike leg lift", "kb halo", "suitcase march", "farmer carry", "overhead carry", "kb deadlift", "half turkish get-up", "bear crawl", "band chop",
+ "copenhagen plank", "dead hang", "pogo hops", "a-skip", "skater hop", "broad jump", "med-ball chest pass", "sled push", "couch stretch", "elephant walk"]
+  .forEach(function (k) { if (!VIDEO_LIB[k]) VIDEO_LIB[k] = []; });
+Object.assign(POSE_OF, {
+  "Lateral Step-Down": "lateralStepDown", "Patrick Step": "patrickStep", "Poliquin Step-Up": "stepUp", "Tibialis Raise": "tibialisRaise",
+  "Backward Walk": "backwardWalk", "Backward Sled Drag": "sledDrag", "Nordic Curl": "nordicCurl", "Reverse Nordic": "reverseNordic",
+  "Seated Pike Leg Lift": "seatedPike", "KB Halo": "kbHalo", "Suitcase March": "suitcaseMarch", "Farmer Carry": "suitcaseCarry",
+  "Overhead Carry": "overheadCarry", "KB Deadlift": "rdl", "Half Turkish Get-up": "halfTGU", "Bear Crawl": "bearCrawl",
+  "Half-Kneeling Band Chop": "bandChop", "Copenhagen Plank": "copenhagen", "Dead Hang": "deadHang", "Pogo Hops": "pogo",
+  "A-Skip": "aSkip", "Skater Hop": "skater", "Broad Jump": "broadJump", "Med-Ball Chest Pass": "medballPass", "Sled Push": "sledPush"
+});
+ROUTINES.push(
+  { id: "kot", kind: "strength", title: "Knees Over Toes", pose: "lateralStepDown", bg: "#6E9CC4",
+    blurb: "Bulletproof knees, ankles and hips",
+    moves: [["Backward Walk", "60s"], ["Tibialis Raise", "40s"], ["KOT Calf Raise", "40s"], ["Patrick Step", "30s / side"], ["ATG Split Squat", "30s / side"], ["Slant Board Squat", "30s"], ["Kneeling Hip Flexor Stretch", "30s / side"], ["Seated Pike Leg Lift", "30s"]],
+    levels: [
+      [["Backward Walk", "60s"], ["Tibialis Raise", "40s"], ["KOT Calf Raise", "40s"], ["Patrick Step", "30s / side"], ["ATG Split Squat", "30s / side"], ["Slant Board Squat", "30s"], ["Kneeling Hip Flexor Stretch", "30s / side"], ["Seated Pike Leg Lift", "30s"]],
+      [["Backward Walk", "60s"], ["Tibialis Raise", "40s"], ["KOT Calf Raise", "40s"], ["Lateral Step-Down", "30s / side"], ["ATG Split Squat", "30s / side"], ["Reverse Nordic", "30s"], ["Couch Stretch", "30s / side"], ["Seated Pike Leg Lift", "30s"]],
+      [["Backward Walk", "75s"], ["Tibialis Raise", "45s"], ["KOT Calf Raise", "45s"], ["Lateral Step-Down", "40s / side"], ["ATG Split Squat", "40s / side"], ["Reverse Nordic", "40s"], ["Couch Stretch", "40s / side"], ["Seated Pike Leg Lift", "40s"]],
+      [["Backward Walk", "90s"], ["Tibialis Raise", "50s"], ["KOT Calf Raise", "50s"], ["Poliquin Step-Up", "40s / side"], ["ATG Split Squat", "45s / side"], ["Reverse Nordic", "45s"], ["Couch Stretch", "45s / side"], ["Seated Pike Leg Lift", "45s"]]
+    ] },
+  { id: "functional", kind: "strength", title: "Functional Strength", pose: "kbHalo", bg: "#D8B44E",
+    blurb: "Carry, brace and move well",
+    moves: [["KB Halo", "30s"], ["KB Deadlift", "40s"], ["Suitcase March", "30s / side"], ["Dead Bug", "40s"], ["Farmer Carry", "40s"], ["Bird Dog", "40s"]],
+    levels: [
+      [["KB Halo", "30s"], ["KB Deadlift", "40s"], ["Suitcase March", "30s / side"], ["Dead Bug", "40s"], ["Farmer Carry", "40s"], ["Bird Dog", "40s"]],
+      [["KB Halo", "30s"], ["KB Deadlift", "40s"], ["Farmer Carry", "40s"], ["Bear Crawl", "30s"], ["Half-Kneeling Band Chop", "30s / side"], ["Suitcase Carry", "30s / side"]],
+      [["KB Halo", "40s"], ["KB Deadlift", "45s"], ["Half Turkish Get-up", "40s / side"], ["Suitcase Carry", "30s / side"], ["Bear Crawl", "40s"], ["Copenhagen Plank", "20s / side"]],
+      [["KB Halo", "40s"], ["KB Deadlift", "50s"], ["Half Turkish Get-up", "45s / side"], ["Overhead Carry", "30s / side"], ["Bear Crawl", "45s"], ["Copenhagen Plank", "25s / side"]]
+    ] },
+  { id: "power", kind: "strength", title: "Power", pose: "broadJump", bg: "#93688A",
+    blurb: "Get springy — Level I has no jumping",
+    moves: [["Squat-to-Stand Pulse", "40s"], ["Fast Step-Up", "30s / side"], ["KB Deadlift", "40s"], ["Push-up", "30s"], ["Mountain Climber", "30s"], ["Glute Bridge", "40s"]],
+    levels: [
+      [["Squat-to-Stand Pulse", "40s"], ["Fast Step-Up", "30s / side"], ["KB Deadlift", "40s"], ["Push-up", "30s"], ["Mountain Climber", "30s"], ["Glute Bridge", "40s"]],
+      [["Pogo Hops", "20s"], ["Fast Step-Up", "30s / side"], ["KB Deadlift", "40s"], ["A-Skip", "30s"], ["Bear Crawl", "30s"], ["Pogo Hops", "20s"]],
+      [["Pogo Hops", "30s"], ["A-Skip", "30s"], ["Skater Hop", "30s"], ["Fast Step-Up", "30s / side"], ["Bear Crawl", "40s"], ["Mountain Climber", "30s"]],
+      [["Pogo Hops", "30s"], ["Skater Hop", "40s"], ["Broad Jump", "30s"], ["Fast Step-Up", "40s / side"], ["Push-up", "30s"], ["Mountain Climber", "40s"]]
+    ] }
+);

@@ -446,8 +446,8 @@ function schemeText(scheme) {   // friendly: "3 × 10–15" stays; "45s" -> "45 
   return String(scheme);
 }
 function needsWeight(name) {
-  if (/anti-rotation|pallof|band|bodyweight|push-up|pull-up|chin-up|plank|bird dog|dead bug|clamshell|abduction|side step|walk|squeeze|kickbacks$|wheel|isolated|double pulse|pulse/i.test(name)) return false;
-  return /db|dumbbell|kb|kettlebell|barbell|machine|cable|press|row|curl|triceps|goblet|thrust|deadlift|leg press|pulldown|split squat|back extension/i.test(name);
+  if (/anti-rotation|pallof|band|bodyweight|push-up|pull-up|chin-up|plank|bird dog|dead bug|clamshell|abduction|side step|walk|squeeze|kickbacks$|wheel|isolated|double pulse|pulse|nordic|hang|crawl|pogo|skip|hop|jump|sled|med-ball|patrick|step-down|tibialis|pike|backward/i.test(name)) return false;
+  return /db|dumbbell|kb|kettlebell|barbell|machine|cable|press|row|curl|triceps|goblet|thrust|deadlift|leg press|pulldown|split squat|back extension|halo|farmer|carry|march|get-up/i.test(name);
 }
 
 /* ---------- sets & progression ---------- */
