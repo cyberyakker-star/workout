@@ -293,7 +293,23 @@ function buildSteps(rd, short) {
 function startPlayer(src, rd, st, resume, onExit) {
   var id = App.id, built = buildSteps(rd, st.short), steps = built.steps, N = built.moves.length;
   if (!steps.length) { toast('Nothing to do here — add a move first'); return; }
-  var i = resume ? Math.min(resume.step || 0, steps.length - 1) : 0;
+  // moves skipped with Skip count as done: later rounds and sets of them are left out
+  var skipped = {}; ((resume && resume.skipped) || []).forEach(function (k) { skipped[k] = 1; });
+  function isSkipped(s) { return !!(s && s.it && skipped[s.it.id]); }
+  // from j on, the first step to actually show: no skipped moves, no rest that only leads to skipped moves
+  function live(j) {
+    while (j < steps.length) {
+      if (steps[j].rest) {
+        var k = j + 1; while (k < steps.length && !steps[k].rest && isSkipped(steps[k])) k++;
+        if (k >= steps.length || steps[k].rest) { j = k; continue; }
+        return j;
+      }
+      if (isSkipped(steps[j])) { j++; continue; }
+      return j;
+    }
+    return j;
+  }
+  var i = resume ? Math.min(live(Math.min(resume.step || 0, steps.length - 1)), steps.length - 1) : 0;
   var timer = null, el = h('<div></div>'), firstTimed = true, closed = false;
   var R = 45, CIRC = 2 * Math.PI * R;
   Layers.push(el, { white: true, onClose: function () { closed = true; stopTimer(); Wake.off(); try { speechSynthesis.cancel(); } catch (e) {} if (onExit && !finished) onExit(); } });
@@ -303,7 +319,7 @@ function startPlayer(src, rd, st, resume, onExit) {
   function stopTimer() { if (timer) { timer.stop(); timer = null; } }
   function save() {
     var s0 = steps[i], mi = s0 ? ('rest' in s0 ? (nextMove(i) || {}).mi : s0.mi) : 0;
-    progSet(id, { src: src, loc: st.loc, short: st.short, step: i, mi: mi || 0, moves: N });
+    progSet(id, { src: src, loc: st.loc, short: st.short, step: i, mi: mi || 0, moves: N, skipped: Object.keys(skipped) });
   }
   function header(s) {
     var sub = s.rest ? 'Rest' : s.g.kind === 'pair' ? s.g.title.split(' · ')[0] + ' · Round ' + s.round + ' of ' + s.rounds : s.g.title;
@@ -312,7 +328,7 @@ function startPlayer(src, rd, st, resume, onExit) {
       '<div class="mid"><b>' + (Math.min(mi, N - 1) + 1) + ' of ' + N + '</b><span class="cap">' + esc(sub) + '</span></div>' +
       '<button class="icon-btn" data-act="menu" aria-label="More options">' + I.more + '</button></div>';
   }
-  function nextMove(from) { for (var j = from + 1; j < steps.length; j++) if (!steps[j].rest) return steps[j]; return null; }
+  function nextMove(from) { for (var j = from + 1; j < steps.length; j++) if (!steps[j].rest && !isSkipped(steps[j])) return steps[j]; return null; }
   function ring(frac, cls, figName, figPose) {
     return '<div class="ringwrap"><svg class="ring ' + (cls || '') + '" viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="' + R + '"/>' +
       '<circle class="val" cx="50" cy="50" r="' + R + '" stroke-dasharray="' + CIRC.toFixed(1) + '" stroke-dashoffset="' + (CIRC * (1 - frac)).toFixed(1) + '"/></svg>' +
@@ -333,9 +349,13 @@ function startPlayer(src, rd, st, resume, onExit) {
       wireVideo(sh); on(sh, '[data-act="close"]', 'click', function () { Sheet.close(); });
     });
     on(el, '[data-act="prev"]', 'click', function () { go(prevIndex()); });
-    on(el, '[data-act="skip"]', 'click', function () { go(skipIndex()); });
+    on(el, '[data-act="skip"]', 'click', function () { var s0 = steps[i]; if (s0 && s0.it) skipped[s0.it.id] = 1; go(skipIndex()); });
   }
-  function prevIndex() { var j = i - 1; while (j > 0 && steps[j].rest) j--; return Math.max(0, j); }
+  function prevIndex() {      // back to the previous move you did; going back to a skipped one un-skips it
+    var j = i - 1; while (j > 0 && (steps[j].rest || isSkipped(steps[j]))) j--;
+    j = Math.max(0, j); if (steps[j] && steps[j].it) delete skipped[steps[j].it.id];
+    return j;
+  }
   function skipIndex() {      // skip the rest of this move (all its sets)
     var s = steps[i], j = i + 1;
     if (s.rest) return j;
@@ -346,7 +366,7 @@ function startPlayer(src, rd, st, resume, onExit) {
     if (closed) return;
     stopTimer();
     try { speechSynthesis.cancel(); } catch (e) {}
-    i = j;
+    i = live(j);
     if (i >= steps.length) { finish(); return; }
     save(); show();
   }
