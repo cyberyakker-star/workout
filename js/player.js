@@ -258,9 +258,9 @@ function buildSteps(rd, short) {
   // no rest before a cool-down / timed move's own get-ready, none at the end, none doubled
   var out = [];
   steps.forEach(function (s, i) {
-    if (!s.rest) { out.push(s); return; }
+    if (!('rest' in s)) { out.push(s); return; }
     var nx = steps[i + 1];
-    if (!s.rest || !nx || nx.rest || nx.g.kind === 'cool' || (out.length && out[out.length - 1].rest)) return;
+    if (!s.rest || !nx || ('rest' in nx) || nx.g.kind === 'cool' || (out.length && ('rest' in out[out.length - 1]))) return;
     out.push(s);
   });
   return { steps: out, moves: moves };
