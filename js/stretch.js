@@ -69,7 +69,25 @@ var ROUTINES = [
     moves: [["Plank", "30s"], ["Side Plank", "20s / side"], ["Bird Dog", "30s"], ["Plank", "40s"]] },
   { id: "legs", kind: "strength", title: "Legs", pose: "splitSquat", bg: "#5560A8",
     blurb: "Bodyweight legs, anywhere",
-    moves: [["Bodyweight Squat", "40s"], ["Reverse Lunge", "30s / side"], ["Wall Sit", "30s"], ["Calf Raise", "40s"], ["Glute Bridge", "40s"], ["Bodyweight Squat", "30s"]] }
+    moves: [["Bodyweight Squat", "40s"], ["Reverse Lunge", "30s / side"], ["Wall Sit", "30s"], ["Calf Raise", "40s"], ["Glute Bridge", "40s"], ["Bodyweight Squat", "30s"]] },
+  { id: "upperq", kind: "strength", title: "Upper Body", pose: "pushUp", bg: "#6E9A8B",
+    blurb: "Push-ups and bands, anywhere",
+    moves: [["Push-up", "40s"], ["Band Row", "40s"], ["Band Overhead Press", "40s"], ["Band Pull-Apart", "40s"], ["Kneeling Push-up", "30s"], ["Band Row", "40s"]] },
+  { id: "arms", kind: "strength", title: "Arms", pose: "bicepsCurl", bg: "#D8B44E",
+    blurb: "Biceps and triceps finisher",
+    moves: [["DB Biceps Curl", "40s"], ["Overhead Triceps Extension", "40s"], ["Band Biceps Curl", "30s"], ["Band Overhead Triceps Extension", "30s"], ["Kneeling Push-up", "30s"], ["DB Biceps Curl", "30s"]] },
+  { id: "shoulders", kind: "strength", title: "Shoulders & Posture", pose: "facePull", bg: "#4E8C8C",
+    blurb: "Stand taller — bands only",
+    moves: [["Band Pull-Apart", "40s"], ["Band Face Pull", "40s"], ["Band Overhead Press", "40s"], ["Wall Angels", "45s"], ["Band Pull-Apart", "30s"]] },
+  { id: "abs", kind: "strength", title: "Abs", pose: "mountainClimber", bg: "#9AA36A",
+    blurb: "Six minutes, no crunches",
+    moves: [["Dead Bug", "40s"], ["Mountain Climber", "30s"], ["Plank", "30s"], ["Standing Anti-Rotation Press", "30s / side"], ["Side Plank", "20s / side"], ["Bird Dog", "30s"]] },
+  { id: "kb", kind: "strength", title: "Kettlebell 10", pose: "suitcaseCarry", bg: "#A08BD6",
+    blurb: "One kettlebell, whole body",
+    moves: [["Goblet Squat", "40s"], ["KB Row", "30s / side"], ["Romanian Deadlift", "40s"], ["Single-Arm KB Press", "30s / side"], ["Suitcase Carry", "30s / side"], ["Goblet Squat", "30s"]] },
+  { id: "express", kind: "strength", title: "Full Body Express", pose: "squat", bg: "#7C8FB8",
+    blurb: "Short on time? Hit everything",
+    moves: [["Bodyweight Squat", "40s"], ["Push-up", "30s"], ["Reverse Lunge", "30s / side"], ["Band Row", "40s"], ["Glute Bridge", "40s"], ["Plank", "30s"]] }
 ];
 
 // short cool-down added to the end of each plan session (skippable in the player)
@@ -77,6 +95,12 @@ var COOLDOWNS = {
   "anthony:a": [["Kneeling Hip Flexor Stretch", "30s / side"], ["Figure-4 Stretch", "30s / side"], ["Child's Pose", "40s"]],
   "anthony:b": [["Knees to Chest", "40s"], ["Lying Hamstring Stretch", "30s / side"], ["Figure-4 Stretch", "30s / side"]],
   "anthony:c": [["Kneeling Hip Flexor Stretch", "30s / side"], ["Thread the Needle", "30s / side"], ["Child's Pose", "40s"]],
+  "anthony:push": [["Thread the Needle", "30s / side"], ["Child's Pose", "40s"]],
+  "anthony:pull": [["Child's Pose", "40s"], ["Thread the Needle", "30s / side"], ["Knees to Chest", "40s"]],
+  "anthony:legs": [["Kneeling Hip Flexor Stretch", "30s / side"], ["Figure-4 Stretch", "30s / side"], ["Child's Pose", "40s"]],
+  "anthony:lower": [["Knees to Chest", "40s"], ["Lying Hamstring Stretch", "30s / side"], ["Figure-4 Stretch", "30s / side"]],
+  "anthony:upper": [["Doorway Pec Stretch", "30s / side"], ["Child's Pose", "40s"]],
+  "anthony:core": [["Knees to Chest", "40s"], ["Kneeling Hip Flexor Stretch", "30s / side"], ["Child's Pose", "40s"]],
   "her:a": [["Figure-4 Stretch", "30s / side"], ["Kneeling Hip Flexor Stretch", "30s / side"]],
   "her:c": [["Doorway Pec Stretch", "30s / side"], ["Child's Pose", "40s"]],
   "default:strength": [["Kneeling Hip Flexor Stretch", "30s / side"], ["Child's Pose", "40s"]]

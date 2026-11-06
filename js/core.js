@@ -150,8 +150,32 @@ function makePersonPlan(p) {
 /* ---------- plans ---------- */
 function planKey(id) { return ATHLETES[id].phases[0].key; }
 function baseSessions(id) {
+  var a = ATHLETES[id], all = (a.phaseDays[planKey(id)] || []).filter(function (d) { return d.type !== 'rest'; });
+  if (a.splits) {     // plans split by muscle group: the sessions for the chosen days a week
+    var n = Math.max(2, Math.min(6, daysPerWeek(id))), keys = a.splits[n] || a.splits[3];
+    var byKey = {}; all.forEach(function (d) { byKey[d.key] = d; });
+    return keys.map(function (k) { return byKey[k]; }).filter(Boolean);
+  }
+  return all;
+}
+function allSessions(id) { return (ATHLETES[id].phaseDays[planKey(id)] || []).filter(function (d) { return d.type !== 'rest'; }); }
+function daysPerWeek(id) { var c = cfgGet(id); return +c.days || ATHLETES[id].perWeek || 3; }
+// change how many days a week; split plans change which sessions rotate, generated plans are rebuilt
+function setDaysPerWeek(id, n) {
+  cfgPatch(id, { days: n });
   var a = ATHLETES[id];
-  return (a.phaseDays[planKey(id)] || []).filter(function (d) { return d.type !== 'rest'; });
+  if (a && a.v2) {
+    var list = store.get('trainops:people', []) || [];
+    list.forEach(function (p) { if (p.id === id) p.days = n; });
+    store.set('trainops:people', list);
+    var cfg = list.filter(function (p) { return p.id === id; })[0];
+    if (cfg) try { ATHLETES[id] = makePersonPlan(cfg); } catch (e) {}
+  }
+}
+function renameSession(id, key, name) {
+  var c = cfgGet(id); c.names = c.names || {};
+  if (name) c.names[key] = name; else delete c.names[key];
+  cfgSet(id, c);
 }
 // Celina's run moves up a level every `perLevel` runs (counted before today); Easier/Harder nudges it
 function applyLevels(id, days) {
@@ -174,8 +198,17 @@ function levelNudge(id, key, delta) {
   var target = Math.max(0, Math.min(d.level.n - 1, d.level.i + delta));
   var c = cfgGet(id); c.lvl = c.lvl || {}; c.lvl[key] = target - d.level.base; cfgSet(id, c);
 }
-function sessions(id) { return applyLevels(id, baseSessions(id)); }
+function sessions(id) {
+  var names = cfgGet(id).names || {};
+  return applyLevels(id, baseSessions(id)).map(function (d) {
+    if (!names[d.key]) return d;
+    var c = {}; for (var k in d) c[k] = d[k]; c.title = names[d.key]; c.renamed = true; return c;
+  });
+}
 function sessionLetter(d) { return String(d.key || '').toUpperCase(); }
+// "Workout A · Glutes & Legs" for lettered plans, just the name for named ones ("Push Day")
+function sessionFull(d) { return String(d.key || '').length === 1 ? 'Workout ' + sessionLetter(d) + ' · ' + d.title : d.title; }
+function sessionTag(d) { return String(d.key || '').length === 1 ? 'Workout ' + sessionLetter(d) : (d.focus || ''); }
 
 /* rotation: sessions run in order on whatever days you train; worked out from the log */
 function rotationState(id) {
@@ -256,7 +289,7 @@ function schemeWithEdits(id, name, scheme) {
 function resolveDay(id, d, opt) {
   opt = opt || {};
   var loc = opt.loc !== undefined ? opt.loc : locGet(id), locs = locsOf(id), mods = modsGet(id);
-  var out = { key: d.key, title: d.title, label: d.label, type: d.type, dur: d.dur, run: d.run, level: d.level,
+  var out = { key: d.key, title: d.title, focus: d.focus, label: d.label, type: d.type, dur: d.dur, run: d.run, level: d.level,
     loc: loc, short: !!opt.short, groups: [] };
   if (!d.groups) return out;
   var groups = d.groups.map(function (g, gi) {
@@ -367,7 +400,7 @@ function weekCount(id) {
   var log = logGet(id), wk = isoWeek(new Date());
   return Object.keys(log).filter(function (x) { return isoWeek(parseDate(x)) === wk; }).length;
 }
-function weeklyTarget(id) { var a = ATHLETES[id]; return a.perWeek || Math.max(1, baseSessions(id).length); }
+function weeklyTarget(id) { return daysPerWeek(id) || Math.max(1, baseSessions(id).length); }
 
 /* ---------- schemes ---------- */
 // timed moves -> phases (no get-ready; the player adds that): "45s", "30s / side", "2 × 20s / side",

@@ -73,8 +73,9 @@ function openOverview(src) {
     html += '<div class="lwrap"><div class="lhead"><button class="icon-btn" data-act="back" aria-label="Back">' + I.back + '</button>' +
       (r && r.mine ? '<button class="icon-btn" data-act="rmore" aria-label="Routine options">' + I.more + '</button>' : '') + '</div>';
     html += '<div class="ov-title">' + (r ? '<span class="eyebrow">' + (r.kind === 'stretch' ? 'Stretch' : 'Quick strength') + '</span>' :
-      '<span class="eyebrow">Workout ' + esc(sessionLetter(rd)) + '</span>') +
-      '<h1>' + esc(r ? r.title : rd.title) + '</h1><p>' + mins + ' min · ' + dayMoves(rd) + ' moves' + (r && r.blurb ? ' · ' + esc(r.blurb) : '') + '</p></div>';
+      '<span class="eyebrow">' + esc(sessionTag(rd) || 'Workout') + '</span>') +
+      '<div style="display:flex;align-items:flex-start;gap:8px"><h1 style="flex:1">' + esc(r ? r.title : rd.title) + '</h1>' +
+      (!r ? '<button class="icon-btn" data-act="rename" aria-label="Rename this workout" style="margin-top:14px">' + I.edit + '</button>' : '') + '</div><p>' + mins + ' min · ' + dayMoves(rd) + ' moves' + (r && r.blurb ? ' · ' + esc(r.blurb) : '') + '</p></div>';
     if (!r) {
       html += '<div class="segs">';
       if (locs) html += '<div class="seg" role="group" aria-label="Where are you?">' + Object.keys(locs).map(function (k) {
@@ -111,6 +112,10 @@ function openOverview(src) {
     });
     on(lay, '[data-act="restart"]', 'click', function () { progClear(id); Sound.unlock(); startPlayer(src, day(), st, null, render); });
     on(lay, '[data-act="rmore"]', 'click', function () { routineMenu(r); });
+    on(lay, '[data-act="rename"]', 'click', function () {
+      var d0 = sessions(id).filter(function (x) { return x.key === src.key; })[0];
+      if (d0) openRename(id, d0, render);
+    });
     $$('.mv', lay).forEach(function (row) {
       var it = items[row.dataset.iid];
       holdable(row, function () { openMoveSheet(ctx, it, 'edit'); });
@@ -122,7 +127,7 @@ function openOverview(src) {
   function renderRun(rd) {
     var d = sessions(id).filter(function (x) { return x.key === src.key; })[0], run = d.run || {}, L = d.level;
     lay.innerHTML = '<div class="lwrap"><div class="lhead"><button class="icon-btn" data-act="back" aria-label="Back">' + I.back + '</button></div>' +
-      '<div class="ov-title"><span class="eyebrow">Workout ' + esc(sessionLetter(d)) + '</span><h1>Run day</h1><p>' + (L ? 'Level ' + (L.i + 1) + ' of ' + L.n + ' · ' : '') + esc(d.dur || '') + '</p></div>' +
+      '<div class="ov-title"><span class="eyebrow">' + esc(sessionTag(d) || 'Workout') + '</span><h1>Run day</h1><p>' + (L ? 'Level ' + (L.i + 1) + ' of ' + L.n + ' · ' : '') + esc(d.dur || '') + '</p></div>' +
       '<div style="display:flex;justify-content:center;margin:18px 0">' + figHTML('Run', 180, id, { pose: 'run' }) + '</div>' +
       '<div class="card list">' + (run.warm ? '<div class="li" style="cursor:default"><span class="grow"><span class="cap">Warm up</span><b style="display:block;font-weight:600">' + esc(run.warm) + '</b></span></div>' : '') +
       '<div class="li" style="cursor:default"><span class="grow"><span class="cap">Run</span><b style="display:block;font-weight:600">' + esc(run.extra || d.title) + '</b></span></div>' +
@@ -475,7 +480,7 @@ function showFinish(src, rd, st) {
       (isPlan && a.check ? '<div class="card" style="padding:18px"><div style="font-size:18px;font-weight:700;text-align:center;margin-bottom:12px">How’s your ' + esc(a.check) + '?</div>' +
         '<div class="choices">' + [1, 2, 3].map(function (k) { return '<button class="choice' + (e.si === k ? ' on' : '') + '" data-si="' + k + '">' + CHECK_LABELS[k] + '</button>'; }).join('') + '</div></div>' : '') +
       (nxt ? '<div class="card" style="display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px">' + figHTML(repName(nxt), 52, id) +
-        '<div><span class="cap">Next time</span><div style="font-size:16px;font-weight:600">Workout ' + esc(sessionLetter(nxt)) + ' · ' + esc(nxt.title) + '</div></div></div>' : '') +
+        '<div><span class="cap">Next time</span><div style="font-size:16px;font-weight:600">' + esc(sessionFull(nxt)) + '</div></div></div>' : '') +
       '</div><div class="foot"><div class="in"><button class="btn" data-act="fin">Finish</button></div></div>';
     on(el, '[data-si]', 'click', function (ev, b) { logCheck(id, +b.dataset.si); render(); if (+b.dataset.si === 3) toast('Noted — next time goes easier on it'); });
     on(el, '[data-act="fin"]', 'click', function () { Layers.closeAll(); App.tab = 'today'; renderTab(); });

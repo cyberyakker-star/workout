@@ -70,7 +70,8 @@ function renderToday(v) {
   var strength = all.filter(function (r) { return r.kind === 'strength'; });
   html += '<div class="sec"><h2>Stretch</h2></div><div class="grid">' + stretches.map(function (r) { return tileHTML(r, r.id === pick); }).join('') +
     '<button class="tile card add" data-act="make" aria-label="Make your own routine"><span class="plus">' + I.plus + '</span><span class="n">Make your own</span></button></div>';
-  html += '<div class="sec"><h2>Quick strength</h2></div><div class="grid">' + strength.map(function (r) { return tileHTML(r, false); }).join('') + '</div>';
+  html += '<div class="sec"><h2>Quick strength</h2></div><div class="grid">' + strength.map(function (r) { return tileHTML(r, false); }).join('') +
+    '<button class="tile card add" data-act="make-strength" aria-label="Make your own strength routine"><span class="plus">' + I.plus + '</span><span class="n">Make your own</span></button></div>';
   v.innerHTML = html;
 
   on(v, '[data-act="people"]', 'click', openPeople);
@@ -79,7 +80,8 @@ function renderToday(v) {
   on(v, '[data-act="ran"]', 'click', function () { logRunFlow(d, false); });
   on(v, '[data-act="intervals"]', 'click', function () { openRunTimer(d); });
   on(v, '[data-act="runmore"]', 'click', function () { runMenu(d); });
-  on(v, '[data-act="make"]', 'click', function () { openBuilder(null); });
+  on(v, '[data-act="make"]', 'click', function () { openBuilder(null, 'stretch'); });
+  on(v, '[data-act="make-strength"]', 'click', function () { openBuilder(null, 'strength'); });
   on(v, '[data-si]', 'click', function (e, b) { logCheck(id, +b.dataset.si); renderTab(); });
   $$('.tile[data-rid]', v).forEach(function (t) {
     var r = routineById(id, t.dataset.rid);
@@ -101,7 +103,7 @@ function heroHTML(id, d, rot, todayE) {
   if (rot.doneToday) {
     var nx = rot.days[(rot.next + 1) % rot.days.length], si = todayE && todayE.si;
     return '<div class="card hero"><div class="hero-top">' + figHTML(repName(d), 96, id) + '<div><span class="done-badge">' + I.check.replace('<svg', '<svg width="14" height="14"') + ' Done today</span>' +
-      '<div class="t" style="margin-top:6px">' + esc(d.title) + '</div><div class="s">Next time: Workout ' + esc(sessionLetter(nx)) + ' · ' + esc(nx.title) + '</div></div></div>' +
+      '<div class="t" style="margin-top:6px">' + esc(d.title) + '</div><div class="s">Next time: ' + esc(sessionFull(nx)) + '</div></div></div>' +
       (a.check ? (si ? '<div class="muted" style="font-size:15px">' + esc(a.check.charAt(0).toUpperCase() + a.check.slice(1)) + ': ' + esc(CHECK_LABELS[si]) + ' ✓</div>' :
         '<div><div style="font-weight:700;margin-bottom:10px">How’s your ' + esc(a.check) + '?</div><div class="seg">' +
         [1, 2, 3].map(function (k) { return '<button data-si="' + k + '">' + CHECK_LABELS[k] + '</button>'; }).join('') + '</div></div>') : '') + '</div>';
@@ -109,7 +111,7 @@ function heroHTML(id, d, rot, todayE) {
   if (d.type === 'run') {
     var run = d.run || {}, L = d.level;
     return '<div class="card hero" data-hold="1"><div class="hero-top">' + figHTML('Run', 112, id, { pose: 'run' }) + '<div style="flex:1">' +
-      '<span class="eyebrow">Next up · Workout ' + esc(sessionLetter(d)) + '</span><div class="t">Run day</div>' +
+      '<span class="eyebrow">Next up' + (sessionTag(d) ? ' · ' + esc(sessionTag(d)) : '') + '</span><div class="t">Run day</div>' +
       '<div class="s">' + (L ? 'Level ' + (L.i + 1) + ' of ' + L.n : '') + (d.dur ? ' · ' + esc(d.dur) : '') + '</div></div>' +
       '<button class="icon-btn" data-act="runmore" aria-label="Run options">' + I.more + '</button></div>' +
       '<div style="background:var(--soft);border-radius:18px;padding:12px 14px"><div style="font-size:17px;font-weight:700">' + esc(run.extra || d.title) + '</div>' +
@@ -121,7 +123,7 @@ function heroHTML(id, d, rot, todayE) {
   var rd = resolveDay(id, d, {}), prog = progGet(id);
   var resume = prog && prog.src && prog.src.type === 'plan' && prog.src.key === d.key ? prog : null;
   return '<div class="card hero" data-hold="1"><div class="hero-top">' + figHTML(repName(d), 112, id) + '<div>' +
-    '<span class="eyebrow">Next up · Workout ' + esc(sessionLetter(d)) + '</span><div class="t">' + esc(d.title) + '</div>' +
+    '<span class="eyebrow">Next up</span><div class="t">' + esc(d.title) + '</div>' + (sessionTag(d) ? '<div class="s">' + esc(sessionTag(d)) + '</div>' : '') +
     '<div class="cap m">' + dayMinutes(id, d) + ' min · ' + dayMoves(rd) + ' moves</div></div></div>' +
     '<button class="btn" data-act="start">' + I.play + (resume ? 'Resume · ' + (resume.mi + 1) + ' of ' + resume.moves : 'Start') + '</button>' +
     '<div class="row2"><button class="link" data-act="change">Do a different workout</button></div></div>';
@@ -142,13 +144,14 @@ function openSessionPicker(id) {
   var rot = rotationState(id), real = rotationState(id);
   var el = Sheet.open('<h2>Pick today’s workout</h2><p class="muted" style="margin:6px 0 4px;font-size:15px">The order carries on from whichever one you do.</p>' +
     rot.days.map(function (d, i) {
-      return '<button class="opt" data-key="' + d.key + '">' + figHTML(repName(d), 52, id) + '<span style="flex:1"><span style="display:block">Workout ' + esc(sessionLetter(d)) + ' · ' + esc(d.title) + '</span>' +
+      return '<button class="opt" data-key="' + d.key + '">' + figHTML(repName(d), 52, id) + '<span style="flex:1"><span style="display:block">' + esc(sessionFull(d)) + '</span>' +
         '<small class="muted" style="font-weight:500;font-size:13px">' + esc(d.dur || '') + '</small></span>' + (i === real.next ? '<span class="tag s1">Up next</span>' : '') + '</button>';
     }).join(''));
   on(el, '[data-key]', 'click', function (e, b) {
     pickSession(id, b.dataset.key); Sheet.close(); renderTab();
     var r = rotationState(id), nx = r.days[(r.next + 1) % r.days.length];
-    toast('Today: Workout ' + b.dataset.key.toUpperCase() + '. Next time: Workout ' + sessionLetter(nx) + '.');
+    var cur = r.days[r.next];
+    toast('Today: ' + (cur ? cur.title : '') + '. Next time: ' + nx.title + '.');
   });
 }
 function routineMenu(r) {
@@ -179,6 +182,43 @@ function runMenu(d) {
   on(el, '[data-a="harder"]', 'click', function () { levelNudge(App.id, d.key, 1); Sheet.close(); renderTab(); });
   on(el, '[data-a="timer"]', 'click', function () { Sheet.close(); openRunTimer(d); });
   on(el, '[data-a="change"]', 'click', function () { Sheet.close(); openSessionPicker(App.id); });
+}
+
+/* ---------- days a week + renaming ---------- */
+function splitPreview(id, n) {
+  var a = ATHLETES[id];
+  if (a.splits) {
+    var byKey = {}; allSessions(id).forEach(function (d) { byKey[d.key] = d; });
+    var names = cfgGet(id).names || {};
+    return (a.splits[n] || []).map(function (k) { return byKey[k] ? (names[k] || byKey[k].title) : ''; }).filter(Boolean);
+  }
+  return null;
+}
+function openDaysPicker(id) {
+  var sel = daysPerWeek(id);
+  function body() {
+    var pv = splitPreview(id, sel);
+    return '<h2>How many days a week?</h2><p class="muted" style="margin:6px 0 12px;font-size:15px">Any days you like — the app just keeps the order.</p>' +
+      '<div class="seg" role="group" aria-label="Days a week">' + [2, 3, 4, 5, 6].map(function (n) { return '<button data-n="' + n + '" aria-pressed="' + (n === sel) + '" class="' + (n === sel ? 'on' : '') + '">' + n + '</button>'; }).join('') + '</div>' +
+      (pv ? '<div class="card list" style="margin-top:14px">' + pv.map(function (t, i) { return '<div class="li" style="cursor:default"><span class="tag" style="margin:0 6px 0 0">' + (i + 1) + '</span><span class="grow">' + esc(t) + '</span></div>'; }).join('') + '</div>' +
+        '<p class="muted" style="font-size:13px;margin:8px 4px 0">' + (sel <= 3 ? 'Each muscle group gets one solid day a week.' : 'Legs get two days (squat day + hinge day), and every muscle group is worked more often.') + '</p>'
+        : '<p class="muted" style="font-size:14px;margin-top:12px">Your workouts keep rotating in order — this sets your weekly goal.</p>') +
+      '<button class="btn sm" style="margin-top:16px" data-a="save">Save</button>';
+  }
+  var el = Sheet.open('<div data-body>' + body() + '</div>');
+  function wire() {
+    on(el, '[data-n]', 'click', function (e, b) { sel = +b.dataset.n; $('[data-body]', el).innerHTML = body(); wire(); });
+    on(el, '[data-a="save"]', 'click', function () { setDaysPerWeek(id, sel); Sheet.close(); renderTab(); toast(sel + ' days a week — saved'); });
+  }
+  wire();
+}
+function openRename(id, d, after) {
+  var base = allSessions(id).filter(function (x) { return x.key === d.key; })[0], orig = base ? base.title : d.title;
+  var el = Sheet.open('<h2>Rename workout</h2><div class="field"><label for="rn">Name</label><input id="rn" maxlength="30" value="' + esc(d.title) + '"></div>' +
+    '<div class="row-btns" style="margin-top:16px">' + (d.renamed ? '<button class="btn ghost sm" data-a="reset">Use “' + esc(orig) + '”</button>' : '') + '<button class="btn sm" data-a="save">Save</button></div>');
+  var inp = $('#rn', el); setTimeout(function () { try { inp.focus(); inp.select(); } catch (e) {} }, 250);
+  on(el, '[data-a="save"]', 'click', function () { var v = inp.value.trim(); renameSession(id, d.key, v && v !== orig ? v : ''); Sheet.close(); after && after(); });
+  on(el, '[data-a="reset"]', 'click', function () { renameSession(id, d.key, ''); Sheet.close(); after && after(); });
 }
 
 /* ---------- logging a run ---------- */
@@ -292,8 +332,8 @@ function renderMe(v) {
     '<button class="btn ghost sm" style="width:auto;padding:0 16px" data-act="people">Switch</button></div>';
   html += '<button class="card li" style="margin-top:18px;padding:16px 18px" data-act="goal"><span style="width:44px;height:44px;border-radius:14px;background:var(--warn-tint);color:var(--warn);display:flex;align-items:center;justify-content:center">' + I.flag + '</span>' +
     '<span class="grow"><span class="cap">Your goal</span><b style="display:block;font-size:17px;margin-top:2px">' + (g && !g.past ? esc(g.name) + (g.when ? ' · ' + esc(g.when) : '') : g && g.past ? esc(g.name) + ' ✓ — set your next one' : 'Set a goal') + '</b></span><span class="chev">' + I.chev + '</span></button>';
-  html += '<div class="sec"><h2>Your plan</h2><span class="cap">' + weeklyTarget(id) + '× a week · any days</span></div><div class="card list">' + days.map(function (d) {
-    return '<button class="li" data-key="' + d.key + '">' + figHTML(repName(d), 48, id) + '<span class="grow"><b style="font-weight:600">Workout ' + esc(sessionLetter(d)) + ' · ' + esc(d.title) + '</b><small>' + esc(d.dur || '') + '</small></span><span class="chev">' + I.chev + '</span></button>';
+  html += '<div class="sec"><h2>Your plan</h2><button class="link" data-act="days" style="padding:6px 0">' + weeklyTarget(id) + ' days a week ' + I.edit.replace('<svg', '<svg width="16" height="16" style="vertical-align:-2px"') + '</button></div><div class="card list">' + days.map(function (d) {
+    return '<button class="li" data-key="' + d.key + '">' + figHTML(repName(d), 48, id) + '<span class="grow"><b style="font-weight:600">' + esc(sessionFull(d)) + '</b><small>' + esc((d.focus ? d.focus + ' · ' : '') + (d.dur || '')) + '</small></span><span class="chev">' + I.chev + '</span></button>';
   }).join('') + '</div><p class="muted" style="font-size:13px;margin:8px 4px 0">Open a workout and press and hold any move to swap it or change sets and reps.</p>';
   html += '<div class="sec"><h2>More</h2></div><div class="card list">' +
     '<button class="li" data-act="library">' + I.book + '<span class="grow">Exercise library</span><span class="chev">' + I.chev + '</span></button>' +
@@ -310,6 +350,7 @@ function renderMe(v) {
   v.innerHTML = html;
   on(v, '[data-act="people"]', 'click', openPeople);
   on(v, '[data-act="goal"]', 'click', function () { openGoalEditor(id, renderTab); });
+  on(v, '[data-act="days"]', 'click', function () { openDaysPicker(id); });
   on(v, '[data-key]', 'click', function (e, b) { openOverview({ type: 'plan', key: b.dataset.key }); });
   on(v, '[data-act="library"]', 'click', openLibrary);
   on(v, '[data-act="logrun"]', 'click', function () { logRunFlow(null, false); });
@@ -373,9 +414,9 @@ function builderPool(kind) {
   ['Push-up', 'Kneeling Push-up', 'Reverse Lunge', 'Step-Up', 'Mountain Climber', 'Band Row', 'Band Pull-Apart', 'Goblet Squat', 'DB Romanian Deadlift', 'Standing Hip Abduction', 'Suitcase Carry', 'Standing Anti-Rotation Press'].forEach(function (n) { s[n] = 1; });
   return Object.keys(s);
 }
-function openBuilder(existing) {
+function openBuilder(existing, kind) {
   var id = App.id, st = {
-    title: existing ? existing.title : '', kind: existing ? existing.kind || 'stretch' : 'stretch',
+    title: existing ? existing.title : '', kind: existing ? existing.kind || 'stretch' : (kind || 'stretch'),
     secs: 45, picked: existing ? existing.moves.map(function (m) { return m[0]; }) : [],
     schemes: {}
   };
@@ -499,7 +540,7 @@ function openSetup() {
     el.innerHTML = '<div class="lwrap"><span class="eyebrow">All set</span><h1 style="font-weight:900;font-size:30px;margin-top:6px">Your plan is ready, ' + esc(st.name) + '</h1>' +
       '<div class="card" style="padding:18px;margin-top:16px"><div style="display:flex;justify-content:space-between"><b>' + st.days + ' workouts a week</b><span class="cap">' + st.mins + ' min each</span></div>' +
       '<div style="display:grid;grid-template-columns:repeat(' + Math.min(3, days.length) + ',minmax(0,1fr));gap:8px;margin-top:14px">' + days.slice(0, 3).map(function (d) {
-        return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center">' + figHTML(repName(d), 76, pid) + '<b style="font-size:14px">Workout ' + esc(sessionLetter(d)) + '</b><span class="muted" style="font-size:13px">' + esc(d.title) + '</span></div>';
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center">' + figHTML(repName(d), 76, pid) + '<b style="font-size:14px">' + esc(String(d.key).length === 1 ? 'Workout ' + sessionLetter(d) : d.title) + '</b><span class="muted" style="font-size:13px">' + esc(d.title) + '</span></div>';
       }).join('') + '</div><p class="muted" style="font-size:14px;margin:12px 0 0">Each one ends with a short cool-down stretch.</p></div>' +
       '<p class="muted" style="margin:16px 4px 0;font-size:15px">Press and hold any move to swap it. You can redo this anytime by adding yourself again under Me → People.</p></div>' +
       '<div class="foot"><div class="in"><button class="btn" data-act="go">Let’s go</button></div></div>';
