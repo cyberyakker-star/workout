@@ -65,9 +65,10 @@ function renderToday(v) {
 
   // stretch + quick strength library: 4 each, "See all" for the rest
   var pick = stretchPickId(id), all = allRoutines(id);
-  var stretches = all.filter(function (r) { return r.kind === 'stretch'; });
+  var stretches = all.filter(function (r) { return r.kind === 'stretch' && !r.baby; });
   stretches.sort(function (x, y) { return (y.id === pick) - (x.id === pick) || (y.mine ? 1 : 0) - (x.mine ? 1 : 0); });
-  var strength = all.filter(function (r) { return r.kind === 'strength'; });
+  var strength = all.filter(function (r) { return r.kind === 'strength' && !r.baby; });
+  var withBaby = all.filter(function (r) { return r.baby; });
   strength.sort(function (x, y) { return (y.mine ? 1 : 0) - (x.mine ? 1 : 0); });
   App.seeAll = App.seeAll || {};
   function section(key, title, list) {
@@ -75,7 +76,7 @@ function renderToday(v) {
     return '<div class="sec"><h2>' + title + '</h2>' + (list.length > 4 ? '<button class="link" data-all="' + key + '" style="padding:6px 0">' + (open ? 'Show less' : 'See all ' + list.length) + '</button>' : '') + '</div>' +
       '<div class="grid">' + shown.map(function (r) { return tileHTML(r, r.id === pick && key === 'stretch'); }).join('') + '</div>';
   }
-  html += section('stretch', 'Stretch', stretches) + section('strength', 'Quick strength', strength);
+  html += section('stretch', 'Stretch', stretches) + section('strength', 'Quick strength', strength) + (withBaby.length ? section('baby', 'With baby', withBaby) : '');
   html += '<button class="card li" data-act="make" style="margin-top:14px;padding:14px 16px"><span class="plusdot">' + I.plus + '</span>' +
     '<span class="grow"><b style="display:block;font-size:17px">Make your own</b><small>Pick the stretches or moves you like</small></span><span class="chev">' + I.chev + '</span></button>';
   v.innerHTML = html;
@@ -100,8 +101,8 @@ function renderToday(v) {
   });
 }
 function levelCap(id, r) {
-  var lv = r.mine ? 1 : routineLevel(id, r.id), mins = routineMinutes(levelMoves(id, r));
-  return (lv > 1 ? 'Level ' + lv + ' · ' : '') + mins + ' minutes';
+  var lv = routineLevel(id, r.id), mins = routineMinutes(levelMoves(id, r));
+  return (r.levels || lv > 1 ? 'Level ' + lv + ' · ' : '') + mins + ' min';
 }
 function tileHTML(r, today) {
   return '<button class="tile card" data-rid="' + esc(r.id) + '">' + (today ? '<span class="badge">Today</span>' : r.mine ? '<span class="badge">Yours</span>' : '') +
@@ -176,7 +177,7 @@ function routineMenu(r) {
       : '<button class="opt" data-a="copy">' + I.copy + 'Make my own version</button>') + '</div>');
   on(el, '[data-a="start"]', 'click', function () { Sheet.close(); openOverview({ type: 'routine', rid: r.id }); });
   on(el, '[data-a="edit"]', 'click', function () { Sheet.close(); Layers.closeAll(); openBuilder(r); });
-  on(el, '[data-a="copy"]', 'click', function () { Sheet.close(); openBuilder({ title: 'My ' + r.title, kind: r.kind, moves: r.moves.slice(), pose: r.pose, bg: r.bg }); });
+  on(el, '[data-a="copy"]', 'click', function () { Sheet.close(); openBuilder({ title: 'My ' + r.title, kind: r.kind, moves: levelBase(r, routineLevel(App.id, r.id)).map(function (m) { return m.slice(); }), pose: r.pose, bg: r.bg }); });
   on(el, '[data-a="del"]', 'click', function () {
     var list = myRoutinesGet(App.id), before = clone(list);
     myRoutinesSave(App.id, list.filter(function (x) { return x.id !== r.id; }));
@@ -431,8 +432,9 @@ function openLibrary() {
 
 /* ---------- Make your own (Bend-style picker) ---------- */
 function builderPool(kind) {
-  if (kind === 'stretch') return Object.keys(STRETCHES);
-  var s = {}; ROUTINES.filter(function (r) { return r.kind === 'strength'; }).forEach(function (r) { r.moves.forEach(function (m) { s[m[0]] = 1; }); });
+  if (kind === 'stretch') return Object.keys(STRETCHES).filter(function (n) { return !STRETCHES[n].baby; });
+  var s = {}; ROUTINES.filter(function (r) { return r.kind === 'strength' && !r.baby; }).forEach(function (r) {
+    (r.levels || [r.moves]).forEach(function (L) { L.forEach(function (m) { s[m[0]] = 1; }); }); });
   ['Push-up', 'Kneeling Push-up', 'Reverse Lunge', 'Step-Up', 'Mountain Climber', 'Band Row', 'Band Pull-Apart', 'Goblet Squat', 'DB Romanian Deadlift', 'Standing Hip Abduction', 'Suitcase Carry', 'Standing Anti-Rotation Press'].forEach(function (n) { s[n] = 1; });
   return Object.keys(s);
 }
@@ -574,6 +576,7 @@ function openSetup() {
 /* ---------- start ---------- */
 (function init() {
   loadPeople();
+  try { migrateLevels(); } catch (e) {}
   App.id = currentId();
   $$('#tabbar button').forEach(function (b) {
     b.addEventListener('click', function () { App.tab = b.dataset.tab; Layers.closeAll(); Sheet.close(true); renderTab(); window.scrollTo(0, 0); });

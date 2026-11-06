@@ -64,7 +64,31 @@ var FIG = (function () {
       '" fill="none" stroke="' + col(q.c || '$eq', bg) + '" stroke-width="' + (q.w || 3) + '" stroke-linecap="round" stroke-linejoin="round"/>';
     if (k === 'path') return '<path d="' + q.d + '" fill="' + (q.fill ? col(q.fill, bg) : 'none') + '"' +
       (q.stroke ? ' stroke="' + col(q.stroke, bg) + '" stroke-width="' + (q.w || 2) + '" stroke-linecap="round" stroke-linejoin="round"' : '') + '/>';
+    if (k === 'baby') return baby(q);
     return '';
+  }
+  /* a 9-month-old in a pink onesie. at = anchor (bottom of the bottom for 'sit',
+     floor contact for 'lie'/'tummy', middle of the body for 'held'); faces right
+     unless flip; rot in degrees; s = size. */
+  function baby(q) {
+    var B = '#F4A3B5', o = '', a = q.at, s = q.s || 1, f = q.flip ? -1 : 1, pose = q.pose || 'sit';
+    function e(cx, cy, rx, ry) { return '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="' + B + '"/>'; }
+    function head(x, y) { return dot([x, y], 5, C.skin) + dot([x - 1.4, y - 4.6], 1.7, C.hair); }
+    if (pose === 'sit') {
+      o = seg([0, -2.6], [7, -2.2], B, 4.4) + dot([7.6, -2.4], 2.3, B) + e(0, -8, 4.7, 6.3) +
+        seg([1.6, -11], [5.4, -7.2], C.skin, 2.6) + dot([5.6, -7], 1.5, C.skin) + head(0.8, -17.8);
+    } else if (pose === 'lie') {          // on its back, knees up, head to the right
+      o = seg([-4.6, -5.2], [-8.6, -10.6], B, 4.2) + dot([-8.9, -11.4], 2.2, B) + e(0, -4.4, 6.6, 4.4) +
+        seg([3, -7.6], [5, -12.4], C.skin, 2.6) + dot([5.1, -12.8], 1.5, C.skin) + head(10.6, -5.2);
+    } else if (pose === 'tummy') {        // lying on its tummy, head up, head to the right
+      o = seg([-5, -3.4], [-11, -2.8], B, 4.2) + dot([-11.6, -2.8], 2.2, B) + e(0, -3.9, 6.6, 3.9) +
+        seg([5.4, -4.6], [8.4, -0.8], C.skin, 2.6) + head(10.2, -8.4);
+    } else {                              // held up under the arms, legs dangling
+      o = seg([-1.6, 5], [-2.6, 11], B, 3.8) + seg([1.6, 5], [2.8, 11], B, 3.8) + e(0, 0, 4.7, 6.5) +
+        seg([-3.2, -3], [-7.2, -7.4], C.skin, 2.6) + seg([3.2, -3], [7.2, -7.4], C.skin, 2.6) + head(0.4, -10.8);
+    }
+    return '<g transform="translate(' + r1(a[0]) + ' ' + r1(a[1]) + ')' + (q.rot ? ' rotate(' + q.rot + ')' : '') +
+      ' scale(' + (s * f) + ' ' + s + ')">' + o + '</g>';
   }
   var uid = 0;
   // svg(pose or key, {size, bg, hair:'bun'|'short', label})
