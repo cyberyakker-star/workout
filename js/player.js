@@ -355,12 +355,20 @@ function startPlayer(src, rd, st, resume, onExit) {
   function menu(s) {
     var inCool = s.g && s.g.kind === 'cool';
     var html = '<h2 style="margin-bottom:6px">Options</h2>' +
-      '<button class="opt" data-m="sound">' + (Sound.on() ? I.sound + 'Sounds &amp; voice: on' : I.mute + 'Sounds &amp; voice: off') + '</button>' +
+      (s.it ? '<button class="opt" data-m="edit">' + I.swap + 'Swap or change ' + esc(s.it.name) + '</button>' : '') +
+      '<button class="opt" data-m="sound">' + (Sound.on() ? I.sound + 'Beeps: on' : I.mute + 'Beeps: off') + '</button>' +
+      '<button class="opt" data-m="voice">' + (Sound.voice() ? I.sound + 'Voice cues: on' : I.mute + 'Voice cues: off') + '</button>' +
       (inCool ? '<button class="opt" data-m="cool">' + I.next + 'Skip the cool-down</button>' : '') +
       '<button class="opt" data-m="finish">' + I.check + 'Finish now</button>' +
       '<button class="btn soft sm" style="margin-top:14px" data-m="close">Close</button>';
     var sh = Sheet.open(html);
-    on(sh, '[data-m="sound"]', 'click', function () { Sound.set(!Sound.on()); Sheet.close(); toast(Sound.on() ? 'Sounds on' : 'Sounds off'); });
+    on(sh, '[data-m="sound"]', 'click', function () { Sound.set(!Sound.on()); Sound.unlock(); Sheet.close(); toast(Sound.on() ? 'Beeps on' : 'Beeps off'); });
+    on(sh, '[data-m="voice"]', 'click', function () { Sound.setVoice(!Sound.voice()); Sound.unlock(); Sheet.close(); toast(Sound.voice() ? 'Voice cues on — music may pause while it talks' : 'Voice cues off'); });
+    on(sh, '[data-m="edit"]', 'click', function () {
+      Sheet.close();
+      if (timer && !timer.paused()) { timer.pause(); updatePause(); }
+      openMoveSheet({ id: id, src: src, rd: rd, loc: st.loc, onChange: rebuild }, s.it, 'edit');
+    });
     on(sh, '[data-m="cool"]', 'click', function () { Sheet.close(); finish(); });
     on(sh, '[data-m="finish"]', 'click', function () { Sheet.close(); if (confirm('Finish now and log this workout?')) finish(); });
     on(sh, '[data-m="close"]', 'click', function () { Sheet.close(); });
@@ -397,7 +405,6 @@ function startPlayer(src, rd, st, resume, onExit) {
     var ready = firstTimed ? 10 : 5; firstTimed = false;
     var seq = [{ kind: 'ready', lab: 'Get ready', secs: ready }].concat(phases), k = 0;
     el.innerHTML = '<div class="pl">' + header(s) + ring(1, '', it.name) + nameRow(it) +
-      '<div class="pl-sub">' + esc(it.note || (cuesFor(it)[0] || '')) + '</div>' +
       '<div class="pl-lab" data-lab>Get ready</div><div class="pl-big" data-t>' + fmtSecs(ready) + '</div>' +
       '<div class="pl-ctrl"><button class="round-btn" data-act="prev" aria-label="Previous">' + I.prev + '</button>' +
       '<button class="round-btn big" data-act="pause" aria-label="Pause">' + I.pause + '</button>' +
@@ -431,19 +438,17 @@ function startPlayer(src, rd, st, resume, onExit) {
     var weighted = loggable && needsWeight(it.name);
     var sug = suggestion(id, it.name, p), w = weighted ? sug.w : 0, reps = sug.r || p.lo || 10;
     if (p.kind === 'reps' && (reps < p.lo || reps > p.hi)) reps = p.lo;
-    var showReps = p.kind === 'max';
+    var showReps = loggable;
     var big = p.kind === 'max' ? 'Max<small>reps</small>' : p.kind === 'count' ? esc(p.label) + (p.unit || p.side ? '<small>' + (p.unit || '') + (p.side ? ' / side' : '') + '</small>' : '') :
       esc(p.label) + '<small>' + (p.unit || 'reps') + (p.side ? ' / side' : '') + '</small>';
     var dots = ''; for (var d = 1; d <= s.sets; d++) dots += '<i class="' + (d < s.set ? 'on' : d === s.set ? 'cur' : '') + '"></i>';
     function render() {
       el.innerHTML = '<div class="pl reps">' + header(s) + ring((s.set - 1) / s.sets, '', it.name) + nameRow(it) +
-        '<div class="pl-sub">' + esc(it.note || '') + '</div>' +
         '<button class="pl-big" data-act="reps" style="background:none;border:0;color:inherit;cursor:pointer">' + big + '</button>' +
         (s.sets > 1 ? '<div class="pl-lab">' + (s.g.kind === 'pair' ? 'Set ' : 'Set ') + s.set + ' of ' + s.sets + '<span class="setdots">' + dots + '</span></div>' : '') +
-        (showReps && loggable ? '<div class="wt"><b>Reps done</b><div class="step"><button data-r="-1" aria-label="Fewer reps">−</button><span data-rv>' + reps + '</span><button data-r="1" aria-label="More reps">+</button></div></div>' : '') +
+        (showReps && loggable ? '<div class="wt"><b>Reps</b><div class="step"><button data-r="-1" aria-label="Fewer reps">−</button><span data-rv>' + reps + '</span><button data-r="1" aria-label="More reps">+</button></div></div>' : '') +
         (weighted ? '<div class="wt"><b>Weight</b><div class="step"><button data-w="-1" aria-label="Less weight">−</button><span data-wv>' + w + ' lb</span><button data-w="1" aria-label="More weight">+</button></div></div>' : '') +
-        (weighted && sug.hint ? '<div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap"><span class="muted" style="font-size:14px">' + esc(sug.hint) + '</span>' +
-          (sug.tryW && w !== sug.tryW ? '<button class="try" data-act="try">Use ' + sug.tryW + ' lb</button>' : '') + '</div>' : '') +
+
         '<div class="pl-ctrl"><button class="round-btn" data-act="prev" aria-label="Previous">' + I.prev + '</button>' +
         '<button class="btn" data-act="done">' + I.check + 'Done</button>' +
         '<button class="round-btn" data-act="skip" aria-label="Skip">' + I.next + '</button></div></div>';
@@ -462,6 +467,18 @@ function startPlayer(src, rd, st, resume, onExit) {
     render();
   }
 
+  // after a swap / sets change mid-workout: rebuild the steps and stay on the same move
+  function rebuild() {
+    var cur = steps[i], mi = cur ? ('rest' in cur ? (nextMove(i) || {}).mi : cur.mi) : 0, set = cur && cur.set || 1;
+    var fresh = src.type === 'routine' ? routineDay(id, routineById(id, src.rid))
+      : resolveDay(id, sessions(id).filter(function (x) { return x.key === src.key; })[0], { loc: st.loc, short: st.short });
+    if (!fresh) return;
+    rd = fresh; built = buildSteps(rd, st.short); steps = built.steps; N = built.moves.length;
+    var j = -1;
+    steps.forEach(function (x, k) { if (j === -1 && !('rest' in x) && x.mi === mi && x.set === set) j = k; });
+    if (j === -1) steps.forEach(function (x, k) { if (j === -1 && !('rest' in x) && x.mi >= mi) j = k; });
+    stopTimer(); i = j === -1 ? Math.min(i, steps.length - 1) : j; save(); show();
+  }
   function finish() {
     if (closed) return;
     finished = true; stopTimer(); progClear(id); Wake.off();

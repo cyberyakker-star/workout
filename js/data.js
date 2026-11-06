@@ -303,7 +303,6 @@ var ATHLETES = {
     perWeek:3,
     quickMin:20,     // the short-on-time version
     check:"SI joint", checkTag:"SI", // quick check-in after each session
-    locations:{ home:"Home", gym:"YMCA" },
     programWeeks:0,
     phases:[
       { key:"split", label:"Any days", range:"Rotation", name:"Push · Pull · Legs", from:1, to:999 }
@@ -323,7 +322,6 @@ var ATHLETES = {
     perWeek:3,
     quickMin:10,
     check:"back & joints", checkTag:"JOINTS", // quick check-in after each session
-    locations:{ home:"Home", gym:"YMCA", min:"Minimal" },
     programWeeks:0,
     phases:[
       { key:"glow", label:"3 × 20 min · any days", range:"Rotation", name:"Strength & 5K", from:1, to:999 }

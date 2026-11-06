@@ -339,7 +339,8 @@ function renderMe(v) {
     '<button class="li" data-act="library">' + I.book + '<span class="grow">Exercise library</span><span class="chev">' + I.chev + '</span></button>' +
     '<button class="li" data-act="logrun">' + I.run + '<span class="grow">Log a run</span><span class="chev">' + I.chev + '</span></button>' +
     '<button class="li" data-act="people">' + I.users + '<span class="grow">People<small>Switch, add or remove</small></span><span class="chev">' + I.chev + '</span></button>' +
-    '<button class="li" data-act="sound">' + (Sound.on() ? I.sound : I.mute) + '<span class="grow">Sounds &amp; voice cues<small>' + (Sound.on() ? 'On' : 'Off') + '</small></span></button>' +
+    '<button class="li" data-act="sound">' + (Sound.on() ? I.sound : I.mute) + '<span class="grow">Beeps<small>' + (Sound.on() ? 'On — plays over your music' : 'Off') + '</small></span></button>' +
+    '<button class="li" data-act="voice">' + (Sound.voice() ? I.sound : I.mute) + '<span class="grow">Voice cues<small>' + (Sound.voice() ? 'On — music may pause while it talks' : 'Off') + '</small></span></button>' +
     '<button class="li" data-act="units">' + I.sliders + '<span class="grow">Run distance<small>' + (unitsFor(id) === 'km' ? 'Kilometres' : 'Miles') + '</small></span></button>' +
     '<button class="li" data-act="backup">' + I.download + '<span class="grow">Back up my data<small>Saves a file you can restore later</small></span></button>' +
     '<button class="li" data-act="restore">' + I.upload + '<span class="grow">Restore from backup</span></button>' +
@@ -355,6 +356,7 @@ function renderMe(v) {
   on(v, '[data-act="library"]', 'click', openLibrary);
   on(v, '[data-act="logrun"]', 'click', function () { logRunFlow(null, false); });
   on(v, '[data-act="sound"]', 'click', function () { Sound.set(!Sound.on()); Sound.unlock(); if (Sound.on()) Sound.chime(); renderTab(); });
+  on(v, '[data-act="voice"]', 'click', function () { Sound.setVoice(!Sound.voice()); Sound.unlock(); if (Sound.voice()) Sound.say('Voice cues on'); renderTab(); });
   on(v, '[data-act="units"]', 'click', function () { store.setRaw('trainops:units:' + id, unitsFor(id) === 'km' ? 'mi' : 'km'); renderTab(); });
   on(v, '[data-act="backup"]', 'click', function () {
     var blob = new Blob([JSON.stringify(exportData(), null, 1)], { type: 'application/json' }), a = document.createElement('a');

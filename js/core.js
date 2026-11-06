@@ -127,7 +127,7 @@ function makePersonPlan(p) {
   });
   plan.check = (p.limits && p.limits.length) ? 'back & joints' : null;
   plan.v2 = p;
-  if (p.place === 'both') {     // gym versions of each move, picked from the exercise database
+  if (false && p.place === 'both') {     // (Home/Gym switching was removed for simplicity)
     plan.locations = { home: 'Home', gym: 'Gym' };
     var used = {};
     plan.phaseDays[plan.phases[0].key].forEach(function (d) {
@@ -493,14 +493,19 @@ var Sound = {
   ctx: null,
   on: function () { return store.raw('trainops:mute') !== '1'; },
   set: function (v) { store.setRaw('trainops:mute', v ? '0' : '1'); },
+  voice: function () { return store.raw('trainops:voice') === '1'; },
+  setVoice: function (v) { store.setRaw('trainops:voice', v ? '1' : '0'); },
   unlock: function () {     // call from a tap so iOS lets timers make sound later
+    // "ambient" mixes our beeps with whatever music is playing instead of pausing it (iOS 17+)
+    try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) {}
+    if (!this.on() && !this.voice()) return;
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (AC && !this.ctx) this.ctx = new AC();
       if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
       if (this.ctx) { var b = this.ctx.createBuffer(1, 1, 22050), s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(0); }
     } catch (e) {}
-    try { if (window.speechSynthesis && !this._spoke) { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); this._spoke = true; } } catch (e) {}
+    try { if (this.voice() && window.speechSynthesis && !this._spoke) { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); this._spoke = true; } } catch (e) {}
   },
   tone: function (f, ms, vol, when) {
     if (!this.on() || !this.ctx) return;
@@ -517,7 +522,7 @@ var Sound = {
   chime: function () { this.tone(784, 220, 0.22); this.tone(1047, 420, 0.22, 0.18); },
   done: function () { this.tone(523, 180, 0.22); this.tone(659, 180, 0.22, 0.15); this.tone(784, 380, 0.22, 0.3); },
   say: function (text) {
-    if (!this.on() || !window.speechSynthesis || !text) return;
+    if (!this.voice() || !window.speechSynthesis || !text) return;
     try {
       speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance(text); u.rate = 1.02; u.pitch = 1; u.volume = 1;
