@@ -22,7 +22,7 @@ function glowSessions(){
       groups:[
         { label:"Warm-up · booty band", items:[
           { name:"Banded Glute Bridge", scheme:"× 15", note:"Band above knees · squeeze 2s at the top" },
-          { name:"Squat Side Step", scheme:"10 steps / side", note:"Stay low, small steps" } ]},
+          { name:"Lateral Step-Down", scheme:"× 10 / side", note:"Low step · slow and controlled · keeps runner's knees happy" } ]},
         { label:"Pair 1 · "+PAIR, items:[
           { name:"Goblet Squat", scheme:"3 × 10–15", note:"KB or one DB · 3s down · only as deep as feels good",
             gym:{ name:"Leg Press", scheme:"3 × 10–15", note:"Feet high on the plate for more glutes" },
@@ -205,7 +205,8 @@ function splitSessions(){
           { name:"Overhead Triceps Extension", scheme:"3 × 10–12", note:"One DB, both hands · elbows point up" } ]},
         { label:"Finisher", items:[
           { name:"Band Face Pull", scheme:"2 × 15", note:"Keeps the shoulders healthy on push days", gym:{ name:"Cable Face Pull", note:"" } },
-          DEADBUG,
+          { name:"KB Halo", scheme:"2 × 10", note:"5 each direction · light bell, ribs down",
+            gym:{ name:"Med-Ball Chest Pass", scheme:"2 × 8", note:"Step and push hard from the chest" } },
           { name:"Doorway Pec Stretch", scheme:"2 × 30s / side", note:"Opens up the chest for posture" } ]}
       ]},
     { key:"pull", label:"Pull", type:"strength", title:"Pull Day", focus:"Back & biceps", dur:"45 min",
@@ -222,21 +223,25 @@ function splitSessions(){
         { label:"Finisher", items:[
           { name:"Back Extension", scheme:"2 × 12–15", note:"Glute-focused · bodyweight to start", cues:BACK_EXT_CUES },
           { name:"Band Face Pull", scheme:"2 × 15", gym:{ name:"Cable Face Pull", note:"" } },
-          { name:"Standing Anti-Rotation Press", scheme:"2 × 10 / side", note:"Pallof press · band at chest height", gym:{ name:"Standing Anti-Rotation Press", note:"Cable at chest height" } } ]}
+          { name:"Farmer Carry", scheme:"2 × 40 steps", note:"Heaviest dumbbells you can carry standing tall" } ]}
       ]},
     { key:"legs", label:"Legs", type:"strength", title:"Leg Day", focus:"Squat, glutes & hips", dur:"45 min",
       groups:[
         prep([{ name:"Clamshell", scheme:"2 × 12 / side", note:"Booty band above knees" },
           { name:"Banded Lateral Walk", scheme:"2 × 10 steps / side", note:"Booty band · small steps" },
-          { name:"Adductor Squeeze", scheme:"5 × 10s hold", note:"Ball or pillow between your knees" }, BIRDDOG]),
+          { name:"Adductor Squeeze", scheme:"5 × 10s hold", note:"Ball or pillow between your knees" },
+          { name:"Tibialis Raise", scheme:"2 × 20", note:"Back on the wall · toes up toward your shins" }]),
         { label:"Strength · 3 sets each", items:[
           { name:"Goblet Squat", scheme:"3 × 10–15", note:"KB or one DB · 3s down · only as deep as feels good",
             gym:{ name:"Leg Press", scheme:"3 × 10–12", note:"Moderate depth — keep your hips down on the pad" } },
-          { name:"Split Squat", scheme:"3 × 8–10 / side", note:"Short stance · hold the bench for balance · if your SI complains, do Goblet Squats" },
+          { name:"ATG Split Squat", scheme:"3 × 8–10 / side", note:"Front foot on a step to start · knee travels over the toes · hold the bench · if your SI complains, do Goblet Squats" },
           { name:"DB Hip Thrust", scheme:"3 × 12–15", note:"Upper back on the bench, DB on your hips", cues:THRUST_CUES,
             gym:{ name:"Barbell Hip Thrust", scheme:"3 × 10–12", note:"Pad on the bar" } },
-          { name:"Calf Raise", scheme:"3 × 15", note:"Slow up, slow down · hold a DB for more" } ]},
-        { label:"Finisher", items:[ SIDEPLANK, DEADBUG ]}
+          { name:"Lateral Step-Down", scheme:"3 × 10 / side", note:"6–8 inch step · 3 seconds down · knee over your second toe" } ]},
+        { label:"Finisher", items:[
+          { name:"Suitcase March", scheme:"2 × 30s / side", note:"Kettlebell at your side · don't lean",
+            gym:{ name:"Backward Sled Drag", scheme:"4 × 20 steps", note:"Light sled · walk backward on your toes" } },
+          { name:"KOT Calf Raise", scheme:"2 × 15", note:"Slow up, slow down · hold a DB for more" } ]}
       ]},
     { key:"lower", label:"Lower", type:"strength", title:"Hinge Day", focus:"Hamstrings, glutes & low back", dur:"45 min",
       groups:[
@@ -246,11 +251,11 @@ function splitSessions(){
           { name:"DB Romanian Deadlift", scheme:"3 × 10–15", note:"Hips back, flat back, DBs close to your legs",
             gym:{ name:"Barbell Romanian Deadlift", scheme:"3 × 8–10", note:"Moderate weight — stop before your back rounds" } },
           { name:"Step-Up", scheme:"3 × 8–10 / side", note:"Bench or sturdy box · drive through the front heel" },
-          { name:"Single-Leg Glute Bridge", scheme:"3 × 10 / side", note:"Hips stay level" },
+          { name:"Nordic Curl", scheme:"3 × 5", note:"On your machine · lower as slowly as you can, catch with your hands" },
           { name:"Back Extension", scheme:"3 × 12–15", note:"Glute-focused · hold a weight when bodyweight is easy", cues:BACK_EXT_CUES } ]},
         { label:"Finisher", items:[
           { name:"Standing Anti-Rotation Press", scheme:"2 × 10 / side", note:"Pallof press · band at chest height" },
-          { name:"Lying Leg Abduction", scheme:"2 × 12 / side", note:"Booty band for more" } ]}
+          { name:"Copenhagen Plank", scheme:"2 × 15s / side", note:"Top knee on the bench (the easy version) · skip on SI flare days" } ]}
       ]},
     { key:"upper", label:"Upper", type:"strength", title:"Upper Day", focus:"Chest, back & arms", dur:"45 min",
       groups:[
@@ -272,7 +277,7 @@ function splitSessions(){
     { key:"core", label:"Core", type:"strength", title:"Core & Glutes", focus:"Abs, glutes & back care", dur:"30 min",
       groups:[
         { label:"Warm-up · loosen up", items:[
-          { name:"Cat-Cow", scheme:"45s" }, { name:"Pelvic Tilts", scheme:"45s" } ]},
+          { name:"Cat-Cow", scheme:"45s" }, { name:"Couch Stretch", scheme:"30s / side" } ]},
         { label:"Strength · 3 sets each", items:[
           { name:"Dead Bug", scheme:"3 × 8 / side", note:"Low back stays flat" },
           { name:"Side Plank", scheme:"3 × 25s / side", note:"Knees down is fine" },
@@ -280,8 +285,8 @@ function splitSessions(){
             gym:{ name:"Barbell Hip Thrust", scheme:"3 × 10–12", note:"Pad on the bar" } },
           { name:"Standing Anti-Rotation Press", scheme:"3 × 10 / side", note:"Pallof press · band at chest height" } ]},
         { label:"Finisher", items:[
-          { name:"Ab Wheel Rollout", scheme:"2 × 8", note:"From your knees · short range — skip if your back or SI complains" },
-          { name:"Banded Lateral Walk", scheme:"2 × 10 steps / side", note:"Booty band · small steps" } ]}
+          { name:"Bear Crawl", scheme:"2 × 20s", note:"Knees an inch off the floor · back flat" },
+          { name:"Seated Pike Leg Lift", scheme:"2 × 10", note:"Sit tall · lift both heels an inch" } ]}
       ]}
   ];
   // 20-min version: first 2 warm-up moves (1 set), then the 4 main lifts at 2 sets
@@ -298,7 +303,6 @@ var ATHLETES = {
     perWeek:3,
     quickMin:20,     // the short-on-time version
     check:"SI joint", checkTag:"SI", // quick check-in after each session
-    locations:{ home:"Home", gym:"YMCA" },
     programWeeks:0,
     phases:[
       { key:"split", label:"Any days", range:"Rotation", name:"Push · Pull · Legs", from:1, to:999 }
@@ -318,7 +322,6 @@ var ATHLETES = {
     perWeek:3,
     quickMin:10,
     check:"back & joints", checkTag:"JOINTS", // quick check-in after each session
-    locations:{ home:"Home", gym:"YMCA", min:"Minimal" },
     programWeeks:0,
     phases:[
       { key:"glow", label:"3 × 20 min · any days", range:"Rotation", name:"Strength & 5K", from:1, to:999 }

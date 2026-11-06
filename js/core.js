@@ -127,7 +127,7 @@ function makePersonPlan(p) {
   });
   plan.check = (p.limits && p.limits.length) ? 'back & joints' : null;
   plan.v2 = p;
-  if (p.place === 'both') {     // gym versions of each move, picked from the exercise database
+  if (false && p.place === 'both') {     // (Home/Gym switching was removed for simplicity)
     plan.locations = { home: 'Home', gym: 'Gym' };
     var used = {};
     plan.phaseDays[plan.phases[0].key].forEach(function (d) {
@@ -446,8 +446,8 @@ function schemeText(scheme) {   // friendly: "3 × 10–15" stays; "45s" -> "45 
   return String(scheme);
 }
 function needsWeight(name) {
-  if (/anti-rotation|pallof|band|bodyweight|push-up|pull-up|chin-up|plank|bird dog|dead bug|clamshell|abduction|side step|walk|squeeze|kickbacks$|wheel|isolated|double pulse|pulse/i.test(name)) return false;
-  return /db|dumbbell|kb|kettlebell|barbell|machine|cable|press|row|curl|triceps|goblet|thrust|deadlift|leg press|pulldown|split squat|back extension/i.test(name);
+  if (/anti-rotation|pallof|band|bodyweight|push-up|pull-up|chin-up|plank|bird dog|dead bug|clamshell|abduction|side step|walk|squeeze|kickbacks$|wheel|isolated|double pulse|pulse|nordic|hang|crawl|pogo|skip|hop|jump|sled|med-ball|patrick|step-down|tibialis|pike|backward/i.test(name)) return false;
+  return /db|dumbbell|kb|kettlebell|barbell|machine|cable|press|row|curl|triceps|goblet|thrust|deadlift|leg press|pulldown|split squat|back extension|halo|farmer|carry|march|get-up/i.test(name);
 }
 
 /* ---------- sets & progression ---------- */
@@ -493,14 +493,19 @@ var Sound = {
   ctx: null,
   on: function () { return store.raw('trainops:mute') !== '1'; },
   set: function (v) { store.setRaw('trainops:mute', v ? '0' : '1'); },
+  voice: function () { return store.raw('trainops:voice') === '1'; },
+  setVoice: function (v) { store.setRaw('trainops:voice', v ? '1' : '0'); },
   unlock: function () {     // call from a tap so iOS lets timers make sound later
+    // "ambient" mixes our beeps with whatever music is playing instead of pausing it (iOS 17+)
+    try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) {}
+    if (!this.on() && !this.voice()) return;
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (AC && !this.ctx) this.ctx = new AC();
       if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
       if (this.ctx) { var b = this.ctx.createBuffer(1, 1, 22050), s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(0); }
     } catch (e) {}
-    try { if (window.speechSynthesis && !this._spoke) { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); this._spoke = true; } } catch (e) {}
+    try { if (this.voice() && window.speechSynthesis && !this._spoke) { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); this._spoke = true; } } catch (e) {}
   },
   tone: function (f, ms, vol, when) {
     if (!this.on() || !this.ctx) return;
@@ -517,7 +522,7 @@ var Sound = {
   chime: function () { this.tone(784, 220, 0.22); this.tone(1047, 420, 0.22, 0.18); },
   done: function () { this.tone(523, 180, 0.22); this.tone(659, 180, 0.22, 0.15); this.tone(784, 380, 0.22, 0.3); },
   say: function (text) {
-    if (!this.on() || !window.speechSynthesis || !text) return;
+    if (!this.voice() || !window.speechSynthesis || !text) return;
     try {
       speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance(text); u.rate = 1.02; u.pitch = 1; u.volume = 1;
@@ -593,6 +598,23 @@ function allRoutines(id) {
   return ROUTINES.concat(myRoutinesGet(id).map(function (r) { r.mine = true; r.kind = r.kind || 'stretch'; return r; }));
 }
 function routineById(id, rid) { return allRoutines(id).filter(function (r) { return r.id === rid; })[0]; }
+/* Levels 1–4 (like Bend's Planks I–IV): a routine can list its own `levels`;
+   otherwise each level holds longer and, from level 3, swaps in harder versions. */
+var LEVEL_SCALE = [1, 1.25, 1.5, 1.75];
+var HARDER = { "Kneeling Push-up": "Push-up", "Glute Bridge": "Single-Leg Glute Bridge", "Bodyweight Squat": "Split Squat", "Banded Glute Bridge": "Single-Leg Glute Bridge" };
+function routineLevel(id, rid) { var c = cfgGet(id).rlvl || {}; return Math.max(1, Math.min(4, +c[rid] || 1)); }
+function setRoutineLevel(id, rid, n) { var c = cfgGet(id); c.rlvl = c.rlvl || {}; c.rlvl[rid] = Math.max(1, Math.min(4, n)); cfgSet(id, c); }
+function scaleScheme(s, f) { return String(s).replace(/(\d+)\s*s\b/, function (all, n) { return Math.max(10, Math.round(+n * f / 5) * 5) + 's'; }); }
+function levelMoves(id, r, lvl) {
+  lvl = lvl || routineLevel(id, r.id);
+  var base = r.levels && r.levels[lvl - 1] ? r.levels[lvl - 1] : r.moves.map(function (m) {
+    var name = lvl >= 3 && HARDER[m[0]] ? HARDER[m[0]] : m[0], sch = lvl > 1 ? scaleScheme(m[1], LEVEL_SCALE[lvl - 1]) : m[1];
+    if (name !== m[0] && /single-leg|split squat/i.test(name) && !/side/.test(sch))      // one-leg version: time each side
+      sch = sch.replace(/(\d+)\s*s\b/, function (a, n) { return Math.max(15, Math.round(+n * 0.6 / 5) * 5) + 's / side'; });
+    return [name, sch];
+  });
+  return base.map(function (m) { return [m[0], schemeWithEdits(id, m[0], m[1])]; });
+}
 function stretchPickId(id) {
   var picks = STRETCH_PICKS[id] || STRETCH_PICKS['default'];
   var log = logGet(id)[todayISO()];
@@ -603,8 +625,8 @@ function stretchPickId(id) {
 // a routine as a "day" the player understands
 function routineDay(id, r) {
   return { key: 'r:' + r.id, title: r.title, type: 'routine', routine: r.id, groups: [{ label: r.kind === 'stretch' ? 'Stretch' : 'Moves',
-    kind: 'flow', title: r.title, gi: 0, items: r.moves.map(function (m, i) {
-      return { id: 'm_' + i, base: m[0], name: m[0], scheme: schemeWithEdits(id, m[0], m[1]), note: '', cues: null };
+    kind: 'flow', title: r.title, gi: 0, items: levelMoves(id, r).map(function (m, i) {
+      return { id: 'm_' + i, base: m[0], name: m[0], scheme: m[1], note: '', cues: null };
     }) }] };
 }
 

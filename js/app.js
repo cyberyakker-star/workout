@@ -92,10 +92,10 @@ function renderToday(v) {
   if (hero) holdable(hero, function () { openSessionPicker(id); });
 }
 function tileHTML(r, today) {
-  var mins = routineMinutes(r.moves.map(function (m) { return [m[0], schemeWithEdits(App.id, m[0], m[1])]; }));
+  var mins = routineMinutes(levelMoves(App.id, r)), lv = routineLevel(App.id, r.id);
   return '<button class="tile card" data-rid="' + esc(r.id) + '">' + (today ? '<span class="badge">Today</span>' : r.mine ? '<span class="badge">Yours</span>' : '') +
     FIG.svg(POSES[r.pose] || POSES[poseFor(r.moves[0][0])], { size: 64, hair: personHair(App.id), bg: r.bg }) +
-    '<span class="n">' + esc(r.title) + '</span><span class="cap">' + mins + ' minutes</span></button>';
+    '<span class="n">' + esc(r.title) + (lv > 1 ? ' ' + ['', 'I', 'II', 'III', 'IV'][lv] : '') + '</span><span class="cap">' + mins + ' minutes</span></button>';
 }
 function heroHTML(id, d, rot, todayE) {
   var a = ATHLETES[id];
@@ -156,7 +156,7 @@ function openSessionPicker(id) {
 }
 function routineMenu(r) {
   var el = Sheet.open('<div style="display:flex;gap:14px;align-items:center">' + FIG.svg(POSES[r.pose] || POSES[poseFor(r.moves[0][0])], { size: 60, hair: personHair(App.id), bg: r.bg }) +
-    '<div><h2>' + esc(r.title) + '</h2><div class="muted" style="font-size:15px">' + routineMinutes(r.moves) + ' min · ' + r.moves.length + ' moves</div></div></div>' +
+    '<div><h2>' + esc(r.title) + '</h2><div class="muted" style="font-size:15px">' + routineMinutes(levelMoves(App.id, r)) + ' min · ' + levelMoves(App.id, r).length + ' moves</div></div></div>' +
     '<div style="margin-top:10px"><button class="opt" data-a="start">' + I.play + 'Start</button>' +
     (r.mine ? '<button class="opt" data-a="edit">' + I.edit + 'Edit</button><button class="opt danger" data-a="del">' + I.trash + 'Delete</button>'
       : '<button class="opt" data-a="copy">' + I.copy + 'Make my own version</button>') + '</div>');
@@ -339,7 +339,8 @@ function renderMe(v) {
     '<button class="li" data-act="library">' + I.book + '<span class="grow">Exercise library</span><span class="chev">' + I.chev + '</span></button>' +
     '<button class="li" data-act="logrun">' + I.run + '<span class="grow">Log a run</span><span class="chev">' + I.chev + '</span></button>' +
     '<button class="li" data-act="people">' + I.users + '<span class="grow">People<small>Switch, add or remove</small></span><span class="chev">' + I.chev + '</span></button>' +
-    '<button class="li" data-act="sound">' + (Sound.on() ? I.sound : I.mute) + '<span class="grow">Sounds &amp; voice cues<small>' + (Sound.on() ? 'On' : 'Off') + '</small></span></button>' +
+    '<button class="li" data-act="sound">' + (Sound.on() ? I.sound : I.mute) + '<span class="grow">Beeps<small>' + (Sound.on() ? 'On — plays over your music' : 'Off') + '</small></span></button>' +
+    '<button class="li" data-act="voice">' + (Sound.voice() ? I.sound : I.mute) + '<span class="grow">Voice cues<small>' + (Sound.voice() ? 'On — music may pause while it talks' : 'Off') + '</small></span></button>' +
     '<button class="li" data-act="units">' + I.sliders + '<span class="grow">Run distance<small>' + (unitsFor(id) === 'km' ? 'Kilometres' : 'Miles') + '</small></span></button>' +
     '<button class="li" data-act="backup">' + I.download + '<span class="grow">Back up my data<small>Saves a file you can restore later</small></span></button>' +
     '<button class="li" data-act="restore">' + I.upload + '<span class="grow">Restore from backup</span></button>' +
@@ -355,6 +356,7 @@ function renderMe(v) {
   on(v, '[data-act="library"]', 'click', openLibrary);
   on(v, '[data-act="logrun"]', 'click', function () { logRunFlow(null, false); });
   on(v, '[data-act="sound"]', 'click', function () { Sound.set(!Sound.on()); Sound.unlock(); if (Sound.on()) Sound.chime(); renderTab(); });
+  on(v, '[data-act="voice"]', 'click', function () { Sound.setVoice(!Sound.voice()); Sound.unlock(); if (Sound.voice()) Sound.say('Voice cues on'); renderTab(); });
   on(v, '[data-act="units"]', 'click', function () { store.setRaw('trainops:units:' + id, unitsFor(id) === 'km' ? 'mi' : 'km'); renderTab(); });
   on(v, '[data-act="backup"]', 'click', function () {
     var blob = new Blob([JSON.stringify(exportData(), null, 1)], { type: 'application/json' }), a = document.createElement('a');
