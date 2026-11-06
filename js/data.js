@@ -175,6 +175,119 @@ function fullBodySessions(){
   });
 }
 
+/* Anthony's plan, by muscle group (his choice over full body). Six sessions; how
+   many rotate depends on how many days a week he picks (Me → Your plan):
+   2: Upper · Lower   3: Push · Pull · Legs   4: Push · Legs · Pull · Lower
+   5: + Upper   6: + Core & Glutes. Legs twice from 4 days (squat day + hinge day).
+   Every session keeps the SI-joint warm-up (hips, core, posture) and avoids
+   heavy spinal loading / twisting under load. `gym` = YMCA version. */
+function splitSessions(){
+  var BACK_EXT_CUES=["Pad just below your hip bones","Round your upper back slightly and squeeze your glutes to rise",
+    "Stop at a straight line — don't arch past it","Lower slowly"];
+  var THRUST_CUES=["Upper back on the edge of the bench","Weight on your hips, feet flat","Drive through your heels, ribs down",
+    "Squeeze glutes at the top — don't arch your low back"];
+  function prep(items){ return { label:"Warm-up · hips, core & posture", items:items }; }
+  var PULLAPART={ name:"Band Pull-Apart", scheme:"2 × 15" };
+  var BIRDDOG={ name:"Bird Dog", scheme:"2 × 6 / side", note:"Slow · hold 2s · hips stay level" };
+  var SIDEPLANK={ name:"Side Plank", scheme:"2 × 20s / side", note:"Knees down is fine" };
+  var DEADBUG={ name:"Dead Bug", scheme:"2 × 8 / side", note:"Low back stays flat" };
+  var days=[
+    { key:"push", label:"Push", type:"strength", title:"Push Day", focus:"Chest, shoulders & triceps", dur:"45 min",
+      groups:[
+        prep([PULLAPART, BIRDDOG, SIDEPLANK, { name:"Glute Bridge", scheme:"2 × 12", note:"Squeeze 2s at the top" }]),
+        { label:"Strength · 3 sets each", items:[
+          { name:"DB Bench Press", scheme:"3 × 10–15", note:"When 15 is easy, pause 2s at the bottom",
+            gym:{ name:"Barbell Bench Press", scheme:"3 × 6–10", note:"" } },
+          { name:"Seated DB Shoulder Press", scheme:"3 × 10–12", note:"Seated with back support — easier on the SI joint than standing",
+            gym:{ name:"Machine Shoulder Press", scheme:"3 × 10–12", note:"" } },
+          { name:"Push-up", scheme:"3 × 10–20", note:"Feet on the bench when 20 is easy",
+            gym:{ name:"Incline DB Press", scheme:"3 × 8–12", note:"" } },
+          { name:"Overhead Triceps Extension", scheme:"3 × 10–12", note:"One DB, both hands · elbows point up" } ]},
+        { label:"Finisher", items:[
+          { name:"Band Face Pull", scheme:"2 × 15", note:"Keeps the shoulders healthy on push days", gym:{ name:"Cable Face Pull", note:"" } },
+          DEADBUG,
+          { name:"Doorway Pec Stretch", scheme:"2 × 30s / side", note:"Opens up the chest for posture" } ]}
+      ]},
+    { key:"pull", label:"Pull", type:"strength", title:"Pull Day", focus:"Back & biceps", dur:"45 min",
+      groups:[
+        prep([PULLAPART, DEADBUG, SIDEPLANK, { name:"Clamshell", scheme:"2 × 12 / side", note:"Booty band above knees" }]),
+        { label:"Strength · 3 sets each", items:[
+          { name:"Pull-up", scheme:"3 × max", note:"Stop 1–2 reps short of failure · band-assisted if needed",
+            gym:{ name:"Lat Pulldown", scheme:"3 × 10–12", note:"" } },
+          { name:"One-Arm DB Row", scheme:"3 × 10–15 / side", note:"Hand and knee on the bench, flat back",
+            gym:{ name:"Seated Cable Row", scheme:"3 × 10–12", note:"" } },
+          { name:"Band Row", scheme:"3 × 15", note:"Band anchored at chest height · squeeze shoulder blades",
+            gym:{ name:"Chest-Supported Machine Row", scheme:"3 × 10–12", note:"" } },
+          { name:"DB Biceps Curl", scheme:"3 × 10–12", note:"Elbows stay by your sides" } ]},
+        { label:"Finisher", items:[
+          { name:"Back Extension", scheme:"2 × 12–15", note:"Glute-focused · bodyweight to start", cues:BACK_EXT_CUES },
+          { name:"Band Face Pull", scheme:"2 × 15", gym:{ name:"Cable Face Pull", note:"" } },
+          { name:"Standing Anti-Rotation Press", scheme:"2 × 10 / side", note:"Pallof press · band at chest height", gym:{ name:"Standing Anti-Rotation Press", note:"Cable at chest height" } } ]}
+      ]},
+    { key:"legs", label:"Legs", type:"strength", title:"Leg Day", focus:"Squat, glutes & hips", dur:"45 min",
+      groups:[
+        prep([{ name:"Clamshell", scheme:"2 × 12 / side", note:"Booty band above knees" },
+          { name:"Banded Lateral Walk", scheme:"2 × 10 steps / side", note:"Booty band · small steps" },
+          { name:"Adductor Squeeze", scheme:"5 × 10s hold", note:"Ball or pillow between your knees" }, BIRDDOG]),
+        { label:"Strength · 3 sets each", items:[
+          { name:"Goblet Squat", scheme:"3 × 10–15", note:"KB or one DB · 3s down · only as deep as feels good",
+            gym:{ name:"Leg Press", scheme:"3 × 10–12", note:"Moderate depth — keep your hips down on the pad" } },
+          { name:"Split Squat", scheme:"3 × 8–10 / side", note:"Short stance · hold the bench for balance · if your SI complains, do Goblet Squats" },
+          { name:"DB Hip Thrust", scheme:"3 × 12–15", note:"Upper back on the bench, DB on your hips", cues:THRUST_CUES,
+            gym:{ name:"Barbell Hip Thrust", scheme:"3 × 10–12", note:"Pad on the bar" } },
+          { name:"Calf Raise", scheme:"3 × 15", note:"Slow up, slow down · hold a DB for more" } ]},
+        { label:"Finisher", items:[ SIDEPLANK, DEADBUG ]}
+      ]},
+    { key:"lower", label:"Lower", type:"strength", title:"Hinge Day", focus:"Hamstrings, glutes & low back", dur:"45 min",
+      groups:[
+        prep([{ name:"Glute Bridge", scheme:"2 × 12", note:"Squeeze 2s at the top" },
+          { name:"Banded Lateral Walk", scheme:"2 × 10 steps / side", note:"Booty band · small steps" }, BIRDDOG, SIDEPLANK]),
+        { label:"Strength · 3 sets each", items:[
+          { name:"DB Romanian Deadlift", scheme:"3 × 10–15", note:"Hips back, flat back, DBs close to your legs",
+            gym:{ name:"Barbell Romanian Deadlift", scheme:"3 × 8–10", note:"Moderate weight — stop before your back rounds" } },
+          { name:"Step-Up", scheme:"3 × 8–10 / side", note:"Bench or sturdy box · drive through the front heel" },
+          { name:"Single-Leg Glute Bridge", scheme:"3 × 10 / side", note:"Hips stay level" },
+          { name:"Back Extension", scheme:"3 × 12–15", note:"Glute-focused · hold a weight when bodyweight is easy", cues:BACK_EXT_CUES } ]},
+        { label:"Finisher", items:[
+          { name:"Standing Anti-Rotation Press", scheme:"2 × 10 / side", note:"Pallof press · band at chest height" },
+          { name:"Lying Leg Abduction", scheme:"2 × 12 / side", note:"Booty band for more" } ]}
+      ]},
+    { key:"upper", label:"Upper", type:"strength", title:"Upper Day", focus:"Chest, back & arms", dur:"45 min",
+      groups:[
+        prep([PULLAPART, BIRDDOG, SIDEPLANK, DEADBUG]),
+        { label:"Strength · 3 sets each", items:[
+          { name:"DB Bench Press", scheme:"3 × 10–15", note:"Pause 2s at the bottom when 15 is easy",
+            gym:{ name:"Incline DB Press", scheme:"3 × 8–12", note:"" } },
+          { name:"Chin-up", scheme:"3 × max", note:"Palms facing you · band-assisted if needed",
+            gym:{ name:"Assisted Chin-up", scheme:"3 × 8–10", note:"Assist machine — less help as you get stronger" } },
+          { name:"KB Row", scheme:"3 × 12–15 / side", note:"25 lb KB · hand on the bench",
+            gym:{ name:"Seated Cable Row", scheme:"3 × 10–12", note:"" } },
+          { name:"Seated DB Shoulder Press", scheme:"3 × 10–12", note:"Seated with back support",
+            gym:{ name:"Machine Shoulder Press", scheme:"3 × 10–12", note:"" } } ]},
+        { label:"Finisher", items:[
+          { name:"DB Biceps Curl", scheme:"2 × 12" },
+          { name:"Overhead Triceps Extension", scheme:"2 × 12" },
+          { name:"Band Face Pull", scheme:"2 × 15", gym:{ name:"Cable Face Pull", note:"" } } ]}
+      ]},
+    { key:"core", label:"Core", type:"strength", title:"Core & Glutes", focus:"Abs, glutes & back care", dur:"30 min",
+      groups:[
+        { label:"Warm-up · loosen up", items:[
+          { name:"Cat-Cow", scheme:"45s" }, { name:"Pelvic Tilts", scheme:"45s" } ]},
+        { label:"Strength · 3 sets each", items:[
+          { name:"Dead Bug", scheme:"3 × 8 / side", note:"Low back stays flat" },
+          { name:"Side Plank", scheme:"3 × 25s / side", note:"Knees down is fine" },
+          { name:"DB Hip Thrust", scheme:"3 × 12–15", note:"Upper back on the bench, DB on your hips", cues:THRUST_CUES,
+            gym:{ name:"Barbell Hip Thrust", scheme:"3 × 10–12", note:"Pad on the bar" } },
+          { name:"Standing Anti-Rotation Press", scheme:"3 × 10 / side", note:"Pallof press · band at chest height" } ]},
+        { label:"Finisher", items:[
+          { name:"Ab Wheel Rollout", scheme:"2 × 8", note:"From your knees · short range — skip if your back or SI complains" },
+          { name:"Banded Lateral Walk", scheme:"2 × 10 steps / side", note:"Booty band · small steps" } ]}
+      ]}
+  ];
+  // 20-min version: first 2 warm-up moves (1 set), then the 4 main lifts at 2 sets
+  return days.map(function(d){ d.quick=[[0,0,1],[0,1,1],[1,0,2],[1,1,2],[1,2,2],[1,3,2]]; return d; });
+}
+
 var ATHLETES = {
 
   anthony: {
@@ -188,9 +301,12 @@ var ATHLETES = {
     locations:{ home:"Home", gym:"YMCA" },
     programWeeks:0,
     phases:[
-      { key:"fb", label:"3 × 45 min · any days", range:"Rotation", name:"Full Body A · B · C", from:1, to:999 }
+      { key:"split", label:"Any days", range:"Rotation", name:"Push · Pull · Legs", from:1, to:999 }
     ],
-    phaseDays:{ fb:fullBodySessions() },
+    phaseDays:{ split:splitSessions() },
+    // which sessions rotate for each number of days a week (Me → Your plan)
+    splits:{ 2:["upper","lower"], 3:["push","pull","legs"], 4:["push","legs","pull","lower"],
+             5:["push","legs","pull","lower","upper"], 6:["push","legs","pull","lower","upper","core"] },
     foot:"<b>Effort, not pain.</b> Lifts should feel like work; SI pain should stay at mild (4/10 or less) — if a move pinches, swap it. Progress by adding reps until the top of the range, then add weight or slow the lowering. Missed a day? The next session just waits for you."
   },
 
