@@ -188,7 +188,7 @@ function fmtPace(sPer) { if (!isFinite(sPer) || sPer <= 0 || sPer > 3599) return
 function logRunFlow(planDay, fromTimer) {
   var id = App.id, u = unitsFor(id), today = todayISO();
   if (planDay) { logRun(id, today, null, planDay); renderTab(); }
-  var el = Sheet.open('<h2>' + (planDay ? 'Nice run! 🎉'.replace(' 🎉', '') : 'Log a run') + '</h2>' +
+  var el = Sheet.open('<h2>' + (planDay ? 'Nice run!' : 'Log a run') + '</h2>' +
     '<p class="muted" style="margin:6px 0 0">' + (planDay ? 'It’s logged. Add the details from Nike Run Club if you like.' : 'From Nike Run Club or anywhere else.') + '</p>' +
     '<div class="row-btns"><div class="field" style="flex:1"><label for="r-dist">Distance (' + u + ')</label><input id="r-dist" type="number" inputmode="decimal" step="0.01" min="0" placeholder="3.1"></div>' +
     '<div class="field" style="flex:1"><label for="r-min">Time (min)</label><input id="r-min" type="number" inputmode="decimal" step="0.1" min="0" placeholder="30"></div></div>' +
@@ -235,7 +235,8 @@ function renderHistory(v) {
       (e.si ? '<span class="tag s' + e.si + '">' + esc(checkTag) + ' · ' + esc(CHECK_LABELS[e.si]) + '</span>' : '') +
       '<small>' + fmtDay(iso) + (e.run && e.run.pace ? ' · ' + e.run.pace + ' /' + e.run.unit : '') + '</small></span><span class="chev">' + I.chev + '</span></button>';
     (sl[iso] || []).forEach(function (s, si) {
-      rows += '<button class="li" data-st="' + iso + '|' + si + '"><span class="grow"><b style="font-weight:600">' + esc(s.title) + '</b><span class="tag">Stretch</span><small>' + fmtDay(iso) + ' · ' + s.mins + ' min</small></span></button>';
+      var rr = routineById(id, s.r), kindTag = rr && rr.kind === 'strength' ? 'Quick workout' : 'Stretch';
+      rows += '<button class="li" data-st="' + iso + '|' + si + '"><span class="grow"><b style="font-weight:600">' + esc(s.title) + '</b><span class="tag">' + kindTag + '</span><small>' + fmtDay(iso) + ' · ' + s.mins + ' min</small></span></button>';
     });
   });
   if (lastWk) rows += '</div>';

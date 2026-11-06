@@ -62,6 +62,7 @@ function openOverview(src) {
   function render() {
     var rd = day(); if (!rd) { Layers.pop(); return; }
     var r = src.type === 'routine' ? routineById(id, src.rid) : null;
+    if (rd.type === 'run') { renderRun(rd); return; }
     var mins = r ? routineMinutes(r.moves.map(function (m) { return [m[0], schemeWithEdits(id, m[0], m[1])]; })) : dayMinutes(id, rd, st.short);
     var prog = progGet(id), resume = prog && prog.src && sameSrc(prog.src, src) && prog.loc === st.loc && !!prog.short === st.short ? prog : null;
     var locs = locsOf(id), html = '';
@@ -109,6 +110,23 @@ function openOverview(src) {
       row.addEventListener('keydown', function (e) { if (e.key === 'Enter') openMoveSheet(ctx, it, 'info'); });
     });
     on(lay, '[data-more]', 'click', function (e, b) { e.stopPropagation(); openMoveSheet(ctx, items[b.dataset.more], 'edit'); });
+  }
+  function renderRun(rd) {
+    var d = sessions(id).filter(function (x) { return x.key === src.key; })[0], run = d.run || {}, L = d.level;
+    lay.innerHTML = '<div class="lwrap"><div class="lhead"><button class="icon-btn" data-act="back" aria-label="Back">' + I.back + '</button></div>' +
+      '<div class="ov-title"><span class="eyebrow">Workout ' + esc(sessionLetter(d)) + '</span><h1>Run day</h1><p>' + (L ? 'Level ' + (L.i + 1) + ' of ' + L.n + ' · ' : '') + esc(d.dur || '') + '</p></div>' +
+      '<div style="display:flex;justify-content:center;margin:18px 0">' + figHTML('Run', 180, id, { pose: 'run' }) + '</div>' +
+      '<div class="card list">' + (run.warm ? '<div class="li" style="cursor:default"><span class="grow"><span class="cap">Warm up</span><b style="display:block;font-weight:600">' + esc(run.warm) + '</b></span></div>' : '') +
+      '<div class="li" style="cursor:default"><span class="grow"><span class="cap">Run</span><b style="display:block;font-weight:600">' + esc(run.extra || d.title) + '</b></span></div>' +
+      (run.cool ? '<div class="li" style="cursor:default"><span class="grow"><span class="cap">Cool down</span><b style="display:block;font-weight:600">' + esc(run.cool) + '</b></span></div>' : '') + '</div>' +
+      (L ? '<p class="muted" style="font-size:14px;margin:12px 4px 0">Moves up a level every ' + L.per + ' runs. Too easy or too hard? Use ⋯ on the Today card.</p>' : '') +
+      '</div><div class="foot"><div class="in"><button class="btn" data-act="ran">' + I.check + 'I did my run</button><button class="link" data-act="timer">Use the interval timer</button></div></div>';
+    on(lay, '[data-act="back"]', 'click', function () { Layers.pop(); });
+    on(lay, '[data-act="ran"]', 'click', function () {
+      var isToday = todaySession(id) && todaySession(id).key === d.key && !rotationState(id).doneToday;
+      Layers.pop(); logRunFlow(isToday ? d : null, false);
+    });
+    on(lay, '[data-act="timer"]', 'click', function () { openRunTimer(d); });
   }
   render();
   return lay;
