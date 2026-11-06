@@ -171,6 +171,11 @@ h1,h2,h3{font-family:var(--round);margin:0}
 .pl.reps .ringwrap{width:min(64vw,32dvh,270px)}
 .pl-ctrl .btn{flex:1;max-width:260px}
 @media (max-height:700px){ .ringwrap{width:min(66vw,34dvh)} .pl{gap:8px} .pl-big{font-size:58px} .pl-name h1{font-size:23px} .wt{padding:4px 4px 4px 14px} }
+.bigstep{display:flex;align-items:center;justify-content:center;gap:18px}
+.bigstep .round-btn{width:56px;height:56px;box-shadow:none;background:var(--soft)}
+.txt-btn{height:52px;min-width:84px;padding:0 14px;border-radius:999px;border:0;background:var(--soft);color:var(--ink);font-weight:700;font-size:15px;cursor:pointer;flex-shrink:0}
+.wbtn{border:0;background:none;color:inherit;cursor:pointer;padding:0;min-width:72px;min-height:44px;text-decoration:underline dotted;text-underline-offset:4px}
+.plusdot{width:44px;height:44px;border-radius:999px;background:var(--tint);color:var(--tint-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .pl-next{width:100%;display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:20px;padding:8px 14px 8px 8px}
 .pl-next b{display:block;font-size:15px;font-weight:600}
 .wt{width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--soft);border-radius:20px;padding:8px 8px 8px 16px}
@@ -235,7 +240,7 @@ h1,h2,h3{font-family:var(--round);margin:0}
 .field input{width:100%}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;padding:16px}
 .cal span{font-size:11px;font-weight:700;color:var(--muted);text-align:center}
-.cal i{aspect-ratio:1;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;color:var(--muted)}
+.cal i{aspect-ratio:1;border-radius:10px;background:none;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;color:var(--muted)}
 .cal i.w{background:var(--accent);color:#fff;font-weight:700}
 .cal i.r{background:#3F6FA0;color:#fff;font-weight:700}
 .cal i.st{box-shadow:inset 0 0 0 2px var(--accent)}
@@ -279,20 +284,20 @@ h1,h2,h3{font-family:var(--round);margin:0}
 </nav>
 <div id="layers"></div>
 <div id="toast" role="status" aria-live="polite"></div>
-<script>window.BUILD='20261106d';</script>
-<script src="js/data.js?v=20261106d"></script>
-<script src="js/figures.js?v=20261106d"></script>
-<script src="js/poses/upper.js?v=20261106d"></script>
-<script src="js/poses/lower.js?v=20261106d"></script>
-<script src="js/poses/stretchA.js?v=20261106d"></script>
-<script src="js/poses/stretchB.js?v=20261106d"></script>
-<script src="js/poses/kot.js?v=20261106d"></script>
-<script src="js/poses/power.js?v=20261106d"></script>
-<script src="js/stretch.js?v=20261106d"></script>
-<script src="js/core.js?v=20261106d"></script>
-<script src="js/ui.js?v=20261106d"></script>
-<script src="js/player.js?v=20261106d"></script>
-<script src="js/app.js?v=20261106d"></script>
+<script>window.BUILD='20261106e';</script>
+<script src="js/data.js?v=20261106e"></script>
+<script src="js/figures.js?v=20261106e"></script>
+<script src="js/poses/upper.js?v=20261106e"></script>
+<script src="js/poses/lower.js?v=20261106e"></script>
+<script src="js/poses/stretchA.js?v=20261106e"></script>
+<script src="js/poses/stretchB.js?v=20261106e"></script>
+<script src="js/poses/kot.js?v=20261106e"></script>
+<script src="js/poses/power.js?v=20261106e"></script>
+<script src="js/stretch.js?v=20261106e"></script>
+<script src="js/core.js?v=20261106e"></script>
+<script src="js/ui.js?v=20261106e"></script>
+<script src="js/player.js?v=20261106e"></script>
+<script src="js/app.js?v=20261106e"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js?v=' + window.BUILD).catch(function () {}); });
