@@ -41,7 +41,7 @@ function fitsLoc(name, loc) {
 }
 function alternativesFor(name, loc) {
   var careful = !!(ATHLETES[App.id] && ATHLETES[App.id].check);
-  if (STRETCHES[name]) return Object.keys(STRETCHES).filter(function (n) { return n !== name; }).slice(0, 12);
+  if (STRETCHES[name]) return Object.keys(STRETCHES).filter(function (n) { return n !== name && !STRETCHES[n].baby; }).slice(0, 12);
   var pat = patOf(name); if (!pat) return [];
   return allMoveNames().filter(function (n) {
     var e = EX_DB.filter(function (x) { return x.name === n; })[0];
@@ -72,15 +72,17 @@ function openOverview(src) {
     var locs = locsOf(id), html = '';
     html += '<div class="lwrap"><div class="lhead"><button class="icon-btn" data-act="back" aria-label="Back">' + I.back + '</button>' +
       (r ? '<button class="icon-btn" data-act="rmore" aria-label="Routine options">' + I.more + '</button>' : '') + '</div>';
-    html += '<div class="ov-title">' + (r ? '<span class="eyebrow">' + (r.kind === 'stretch' ? 'Stretch' : 'Quick strength') + '</span>' :
+    html += '<div class="ov-title">' + (r ? '<span class="eyebrow">' + (r.baby ? 'With baby' : r.kind === 'stretch' ? 'Stretch' : 'Quick strength') + '</span>' :
       '<span class="eyebrow">' + esc(sessionTag(rd) || 'Workout') + '</span>') +
       '<div style="display:flex;align-items:flex-start;gap:8px"><h1 style="flex:1">' + esc(r ? r.title : rd.title) + '</h1>' +
       (!r ? '<button class="icon-btn" data-act="rename" aria-label="Rename this workout" style="margin-top:14px">' + I.edit + '</button>' : '') + '</div><p>' + mins + ' min · ' + dayMoves(rd) + ' moves' + (r && r.blurb ? ' · ' + esc(r.blurb) : '') + '</p></div>';
-    if (r && !r.mine) {
-      var lv = routineLevel(id, r.id);
+    if (r && hasLevels(r)) {
+      var lv = routineLevel(id, r.id), news = levelNews(r, lv);
       html += '<div class="segs"><div class="seg" role="group" aria-label="Level">' + [1, 2, 3, 4].map(function (n) {
-        return '<button data-lvl="' + n + '" aria-pressed="' + (n === lv) + '" class="' + (n === lv ? 'on' : '') + '">Level ' + n + '</button>'; }).join('') + '</div></div>';
+        return '<button data-lvl="' + n + '" aria-pressed="' + (n === lv) + '" class="' + (n === lv ? 'on' : '') + '">Level ' + n + '</button>'; }).join('') + '</div>' +
+        (r.levels ? '<p class="lvl-note">' + (lv === 1 ? 'Easiest versions — learn the moves' : news.length ? '<b>New at this level:</b> ' + esc(news.join(', ')) : 'Same moves, longer holds') + '</p>' : '') + '</div>';
     }
+    if (r && r.baby) html += '<p class="lvl-note">Baby needs you? Tap pause — or close it and pick up right where you left off.</p>';
     if (!r) {
       html += '<div class="segs">';
       if (locs) html += '<div class="seg" role="group" aria-label="Where are you?">' + Object.keys(locs).map(function (k) {
@@ -238,9 +240,8 @@ function openMoveSheet(ctx, item, mode) {
 function itemBaseScheme(ctx, item) {
   try {
     if (ctx.src.type === 'routine') {
-      var r = routineById(ctx.id, ctx.src.rid), lv = routineLevel(ctx.id, r.id), i = +String(item.id).split('_')[1];
-      var raw = r.levels && r.levels[lv - 1] ? r.levels[lv - 1][i] : r.moves[i];
-      return raw && (r.levels && r.levels[lv - 1] ? raw[1] : (lv > 1 ? scaleScheme(raw[1], LEVEL_SCALE[lv - 1]) : raw[1]));
+      var r = routineById(ctx.id, ctx.src.rid), raw = levelBase(r, routineLevel(ctx.id, r.id))[+String(item.id).split('_')[1]];
+      return raw && raw[1];
     }
     if (item.cool) { var cd = COOLDOWNS[ctx.id + ':' + ctx.rd.key] || COOLDOWNS['default:strength']; return cd[+item.id.split('_')[1]][1]; }
     var d = sessions(ctx.id).filter(function (x) { return x.key === ctx.rd.key; })[0];
@@ -503,7 +504,7 @@ function showFinish(src, rd, st) {
   var id = App.id, a = ATHLETES[id], isPlan = src.type === 'plan';
   var r = !isPlan ? routineById(id, src.rid) : null;
   if (isPlan) logSession(id, rd, { short: st.short, loc: st.loc });
-  else addStretchLog(id, r.id, r.title + (!r.mine && routineLevel(id, r.id) > 1 ? ' · Level ' + routineLevel(id, r.id) : ''), routineMinutes(levelMoves(id, r)));
+  else addStretchLog(id, r.id, r.title + (hasLevels(r) ? ' · Level ' + routineLevel(id, r.id) : ''), routineMinutes(levelMoves(id, r)));
   Sound.done(); Sound.say(isPlan ? 'Workout done. Nice work!' : 'All done. Nice!');
   var n = weekCount(id), T = weeklyTarget(id), rot = rotationState(id);
   var lvNow = r ? routineLevel(id, r.id) : 1, lvUp = false, ROMAN = ['', 'I', 'II', 'III', 'IV'];
@@ -516,7 +517,7 @@ function showFinish(src, rd, st) {
       '<p style="text-align:center;margin:-6px 0 0;font-size:17px;color:var(--ink2)">' + esc(isPlan ? rd.title + ' done' : r.title + ' done · ' + routineMinutes(levelMoves(id, r)) + ' min') +
       (isPlan ? ' · ' + n + ' of ' + T + ' this week' : '') + '</p>' +
       (isPlan ? '<div style="display:flex;justify-content:center">' + dotsHTML(n, T) + '</div>' : '') +
-      (!isPlan && !r.mine && lvNow < 4 ? '<button class="btn ghost sm" data-act="lvlup">' + (lvUp ? '✓ Level ' + (lvNow + 1) + ' next time' : 'Felt easy? Try Level ' + (lvNow + 1) + ' next time') + '</button>' : '') +
+      (!isPlan && hasLevels(r) && lvNow < 4 ? '<button class="btn ghost sm" data-act="lvlup">' + (lvUp ? '✓ Level ' + (lvNow + 1) + ' next time' : 'Felt easy? Try Level ' + (lvNow + 1) + ' next time') + '</button>' : '') +
       (isPlan && a.check ? '<div class="card" style="padding:18px"><div style="font-size:18px;font-weight:700;text-align:center;margin-bottom:12px">How’s your ' + esc(a.check) + '?</div>' +
         '<div class="choices">' + [1, 2, 3].map(function (k) { return '<button class="choice' + (e.si === k ? ' on' : '') + '" data-si="' + k + '">' + CHECK_LABELS[k] + '</button>'; }).join('') + '</div></div>' : '') +
       (nxt ? '<div class="card" style="display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px">' + figHTML(repName(nxt), 52, id) +

@@ -132,6 +132,9 @@ h1,h2,h3{font-family:var(--round);margin:0}
 .seg button{flex:1 1 0;height:44px;border:0;border-radius:999px;background:transparent;color:var(--ink2);font-weight:600;font-size:15px;cursor:pointer}
 .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(21,24,29,.14)}
 .segs{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.lvl-note{margin:0 6px;font-size:15px;line-height:1.4;color:var(--ink2)}
+.lvl-note b{font-weight:700;color:var(--ink)}
+.segs+.lvl-note,.ov-title+.lvl-note{margin-top:12px}
 .grp{margin-top:22px}
 .grp-h{display:flex;justify-content:space-between;align-items:center;padding:0 4px 8px}
 .grp-h span{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -284,20 +287,24 @@ h1,h2,h3{font-family:var(--round);margin:0}
 </nav>
 <div id="layers"></div>
 <div id="toast" role="status" aria-live="polite"></div>
-<script>window.BUILD='20261106e';</script>
-<script src="js/data.js?v=20261106e"></script>
-<script src="js/figures.js?v=20261106e"></script>
-<script src="js/poses/upper.js?v=20261106e"></script>
-<script src="js/poses/lower.js?v=20261106e"></script>
-<script src="js/poses/stretchA.js?v=20261106e"></script>
-<script src="js/poses/stretchB.js?v=20261106e"></script>
-<script src="js/poses/kot.js?v=20261106e"></script>
-<script src="js/poses/power.js?v=20261106e"></script>
-<script src="js/stretch.js?v=20261106e"></script>
-<script src="js/core.js?v=20261106e"></script>
-<script src="js/ui.js?v=20261106e"></script>
-<script src="js/player.js?v=20261106e"></script>
-<script src="js/app.js?v=20261106e"></script>
+<script>window.BUILD='20261106f';</script>
+<script src="js/data.js?v=20261106f"></script>
+<script src="js/figures.js?v=20261106f"></script>
+<script src="js/poses/upper.js?v=20261106f"></script>
+<script src="js/poses/lower.js?v=20261106f"></script>
+<script src="js/poses/stretchA.js?v=20261106f"></script>
+<script src="js/poses/stretchB.js?v=20261106f"></script>
+<script src="js/poses/kot.js?v=20261106f"></script>
+<script src="js/poses/power.js?v=20261106f"></script>
+<script src="js/poses/variants.js?v=20261106f"></script>
+<script src="js/poses/baby.js?v=20261106f"></script>
+<script src="js/stretch.js?v=20261106f"></script>
+<script src="js/levels.js?v=20261106f"></script>
+<script src="js/baby.js?v=20261106f"></script>
+<script src="js/core.js?v=20261106f"></script>
+<script src="js/ui.js?v=20261106f"></script>
+<script src="js/player.js?v=20261106f"></script>
+<script src="js/app.js?v=20261106f"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js?v=' + window.BUILD).catch(function () {}); });
