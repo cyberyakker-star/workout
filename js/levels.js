@@ -19,13 +19,14 @@ EX_DB.push(
   { name: "Tempo Push-up", pat: "pushH", eq: "bw", flags: [] },
   { name: "Close-Grip Push-up", pat: "pushH", eq: "bw", flags: [] },
   { name: "Diamond Push-up", pat: "pushH", eq: "bw", flags: [] },
-  { name: "Hammer Curl", pat: "arms", eq: "db", flags: [] }
+  { name: "Hammer Curl", pat: "arms", eq: "db", flags: [] },
+  { name: "Fire Hydrant", pat: "hip", eq: "bw", flags: ["floor"] }
 );
 Object.assign(POSE_OF, {
   "Box Squat": "boxSquat", "Tempo Squat": "squat", "Bulgarian Split Squat": "bulgarianSplitSquat", "Goblet Reverse Lunge": "gobletReverseLunge",
   "Knee Plank": "kneePlank", "Knee Side Plank": "kneeSidePlank", "Side Plank Leg Lift": "sidePlankLegLift", "Plank Shoulder Tap": "plankShoulderTap",
   "Long-Lever Dead Bug": "longLeverDeadBug", "Single-Leg Hip Thrust": "singleLegHipThrust", "Feet-Elevated Push-up": "feetElevatedPushUp",
-  "Tempo Push-up": "pushUp", "Close-Grip Push-up": "pushUp", "Diamond Push-up": "pushUp", "Hammer Curl": "bicepsCurl"
+  "Tempo Push-up": "pushUp", "Close-Grip Push-up": "pushUp", "Diamond Push-up": "pushUp", "Hammer Curl": "bicepsCurl", "Fire Hydrant": "fireHydrant"
 });
 Object.assign(CUE_LIB, {
   "box squat": ["Chair or box behind you", "Sit back until you just touch it", "Stand up without rocking"],
@@ -42,6 +43,7 @@ Object.assign(CUE_LIB, {
   "close-grip push-up": ["Hands just under your shoulders", "Elbows brush your sides", "Knees down is fine"],
   "diamond push-up": ["Hands together under your chest, thumbs and fingers touching", "Elbows back, not out", "Knees down if you need to"],
   "hammer curl": ["Palms face each other", "Elbows pinned to your sides", "Lower slowly"],
+  "fire hydrant": ["On hands and knees, back flat", "Lift one knee out to the side, keeping it bent", "Pause, lower slowly — don't tip your hips"],
   "bodyweight squat": ["Feet shoulder-width, toes slightly out", "Sit back and down, chest up", "Knees track over your toes", "Stand tall and squeeze your glutes"],
   "band pull-apart": ["Arms straight out in front, band at chest height", "Pull the band apart until it touches your chest", "Squeeze your shoulder blades, return slowly"]
 });
@@ -132,6 +134,17 @@ var ROUTINE_BLURBS = {
   upperq: "Push-ups and bands — a pull-up bar from Level 3",
   power: "Get springy — Levels 1 and 2 have no jumping"
 };
+/* Glute Activation: stretch the glutes, then switch them on — before a run, leg
+   day, or whenever the hips and SI feel stiff. Sits near the top of Stretch. */
+ROUTINES.splice(1, 0, { id: "gluteact", kind: "stretch", title: "Glute Activation", pose: "fireHydrant", bg: "#D8B44E",
+  blurb: "Stretch and switch on your glutes — great before a run or leg day",
+  levels: [
+    [["Knees to Chest", "40s"], ["Glute Bridge", "40s"], ["Figure-4 Stretch", "30s / side"], ["Clamshell", "30s / side"], ["Lying Leg Abduction", "30s / side"], ["Child's Pose", "40s"]],
+    [["Figure-4 Stretch", "30s / side"], ["Glute Bridge", "45s"], ["Clamshell", "30s / side"], ["Fire Hydrant", "30s / side"], ["Kickbacks", "30s / side"], ["90/90 Hip Stretch", "30s / side"]],
+    [["Pigeon Stretch", "40s / side"], ["Banded Glute Bridge", "45s"], ["Banded Lateral Walk", "40s"], ["Fire Hydrant", "40s / side"], ["Single-Leg Glute Bridge", "30s / side"], ["90/90 Hip Stretch", "40s / side"]],
+    [["Pigeon Stretch", "45s / side"], ["Single-Leg Hip Thrust", "30s / side"], ["Banded Lateral Walk", "45s"], ["Standing Hip Abduction", "40s / side"], ["Single-Leg Romanian Deadlift", "30s / side"], ["90/90 Hip Stretch", "45s / side"]]
+  ] });
+ROUTINES[1].moves = ROUTINES[1].levels[1];
 ROUTINES.forEach(function (r) {
   var L = ROUTINE_LEVELS[r.id]; if (!L) return;
   r.levels = L.map(function (lv) { return lv || r.moves; });
