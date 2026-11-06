@@ -102,7 +102,7 @@ function heroHTML(id, d, rot, todayE) {
     var nx = rot.days[(rot.next + 1) % rot.days.length], si = todayE && todayE.si;
     return '<div class="card hero"><div class="hero-top">' + figHTML(repName(d), 96, id) + '<div><span class="done-badge">' + I.check.replace('<svg', '<svg width="14" height="14"') + ' Done today</span>' +
       '<div class="t" style="margin-top:6px">' + esc(d.title) + '</div><div class="s">Next time: Workout ' + esc(sessionLetter(nx)) + ' · ' + esc(nx.title) + '</div></div></div>' +
-      (a.check ? (si ? '<div class="muted" style="font-size:15px">' + esc(titleCase(a.check)) + ': ' + esc(CHECK_LABELS[si]) + ' ✓</div>' :
+      (a.check ? (si ? '<div class="muted" style="font-size:15px">' + esc(a.check.charAt(0).toUpperCase() + a.check.slice(1)) + ': ' + esc(CHECK_LABELS[si]) + ' ✓</div>' :
         '<div><div style="font-weight:700;margin-bottom:10px">How’s your ' + esc(a.check) + '?</div><div class="seg">' +
         [1, 2, 3].map(function (k) { return '<button data-si="' + k + '">' + CHECK_LABELS[k] + '</button>'; }).join('') + '</div></div>') : '') + '</div>';
   }
@@ -223,7 +223,7 @@ function renderHistory(v) {
     if (iso === todayISO()) cls += ' today';
     cal += '<i class="' + cls + '">' + dd + '</i>';
   }
-  cal += '</div><div style="display:flex;gap:14px;padding:0 18px 14px;font-size:13px;color:var(--muted)"><span>● Workout</span><span style="color:#6E9CC4">● Run</span><span>○ Stretch</span></div></div>';
+  cal += '</div><div style="display:flex;gap:14px;padding:0 18px 14px;font-size:13px;color:var(--muted)"><span>● Workout</span><span style="color:#3F6FA0">● Run</span><span>○ Stretch</span></div></div>';
   var dates = {};
   Object.keys(log).forEach(function (k) { dates[k] = 1; }); Object.keys(sl).forEach(function (k) { dates[k] = 1; });
   var sorted = Object.keys(dates).sort().reverse(), rows = '', lastWk = null, checkTag = ATHLETES[id].checkTag || 'Check';
@@ -323,6 +323,7 @@ function renderMe(v) {
   on(v, '[data-act="restore"]', 'click', function () { $('#restore-file', v).click(); });
   $('#restore-file', v).addEventListener('change', function () {
     var f = this.files && this.files[0]; if (!f) return;
+    if (!confirm('Replace the data on this phone with this backup?')) { this.value = ''; return; }
     var rd = new FileReader();
     rd.onload = function () { try { importData(JSON.parse(rd.result)); toast('Restored — reloading'); setTimeout(function () { location.reload(); }, 800); } catch (e) { toast('That file isn’t a backup'); } };
     rd.readAsText(f);
@@ -418,7 +419,7 @@ function openBuilder(existing) {
       if (!st.picked.length) return;
       var list = myRoutinesGet(id), rid = existing && existing.id ? existing.id : 'my_' + Date.now().toString(36);
       var r = { id: rid, kind: st.kind, title: (st.title || '').trim() || (st.kind === 'stretch' ? 'My stretch' : 'My workout'),
-        pose: poseFor(st.picked[0]), bg: FIG_BG[list.length % FIG_BG.length], blurb: '', moves: st.picked.map(function (n) { return [n, scheme(n)]; }) };
+        pose: poseFor(st.picked[0]), bg: existing && existing.bg ? existing.bg : FIG_BG[list.length % FIG_BG.length], blurb: '', moves: st.picked.map(function (n) { return [n, scheme(n)]; }) };
       var i = list.map(function (x) { return x.id; }).indexOf(rid);
       if (i === -1) list.push(r); else list[i] = r;
       myRoutinesSave(id, list); Layers.pop(); App.tab = 'today'; renderTab(); toast('Saved ' + r.title);

@@ -74,7 +74,8 @@ var Sheet = {
     if (typeof html === 'string') el.insertAdjacentHTML('beforeend', html); else el.appendChild(html);
     document.body.appendChild(scrim); document.body.appendChild(el);
     var self = this;
-    scrim.addEventListener('click', function () { self.close(); });
+    var opened = Date.now();
+    scrim.addEventListener('click', function () { if (Date.now() - opened > 350) self.close(); });
     // swipe down on the grabber area to close
     var y0 = null;
     el.addEventListener('touchstart', function (e) { if (el.scrollTop <= 0) y0 = e.touches[0].clientY; }, { passive: true });
@@ -106,7 +107,10 @@ function toast(msg, action, fn, ms) {
   clearTimeout(_toastT); _toastT = setTimeout(function () { t.classList.remove('on'); }, ms || (action ? 5000 : 2600));
 }
 
-/* press-and-hold: onHold after 450 ms (cancelled by scrolling); a normal tap still clicks */
+/* press-and-hold: onHold after 450 ms (cancelled by scrolling); a normal tap still clicks.
+   After a hold, the click that follows the finger lifting is swallowed wherever it lands. */
+var _holdUntil = 0;
+document.addEventListener('click', function (e) { if (Date.now() < _holdUntil) { e.preventDefault(); e.stopPropagation(); _holdUntil = 0; } }, true);
 function holdable(el, onHold) {
   var timer = null, x0 = 0, y0 = 0, held = false, pressT = null;
   el.classList.add('hold', 'press');
@@ -115,7 +119,7 @@ function holdable(el, onHold) {
     if (e.button && e.button !== 0) return;
     held = false; x0 = e.clientX; y0 = e.clientY;
     pressT = setTimeout(function () { el.classList.add('pressing'); }, 90);
-    timer = setTimeout(function () { held = true; cancel(); onHold(e); }, 450);
+    timer = setTimeout(function () { held = true; cancel(); _holdUntil = Date.now() + 700; onHold(e); }, 450);
   });
   el.addEventListener('pointermove', function (e) { if (timer && (Math.abs(e.clientX - x0) > 10 || Math.abs(e.clientY - y0) > 10)) cancel(); });
   el.addEventListener('pointerup', cancel);

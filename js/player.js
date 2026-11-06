@@ -40,11 +40,13 @@ function fitsLoc(name, loc) {
   return !/machine|cable|barbell|leg press|lat pulldown|assisted|seated calf/i.test(name);
 }
 function alternativesFor(name, loc) {
+  var careful = !!(ATHLETES[App.id] && ATHLETES[App.id].check);
   if (STRETCHES[name]) return Object.keys(STRETCHES).filter(function (n) { return n !== name; }).slice(0, 12);
   var pat = patOf(name); if (!pat) return [];
   return allMoveNames().filter(function (n) {
     var e = EX_DB.filter(function (x) { return x.name === n; })[0];
     if (e && e.flags.indexOf('impact') !== -1) return false;    // no jumping swaps
+    if (e && careful && e.flags.indexOf('spinal') !== -1) return false;   // back/SI: nothing that loads the spine
     return n !== name && patOf(n) === pat && fitsLoc(n, loc || 'home');
   }).slice(0, 10);
 }
@@ -53,6 +55,8 @@ function alternativesFor(name, loc) {
 // src: {type:'plan', key} | {type:'routine', rid}
 function openOverview(src) {
   var id = App.id, st = { loc: locGet(id), short: false };
+  var p0 = progGet(id);
+  if (p0 && p0.src && sameSrc(p0.src, src)) { if (p0.loc !== undefined && p0.loc !== null) st.loc = p0.loc; st.short = !!p0.short; }
   var lay = Layers.push(h('<div></div>'), { onClose: function () { renderTab(); } });
   function day() {
     if (src.type === 'routine') { var r = routineById(id, src.rid); return r ? routineDay(id, r) : null; }
@@ -100,8 +104,12 @@ function openOverview(src) {
     on(lay, '[data-act="tip"]', 'click', function () { store.setRaw('trainops:tip:hold', '1'); render(); });
     on(lay, '[data-loc]', 'click', function (e, b) { st.loc = b.dataset.loc; locSet(id, st.loc); render(); });
     on(lay, '[data-short]', 'click', function (e, b) { st.short = b.dataset.short === '1'; render(); });
-    on(lay, '[data-act="start"]', 'click', function () { Sound.unlock(); startPlayer(src, day(), st, resume); });
-    on(lay, '[data-act="restart"]', 'click', function () { progClear(id); Sound.unlock(); startPlayer(src, day(), st, null); });
+    on(lay, '[data-act="start"]', 'click', function () {
+      Sound.unlock();
+      var p = progGet(id), res = p && p.src && sameSrc(p.src, src) && p.loc === st.loc && !!p.short === st.short ? p : null;
+      startPlayer(src, day(), st, res, render);
+    });
+    on(lay, '[data-act="restart"]', 'click', function () { progClear(id); Sound.unlock(); startPlayer(src, day(), st, null, render); });
     on(lay, '[data-act="rmore"]', 'click', function () { routineMenu(r); });
     $$('.mv', lay).forEach(function (row) {
       var it = items[row.dataset.iid];
@@ -150,7 +158,7 @@ function openMoveSheet(ctx, item, mode) {
   function render() {
     var p = parseScheme(item.scheme), ed = editsGet(id)[item.name] || {}, mods = modsGet(id), changed = !!(isPlan && mods[key()]) || !!editsGet(id)[item.name];
     var head = '<div style="display:flex;gap:14px;align-items:center;margin-bottom:6px">' + figHTML(item.name, 76, id) +
-      '<div><h2>' + esc(item.name) + '</h2><div class="muted" style="font-size:15px;margin-top:2px">' + esc(schemeText(item.scheme)) + '</div>' +
+      '<div><h2>' + esc(item.name) + '</h2><div class="muted" data-scheme style="font-size:15px;margin-top:2px">' + esc(schemeText(item.scheme)) + '</div>' +
       (item.note ? '<div style="font-size:14px;color:var(--ink2);margin-top:4px">' + esc(item.note) + '</div>' : '') + '</div></div>';
     var info = '<div>' + moveInfoHTML(id, item.name, item) + '</div>';
     var edit = '';
@@ -202,10 +210,10 @@ function openMoveSheet(ctx, item, mode) {
       span.textContent = v;
       cur[f] = v;
       if (f !== 'sets' && cur.sets == null) cur.sets = +($('[data-val="sets"]', el) || { textContent: 1 }).textContent;
-      if (f === 'sets' && p.kind === 'reps' && cur.reps == null) cur.reps = p.lo;
       if (f === 'sets' && p.kind === 'timed' && cur.secs == null) { var w1 = p.phases.filter(function (x) { return x.kind === 'work'; })[0]; cur.secs = w1 ? w1.secs : 30; }
       all[item.name] = cur; editsSave(id, all);
-      item.scheme = schemeWithEdits(id, item.name, item.base === item.name ? (itemBaseScheme(ctx, item) || item.scheme) : item.scheme);
+      item.scheme = schemeWithEdits(id, item.name, itemBaseScheme(ctx, item) || item.scheme);
+      var sc = $('[data-scheme]', el); if (sc) sc.textContent = schemeText(item.scheme);
       ctx.onChange();
     });
   }
@@ -266,16 +274,20 @@ function buildSteps(rd, short) {
   return { steps: out, moves: moves };
 }
 
-function startPlayer(src, rd, st, resume) {
+function startPlayer(src, rd, st, resume, onExit) {
   var id = App.id, built = buildSteps(rd, st.short), steps = built.steps, N = built.moves.length;
   if (!steps.length) { toast('Nothing to do here — add a move first'); return; }
   var i = resume ? Math.min(resume.step || 0, steps.length - 1) : 0;
-  var timer = null, el = h('<div></div>'), firstTimed = true;
+  var timer = null, el = h('<div></div>'), firstTimed = true, closed = false;
   var R = 45, CIRC = 2 * Math.PI * R;
-  Layers.push(el, { white: true, onClose: function () { stopTimer(); Wake.off(); try { speechSynthesis.cancel(); } catch (e) {} } });
+  Layers.push(el, { white: true, onClose: function () { closed = true; stopTimer(); Wake.off(); try { speechSynthesis.cancel(); } catch (e) {} if (onExit && !finished) onExit(); } });
   Wake.on();
+  var finished = false;
   function stopTimer() { if (timer) { timer.stop(); timer = null; } }
-  function save() { progSet(id, { src: src, loc: st.loc, short: st.short, step: i, mi: (steps[i] && steps[i].mi) || 0, moves: N }); }
+  function save() {
+    var s0 = steps[i], mi = s0 ? ('rest' in s0 ? (nextMove(i) || {}).mi : s0.mi) : 0;
+    progSet(id, { src: src, loc: st.loc, short: st.short, step: i, mi: mi || 0, moves: N });
+  }
   function header(s) {
     var sub = s.rest ? 'Rest' : s.g.kind === 'pair' ? s.g.title.split(' · ')[0] + ' · Round ' + s.round + ' of ' + s.rounds : s.g.title;
     var mi = s.rest ? nextMove(i).mi : s.mi;
@@ -297,10 +309,10 @@ function startPlayer(src, rd, st, resume) {
     on(el, '[data-act="exit"]', 'click', function () { save(); Layers.pop(); toast('Saved — pick up where you left off'); });
     on(el, '[data-act="menu"]', 'click', function () { menu(s); });
     on(el, '[data-act="info"]', 'click', function () {
-      var t = timer; if (t && !t.paused()) { t.pause(); updatePause(); }
+      var t = timer, wasRunning = t && !t.paused(); if (wasRunning) { t.pause(); updatePause(); }
       var sh = Sheet.open('<div style="display:flex;gap:14px;align-items:center">' + figHTML(s.it.name, 64, id) + '<h2>' + esc(s.it.name) + '</h2></div>' +
         (s.it.note ? '<p style="margin:10px 0 0;color:var(--ink2)">' + esc(s.it.note) + '</p>' : '') + moveInfoHTML(id, s.it.name, s.it) +
-        '<button class="btn soft sm" style="margin-top:18px" data-act="close">Back to it</button>');
+        '<button class="btn soft sm" style="margin-top:18px" data-act="close">Back to it</button>', { onClose: function () { if (wasRunning && timer === t && t.paused()) { t.resume(); updatePause(); } } });
       wireVideo(sh); on(sh, '[data-act="close"]', 'click', function () { Sheet.close(); });
     });
     on(el, '[data-act="prev"]', 'click', function () { go(prevIndex()); });
@@ -314,6 +326,7 @@ function startPlayer(src, rd, st, resume) {
     return j;
   }
   function go(j) {
+    if (closed) return;
     stopTimer();
     try { speechSynthesis.cancel(); } catch (e) {}
     i = j;
@@ -334,7 +347,7 @@ function startPlayer(src, rd, st, resume) {
     var sh = Sheet.open(html);
     on(sh, '[data-m="sound"]', 'click', function () { Sound.set(!Sound.on()); Sheet.close(); toast(Sound.on() ? 'Sounds on' : 'Sounds off'); });
     on(sh, '[data-m="cool"]', 'click', function () { Sheet.close(); finish(); });
-    on(sh, '[data-m="finish"]', 'click', function () { Sheet.close(); finish(); });
+    on(sh, '[data-m="finish"]', 'click', function () { Sheet.close(); if (confirm('Finish now and log this workout?')) finish(); });
     on(sh, '[data-m="close"]', 'click', function () { Sheet.close(); });
   }
 
@@ -348,7 +361,7 @@ function startPlayer(src, rd, st, resume) {
 
   function showRest(s) {
     var nx = nextMove(i), np = nx && nx.p;
-    var nextTxt = nx ? nx.it.name + (np.kind === 'reps' ? ' · ' + np.label + ' reps' : np.kind === 'timed' ? '' : '') : '';
+    var nextTxt = nx ? nx.it.name + (np.kind === 'reps' ? ' · ' + np.label + ' reps' + (np.side ? ' / side' : '') : '') : '';
     el.innerHTML = '<div class="pl">' + header(s) + ring(1, 'rest', nx ? nx.it.name : 'Child\'s Pose') +
       '<div class="pl-lab">Rest</div><div class="pl-big" data-t>' + fmtSecs(s.rest) + '</div>' +
       '<div class="pl-sub">' + (nx ? 'Next: ' + esc(nextTxt) + (nx.set > 1 ? ' · set ' + nx.set + ' of ' + nx.sets : '') : '') + '</div>' +
@@ -391,7 +404,7 @@ function startPlayer(src, rd, st, resume) {
         k++;
         if (k < seq.length) { run(); return; }
         Sound.chime();
-        setTimeout(function () { if (steps[i] === s) go(i + 1); }, 900);
+        setTimeout(function () { if (!closed && steps[i] === s) go(i + 1); }, 900);
       });
       updatePause();
     }
@@ -401,13 +414,14 @@ function startPlayer(src, rd, st, resume) {
   function showReps(s) {
     var it = s.it, p = s.p, warm = s.g.kind === 'warm', loggable = (p.kind === 'reps' || p.kind === 'max') && !warm;
     var weighted = loggable && needsWeight(it.name);
-    var sug = suggestion(id, it.name, p), w = weighted ? sug.w : 0, reps = p.kind === 'max' ? (sug.r || 8) : (sug.r || p.lo || 10);
+    var sug = suggestion(id, it.name, p), w = weighted ? sug.w : 0, reps = sug.r || p.lo || 10;
     if (p.kind === 'reps' && (reps < p.lo || reps > p.hi)) reps = p.lo;
     var showReps = p.kind === 'max';
-    var big = p.kind === 'max' ? 'Max<small>reps</small>' : p.kind === 'count' ? esc(p.label) : esc(p.label) + '<small>' + (p.unit || 'reps') + (p.side ? ' / side' : '') + '</small>';
+    var big = p.kind === 'max' ? 'Max<small>reps</small>' : p.kind === 'count' ? esc(p.label) + (p.unit || p.side ? '<small>' + (p.unit || '') + (p.side ? ' / side' : '') + '</small>' : '') :
+      esc(p.label) + '<small>' + (p.unit || 'reps') + (p.side ? ' / side' : '') + '</small>';
     var dots = ''; for (var d = 1; d <= s.sets; d++) dots += '<i class="' + (d < s.set ? 'on' : d === s.set ? 'cur' : '') + '"></i>';
     function render() {
-      el.innerHTML = '<div class="pl">' + header(s) + ring((s.set - 1) / s.sets, '', it.name) + nameRow(it) +
+      el.innerHTML = '<div class="pl reps">' + header(s) + ring((s.set - 1) / s.sets, '', it.name) + nameRow(it) +
         '<div class="pl-sub">' + esc(it.note || '') + '</div>' +
         '<button class="pl-big" data-act="reps" style="background:none;border:0;color:inherit;cursor:pointer">' + big + '</button>' +
         (s.sets > 1 ? '<div class="pl-lab">' + (s.g.kind === 'pair' ? 'Set ' : 'Set ') + s.set + ' of ' + s.sets + '<span class="setdots">' + dots + '</span></div>' : '') +
@@ -434,7 +448,8 @@ function startPlayer(src, rd, st, resume) {
   }
 
   function finish() {
-    stopTimer(); progClear(id); Wake.off();
+    if (closed) return;
+    finished = true; stopTimer(); progClear(id); Wake.off();
     showFinish(src, rd, st);
   }
   show();
@@ -488,7 +503,14 @@ function runPhases(d) {
       ph.push({ lab: iv.workLab === 'JOG' ? 'Jog' : 'Hard', secs: iv.work, round: r + 1, rounds: iv.rounds });
       if (!iv.startEasy) ph.push({ lab: iv.easyLab === 'WALK' ? 'Walk' : 'Easy', secs: iv.easy, easy: true, round: r + 1, rounds: iv.rounds });
     }
-  } else ph.push({ lab: 'Run', say: run.extra || 'Run', secs: minsIn(run.extra, 20 * 60) });
+  } else {
+    var segs = String(run.extra || '').replace(/^[^:]*:\s*/, '').split(/\s*,\s*/).map(function (x) { var m = x.match(/(\d+)\s*min\s*(.*)/i); return m ? { mins: +m[1], what: m[2] } : null; }).filter(Boolean);
+    if (segs.length > 1) segs.forEach(function (g) {
+      var hard = /hard|fast|tempo/i.test(g.what);
+      ph.push({ lab: hard ? 'Comfortably hard' : 'Easy', say: g.what || 'Run', secs: g.mins * 60, easy: !hard });
+    });
+    else ph.push({ lab: 'Run', say: run.extra || 'Run', secs: minsIn(run.extra, 20 * 60) });
+  }
   if (run.cool) ph.push({ lab: 'Cool-down', say: 'Cool down. ' + run.cool, secs: minsIn(run.cool, 120), easy: true });
   return ph;
 }
@@ -520,7 +542,7 @@ function openRunTimer(d) {
       '<button class="round-btn" data-act="skip" aria-label="Skip">' + I.next + '</button></div>' +
       '<p class="muted" style="font-size:13px;text-align:center;margin:0">Keep the screen on for voice cues — or run with Nike Run Club and just tap “I did my run”.</p></div>';
     on(el, '[data-act="exit"]', 'click', function () { Layers.pop(); });
-    on(el, '[data-act="pause"]', 'click', function (e, b) { if (!timer) return; var pz = timer.toggle(); b.innerHTML = pz ? I.play : I.pause; });
+    on(el, '[data-act="pause"]', 'click', function (e, b) { if (!timer) return; var pz = timer.toggle(); b.innerHTML = pz ? I.play : I.pause; b.setAttribute('aria-label', pz ? 'Resume' : 'Pause'); });
     on(el, '[data-act="prev"]', 'click', function () { if (timer) timer.stop(); k = Math.max(0, k - 1); show(); });
     on(el, '[data-act="skip"]', 'click', function () { if (timer) timer.stop(); next(); });
     Sound.go(); Sound.say(p.say || p.lab);
@@ -535,7 +557,8 @@ function openRunTimer(d) {
     if (k < ph.length) { show(); return; }
     Sound.done(); Sound.say('Run done. Great job!');
     Layers.pop();
-    logRunFlow(d, true);
+    var isToday = todaySession(id) && todaySession(id).key === d.key && !rotationState(id).doneToday;
+    logRunFlow(isToday ? d : null, true);
   }
   show();
 }

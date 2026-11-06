@@ -120,6 +120,11 @@ function makePersonPlan(p) {
     duration: mins <= 30 ? '30' : mins <= 45 ? '45' : '60', equip: equip, limits: limits, weeks: 0 };
   var plan = toRotation(buildCustomPlan(cfg), { perWeek: +p.days || 3, mins: mins, hair: p.hair || 'bun', color: p.color });
   plan.meta.goal = '';
+  plan.phaseDays[plan.phases[0].key].forEach(function (d) {      // holds are timed, not counted
+    (d.groups || []).forEach(function (g) { g.items.forEach(function (it) {
+      if (/wall sit|plank|carry/i.test(it.name) && !/s\b/.test(it.scheme || '')) { var m = String(it.scheme || '').match(/^(\d+)\s*×/); it.scheme = (m ? m[1] : 3) + ' × 30s' + (/side plank/i.test(it.name) ? ' / side' : ''); }
+    }); });
+  });
   plan.check = (p.limits && p.limits.length) ? 'back & joints' : null;
   plan.v2 = p;
   if (p.place === 'both') {     // gym versions of each move, picked from the exercise database
@@ -232,11 +237,17 @@ function oneSet(scheme, sets) {
 function schemeWithEdits(id, name, scheme) {
   var e = editsGet(id)[name]; if (!e) return scheme;
   var p = parseScheme(scheme);
-  if (p.kind === 'timed' && e.secs) return (e.sets > 1 ? e.sets + ' × ' : '') + e.secs + 's' + (p.side ? ' / side' : '');
-  if ((p.kind === 'reps' || p.kind === 'max') && (e.sets || e.reps)) {
+  var hold = /hold/i.test(scheme) ? ' hold' : '';
+  if (p.kind === 'timed' && (e.secs || e.sets)) {
+    var w = p.phases.filter(function (x) { return x.kind === 'work'; })[0];
+    var tsets = e.sets || +((String(scheme).match(/^\s*(\d+)\s*[×x]/) || [])[1] || 1);
+    return (tsets > 1 ? tsets + ' × ' : '') + (e.secs || (w ? w.secs : 30)) + 's' + hold + (p.side ? ' / side' : '');
+  }
+  if ((p.kind === 'reps' || p.kind === 'max') && (e.sets || e.reps != null)) {
     var sets = e.sets || p.sets, reps = e.reps != null ? e.reps : (p.kind === 'max' ? 'max' : p.label);
     return sets + ' × ' + reps + (p.side ? ' / side' : '');
   }
+  if (p.kind === 'count' && e.sets) return e.sets + ' × ' + String(scheme).replace(/^\s*\d+\s*[×x]\s*/, '').replace(/^\s*[×x]\s*/, '');
   return scheme;
 }
 
@@ -301,6 +312,14 @@ var CHECK_LABELS = ['', 'Feels fine', 'A twinge', 'Flared up'];
 function runBit(r) { return 'run ' + (+r.dist).toFixed(1) + ' ' + r.unit; }
 function mergeDay(old, neu) {
   if (!old) return neu;
+  if (old.rot && neu.rot && old.k !== neu.k) {      // two plan sessions in one day: keep both
+    neu.title = old.title + ' + ' + neu.title;
+    neu.ks = (old.ks || [old.k]).concat([neu.k]);
+    if (old.run && !neu.run) neu.run = old.run;
+    if (old.si && !neu.si) neu.si = old.si;
+    if (old.cb) neu.cb = old.cb;
+    return neu;
+  }
   if (neu.run && !old.run && old.t !== 'run') { old.run = neu.run; old.title += ' + ' + runBit(neu.run); return old; }
   if (!neu.run && old.run) { neu.run = old.run; neu.title += ' + ' + runBit(old.run); return neu; }
   return neu;
@@ -394,7 +413,7 @@ function schemeText(scheme) {   // friendly: "3 × 10–15" stays; "45s" -> "45 
   return String(scheme);
 }
 function needsWeight(name) {
-  if (/band|bodyweight|push-up|pull-up|chin-up|plank|bird dog|dead bug|clamshell|abduction|side step|walk|squeeze|kickbacks$|wheel|isolated|double pulse|pulse/i.test(name)) return false;
+  if (/anti-rotation|pallof|band|bodyweight|push-up|pull-up|chin-up|plank|bird dog|dead bug|clamshell|abduction|side step|walk|squeeze|kickbacks$|wheel|isolated|double pulse|pulse/i.test(name)) return false;
   return /db|dumbbell|kb|kettlebell|barbell|machine|cable|press|row|curl|triceps|goblet|thrust|deadlift|leg press|pulldown|split squat|back extension/i.test(name);
 }
 
@@ -412,6 +431,11 @@ function recordSet(id, name, w, r) {
 // what to aim for today: hit the top of the range -> go heavier, else one more rep
 function suggestion(id, name, p) {
   var h = setsGet(id)[name], ed = editsGet(id)[name], today = todayISO();
+  if (p && p.kind === 'max') {        // as many as you can: start from last time
+    if (h && h.last && h.last.d === today) return { w: h.last.w, r: h.last.r, hint: '' };
+    var pm = h && h.hist ? h.hist.filter(function (x) { return x.d < today; }).pop() : null;
+    return pm ? { w: pm.w, r: pm.r, hint: 'Last time ' + pm.r + ' — go for ' + (pm.r + 1) } : { w: 0, r: 5, hint: '' };
+  }
   var reps = p && p.lo || 10, top = p && p.hi || reps;
   if (h && h.last && h.last.d === today) return { w: h.last.w, r: h.last.r, hint: '' };   // next set: same as the last one
   var prev = h && h.hist ? h.hist.filter(function (x) { return x.d < today; }).pop() : null;
@@ -547,7 +571,7 @@ function stretchPickId(id) {
 function routineDay(id, r) {
   return { key: 'r:' + r.id, title: r.title, type: 'routine', routine: r.id, groups: [{ label: r.kind === 'stretch' ? 'Stretch' : 'Moves',
     kind: 'flow', title: r.title, gi: 0, items: r.moves.map(function (m, i) {
-      return { id: 'm_' + i, base: m[0], name: m[0], scheme: m[1], note: '', cues: null };
+      return { id: 'm_' + i, base: m[0], name: m[0], scheme: schemeWithEdits(id, m[0], m[1]), note: '', cues: null };
     }) }] };
 }
 
