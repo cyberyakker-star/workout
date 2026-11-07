@@ -446,7 +446,7 @@ function schemeText(scheme) {   // friendly: "3 × 10–15" stays; "45s" -> "45 
   return String(scheme);
 }
 function needsWeight(name) {
-  if (/anti-rotation|pallof|band|bodyweight|push-up|pull-up|chin-up|plank|bird dog|dead bug|clamshell|abduction|side step|walk|squeeze|kickbacks$|wheel|isolated|double pulse|pulse|nordic|hang|crawl|pogo|skip|hop|jump|sled|med-ball|patrick|step-down|tibialis|pike|backward/i.test(name)) return false;
+  if (/baby|peekaboo|anti-rotation|pallof|band|bodyweight|push-up|pull-up|chin-up|plank|bird dog|dead bug|clamshell|abduction|side step|walk|squeeze|kickbacks$|wheel|isolated|double pulse|pulse|nordic|hang|crawl|pogo|skip|hop|jump|sled|med-ball|patrick|step-down|tibialis|pike|backward/i.test(name)) return false;
   return /db|dumbbell|kb|kettlebell|barbell|machine|cable|press|row|curl|triceps|goblet|thrust|deadlift|leg press|pulldown|split squat|back extension|halo|farmer|carry|march|get-up/i.test(name);
 }
 
@@ -590,7 +590,7 @@ function videoFor(name) { var v = typeof videoIds === 'function' ? videoIds(name
 /* ---------- routines (Bend-style) ---------- */
 function routineSecs(moves) {
   var t = 0;
-  moves.forEach(function (m) { var p = parseScheme(m[1]); t += (p.kind === 'timed' ? p.secs : 40) + 8; });
+  moves.forEach(function (m) { var p = parseScheme(m[1]), n = p.sets || 1; t += (p.kind === 'timed' ? p.secs : n * 40 + (n - 1) * 60) + 8; });
   return t;
 }
 function routineMinutes(moves) { return Math.max(1, Math.round(routineSecs(moves) / 60)); }
@@ -649,10 +649,17 @@ function stretchPickId(id) {
 }
 // a routine as a "day" the player understands
 function routineDay(id, r) {
-  return { key: 'r:' + r.id, title: r.title, type: 'routine', routine: r.id, groups: [{ label: r.kind === 'stretch' ? 'Stretch' : 'Moves',
-    kind: 'flow', title: r.title, gi: 0, items: levelMoves(id, r).map(function (m, i) {
-      return { id: 'm_' + i, base: m[0], name: m[0], scheme: m[1], note: '', cues: null };
-    }) }] };
+  var lvl = routineLevel(id, r.id), key = 'r:' + r.id + (r.levels ? ':' + lvl : ''), mods = modsGet(id), items = [];
+  levelMoves(id, r, lvl).forEach(function (m, i) {
+    var iid = 'm_' + i, md = mods[key + '|home|' + iid] || {};
+    if (md.rm) return;
+    var o = { id: iid, base: m[0], name: m[0], scheme: m[1], note: '', cues: null };
+    if (md.swap && md.swap !== m[0]) { o.name = md.swap; o.swapped = true; o.scheme = schemeWithEdits(id, md.swap, levelBase(r, lvl)[i][1]); }
+    items.push(o);
+  });
+  var sets = items.some(function (it) { return parseScheme(it.scheme).kind !== 'timed'; });   // sets x reps: rest between sets
+  return { key: key, title: r.title, type: 'routine', routine: r.id, groups: [{ label: r.kind === 'stretch' ? 'Stretch' : 'Moves',
+    kind: sets ? 'main' : 'flow', title: sets ? 'Moves' : r.title, gi: 0, items: items }] };
 }
 
 /* ---------- backup ---------- */
