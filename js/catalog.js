@@ -135,25 +135,21 @@ function openLibrary() {
 }
 
 /* ---------- Plan workouts with your AI: copy the catalog out, paste workouts back ---------- */
+// only what's in the app (exercises, workouts, reply format): goals, limits and
+// anything personal are for the person to tell their AI themselves
 function aiExportText(id) {
-  var a = ATHLETES[id] || {}, L = [], g = null;
-  try { g = goalInfo(id); } catch (e) {}
+  var L = [];
   L.push('I use a simple workout app. Please help me plan workouts using ONLY the exercises listed at the bottom (copy the names exactly), so I can paste your answer straight back into the app.');
-  L.push('', 'ABOUT ME');
-  L.push('- ' + personName(id) + ', working out ' + weeklyTarget(id) + ' days a week.');
-  if (g && !g.past && g.name) L.push('- Goal: ' + g.name + (g.when ? ' (' + g.when + ')' : '') + '.');
-  if (a.check) L.push('- Go easy on my ' + a.check + ': skip moves that load the spine (heavy deadlifts, bent-over rows, swings).');
-  L.push('- My current plan:');
+  L.push('', 'MY WORKOUTS IN THE APP RIGHT NOW');
   sessions(id).forEach(function (d) {
-    if (d.type === 'run') { L.push('  • ' + sessionFull(d) + ': a run'); return; }
+    if (d.type === 'run') { L.push('- ' + sessionFull(d) + ': a run'); return; }
     try {
       var rd = resolveDay(id, d, {}), mv = [];
       rd.groups.forEach(function (gr) { gr.items.forEach(function (it) { mv.push(it.name + ' ' + it.scheme); }); });
-      L.push('  • ' + sessionFull(d) + ': ' + mv.join('; '));
-    } catch (e) { L.push('  • ' + sessionFull(d)); }
+      L.push('- ' + sessionFull(d) + ': ' + mv.join('; '));
+    } catch (e) { L.push('- ' + sessionFull(d)); }
   });
-  var mine = myRoutinesGet(id);
-  if (mine.length) L.push('- Workouts I already made: ' + mine.map(function (r) { return r.title; }).join(', ') + '.');
+  myRoutinesGet(id).forEach(function (r) { L.push('- ' + r.title + ': ' + r.moves.map(function (m) { return m[0] + ' ' + m[1]; }).join('; ')); });
   L.push('', 'HOW TO REPLY SO THE APP CAN READ IT',
     'Put the workouts in one code block, each one like this:', '',
     'WORKOUT: Hotel Room Upper Body', 'TYPE: strength', '- Push-up | 3 × 12', '- Band Row | 3 × 12', '- Pike Push-up | 2 × 8', '- Plank | 40s', '',
@@ -246,7 +242,7 @@ function openAIHelper() {
   function render() {
     el.innerHTML = '<div class="lwrap"><div class="lhead"><button class="icon-btn" data-act="back" aria-label="Back">' + I.back + '</button></div>' +
       '<h1 style="font-weight:900;font-size:30px;margin-top:10px">Plan workouts with AI</h1>' +
-      '<p class="muted" style="margin:6px 0 0;font-size:16px;line-height:1.45">Use ChatGPT, Claude or any AI you like. It gets every exercise in this app and your plan, and answers in a format the app can open.</p>' +
+      '<p class="muted" style="margin:6px 0 0;font-size:16px;line-height:1.45">Use ChatGPT, Claude or any AI you like. It gets every exercise in this app and your current workouts, nothing personal, and answers in a format the app can open.</p>' +
       '<div class="card ai-step"><span class="ai-n">1</span><div class="grow"><b>Copy everything your AI needs</b>' +
       '<p>Then paste it into a chat and add what you want, like "a 20-minute leg day with no dumbbells".</p>' +
       '<div class="ai-btns"><button class="btn" data-act="copy">' + I.copy + 'Copy for my AI</button>' +
