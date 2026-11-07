@@ -287,7 +287,7 @@ function renderHistory(v) {
     if (wk !== lastWk) { rows += (lastWk ? '</div>' : '') + '<div class="cap" style="margin:18px 4px 8px">' + (wk === isoWeek(now) ? 'This week' : 'Week of ' + fmtDay(mondayOf(iso)).split(', ')[1]) + '</div><div class="card list">'; lastWk = wk; }
     var e = log[iso];
     if (e) rows += '<button class="li" data-iso="' + iso + '"><span class="grow"><b style="font-weight:600">' + esc(e.title) + '</b>' + (e.cb ? '<span class="tag">Comeback</span>' : '') +
-      (e.si ? '<span class="tag s' + e.si + '">' + esc(checkTag) + ' · ' + esc(CHECK_LABELS[e.si]) + '</span>' : '') +
+      (e.si && ATHLETES[id].check ? '<span class="tag s' + e.si + '">' + esc(checkTag) + ' · ' + esc(CHECK_LABELS[e.si]) + '</span>' : '') +
       '<small>' + fmtDay(iso) + (e.run && e.run.pace ? ' · ' + e.run.pace + ' /' + e.run.unit : '') + '</small></span><span class="chev">' + I.chev + '</span></button>';
     (sl[iso] || []).forEach(function (s, si) {
       var rr = routineById(id, s.r), kindTag = rr && rr.kind === 'strength' ? 'Quick workout' : 'Stretch';
@@ -333,7 +333,7 @@ function entryDetail(iso) {
   var sets = setsGet(id), lines = [];
   Object.keys(sets).forEach(function (nm) { (sets[nm].hist || []).forEach(function (h) { if (h.d === iso) lines.push({ n: nm, h: h }); }); });
   var html = '<span class="cap">' + fmtDay(iso) + '</span><h2 style="margin-top:4px">' + esc(e.title) + '</h2>' +
-    (e.si ? '<p style="margin:8px 0 0"><span class="tag s' + e.si + '" style="margin-left:0">' + esc(ATHLETES[id].checkTag || 'Check') + ' · ' + esc(CHECK_LABELS[e.si]) + '</span></p>' : '');
+    (e.si && ATHLETES[id].check ? '<p style="margin:8px 0 0"><span class="tag s' + e.si + '" style="margin-left:0">' + esc(ATHLETES[id].checkTag || 'Check') + ' · ' + esc(CHECK_LABELS[e.si]) + '</span></p>' : '');
   if (e.run && e.run.dist) html += '<div class="card" style="padding:14px 16px;margin-top:12px;display:flex;gap:18px"><div><span class="cap">Distance</span><div style="font-size:20px;font-weight:800">' + e.run.dist + ' ' + e.run.unit + '</div></div>' +
     (e.run.secs ? '<div><span class="cap">Time</span><div style="font-size:20px;font-weight:800">' + fmtSecs(e.run.secs) + '</div></div>' : '') +
     (e.run.pace ? '<div><span class="cap">Pace</span><div style="font-size:20px;font-weight:800">' + e.run.pace + '</div></div>' : '') + '</div>';

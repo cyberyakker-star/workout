@@ -302,7 +302,7 @@ var ATHLETES = {
     rotation:true,   // sessions run in order (A → B → C) on whatever days you train
     perWeek:3,
     quickMin:20,     // the short-on-time version
-    check:"SI joint", checkTag:"SI", // quick check-in after each session
+    // no SI check-in or SI filtering: Anthony handles that himself
     programWeeks:0,
     phases:[
       { key:"split", label:"Any days", range:"Rotation", name:"Push · Pull · Legs", from:1, to:999 }
