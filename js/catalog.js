@@ -15,7 +15,7 @@ function exMap() {
 function eqOf(name) {
   if (_eqC[name]) return _eqC[name];
   var e = exMap()[name], q;
-  if (STRETCHES[name]) q = STRETCHES[name].baby ? 'baby' : 'bw';
+  if (STRETCHES[name]) q = STRETCHES[name].baby ? 'baby' : STRETCHES[name].eq || 'bw';
   else if (e && e.eq) q = e.eq === 'machine' || e.eq === 'cable' ? 'gym' : e.eq;
   else if (/baby|peekaboo/i.test(name)) q = 'baby';
   else if (/band/i.test(name)) q = 'band';

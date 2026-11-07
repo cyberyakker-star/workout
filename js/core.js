@@ -625,12 +625,14 @@ function levelMoves(id, r, lvl) {
 // Move any level someone already picked up by one (once) so nothing gets easier.
 function migrateLevels() {
   peopleIds().forEach(function (pid) {
-    var c = cfgGet(pid); if (c.rlvlV >= 2) return;
+    var c = cfgGet(pid), v = c.rlvlV || 1; if (v >= 3) return;
+    var stretchRedo = { wake: 1, hips: 1, back: 1, posture: 1, run: 1, full: 1 };
     Object.keys(c.rlvl || {}).forEach(function (rid) {
       var r = ROUTINES.filter(function (x) { return x.id === rid; })[0];
-      if (r && r.levels) c.rlvl[rid] = Math.min(4, (+c.rlvl[rid] || 1) + 1);
+      if (!r || !r.levels) return;
+      if ((v < 2 && !stretchRedo[rid]) || stretchRedo[rid]) c.rlvl[rid] = Math.min(4, (+c.rlvl[rid] || 1) + 1);
     });
-    c.rlvlV = 2; cfgSet(pid, c);
+    c.rlvlV = 3; cfgSet(pid, c);
   });
 }
 // moves that show up at this level but not the one below
