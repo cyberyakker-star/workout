@@ -34,22 +34,7 @@ function allMoveNames() {
   _allNames = Object.keys(set).filter(function (n) { return !/finisher\)/i.test(n); }).sort();
   return _allNames;
 }
-function fitsLoc(name, loc) {
-  if (loc === 'gym') return true;
-  if (loc === 'min') return !/db|dumbbell|kb|kettlebell|barbell|machine|cable|leg press|pulldown|bench|goblet|thrust$/i.test(name) || /band/i.test(name);
-  return !/machine|cable|barbell|leg press|lat pulldown|assisted|seated calf/i.test(name);
-}
-function alternativesFor(name, loc) {
-  var careful = !!(ATHLETES[App.id] && ATHLETES[App.id].check);
-  if (STRETCHES[name]) return Object.keys(STRETCHES).filter(function (n) { return n !== name && !STRETCHES[n].baby; }).slice(0, 12);
-  var pat = patOf(name); if (!pat) return [];
-  return allMoveNames().filter(function (n) {
-    var e = EX_DB.filter(function (x) { return x.name === n; })[0];
-    if (e && e.flags.indexOf('impact') !== -1) return false;    // no jumping swaps
-    if (e && careful && e.flags.indexOf('spinal') !== -1) return false;   // back/SI: nothing that loads the spine
-    return n !== name && patOf(n) === pat && fitsLoc(n, loc || 'home');
-  }).slice(0, 10);
-}
+// swap options live in catalog.js (swapOptions)
 
 /* ---------- overview ---------- */
 // src: {type:'plan', key} | {type:'routine', rid}
@@ -166,19 +151,26 @@ function moveInfoHTML(id, name, item) {
   return o;
 }
 function openMoveSheet(ctx, item, mode) {
-  var id = ctx.id, isPlan = ctx.src && ctx.src.type === 'plan';
+  var id = ctx.id, canSwap = !item.cool && !!ctx.rd;
   function key() { return ctx.rd.key + '|' + (ctx.loc || 'home') + '|' + item.id; }
+  function doSwap(n) {
+    var m = modsGet(id), k = key(), prev = m[k] ? clone(m[k]) : null;
+    if (n === item.base) delete m[k]; else m[k] = { swap: n };
+    modsSave(id, m); ctx.onChange();
+    toast('Swapped to ' + n, 'Undo', function () { var m2 = modsGet(id); if (prev) m2[k] = prev; else delete m2[k]; modsSave(id, m2); ctx.onChange(); });
+  }
   function render() {
-    var p = parseScheme(item.scheme), ed = editsGet(id)[item.name] || {}, mods = modsGet(id), changed = !!(isPlan && mods[key()]) || !!editsGet(id)[item.name];
+    var p = parseScheme(item.scheme), ed = editsGet(id)[item.name] || {}, mods = modsGet(id), changed = !!(canSwap && mods[key()]) || !!editsGet(id)[item.name];
     var head = '<div style="display:flex;gap:14px;align-items:center;margin-bottom:6px">' + figHTML(item.name, 76, id) +
       '<div><h2>' + esc(item.name) + '</h2><div class="muted" data-scheme style="font-size:15px;margin-top:2px">' + esc(schemeText(item.scheme)) + '</div>' +
       (item.note ? '<div style="font-size:14px;color:var(--ink2);margin-top:4px">' + esc(item.note) + '</div>' : '') + '</div></div>';
     var info = '<div>' + moveInfoHTML(id, item.name, item) + '</div>';
     var edit = '';
-    if (isPlan && !item.cool) {
-      var alts = alternativesFor(item.name, ctx.loc);
-      if (alts.length) edit += '<h3 style="font-size:17px;margin:18px 0 8px">Swap for</h3><div class="swaps">' + alts.map(function (n) {
-        return '<button data-swap="' + esc(n) + '">' + figHTML(n, 72, id) + '<span>' + esc(n) + '</span></button>'; }).join('') + '</div>';
+    if (canSwap) {
+      var alts = swapOptions(item.name);
+      edit += '<h3 style="font-size:17px;margin:18px 0 8px">Swap for</h3>' + eqChipsHTML(alts) + '<div class="swaps">' + alts.map(function (n) {
+        return '<button data-swap="' + esc(n) + '" data-eq="' + eqOf(n) + '">' + figHTML(n, 72, id) + '<span>' + esc(n) + '</span><small>' + EQ_NAMES[eqOf(n)] + '</small></button>'; }).join('') +
+        '<button data-act="more" class="more-tile"><i>' + I.more + '</i><span>More</span><small>All exercises</small></button></div>';
     }
     // sets / reps / seconds — saved straight away, for this move everywhere
     var rows = '';
@@ -193,17 +185,22 @@ function openMoveSheet(ctx, item, mode) {
     if (rows) edit += '<h3 style="font-size:17px;margin:18px 0 2px">Sets &amp; reps</h3>' + rows +
       '<p class="muted" style="font-size:13px;margin:0 0 6px">Changes apply wherever ' + esc(item.name) + ' shows up.</p>';
     var acts = '';
-    if (isPlan) acts += '<button class="opt danger" data-act="rm">' + I.trash + 'Remove from this workout</button>';
+    if (canSwap) acts += '<button class="opt danger" data-act="rm">' + I.trash + 'Remove from this workout</button>';
     if (changed) acts += '<button class="opt" data-act="reset">' + I.reset + 'Reset to original</button>';
     var html = head + (mode === 'edit' ? edit + acts + '<h3 style="font-size:17px;margin:18px 0 0">How to do it</h3>' + info : info + edit + acts) +
       '<button class="btn soft sm" style="margin-top:18px" data-act="close">Done</button>';
     var el = Sheet.open(html);
     wireVideo(el);
     on(el, '[data-act="close"]', 'click', function () { Sheet.close(); });
-    on(el, '[data-swap]', 'click', function (e, b) {
-      var m = modsGet(id), k = key(), prev = m[k] ? clone(m[k]) : null;
-      m[k] = { swap: b.dataset.swap }; modsSave(id, m); Sheet.close(); ctx.onChange();
-      toast('Swapped to ' + b.dataset.swap, 'Undo', function () { var m2 = modsGet(id); if (prev) m2[k] = prev; else delete m2[k]; modsSave(id, m2); ctx.onChange(); });
+    on(el, '[data-swap]', 'click', function (e, b) { Sheet.close(); doSwap(b.dataset.swap); });
+    wireEqChips(el, function (q) {
+      $$('[data-swap]', el).forEach(function (t) { t.style.display = !q || t.dataset.eq === q ? '' : 'none'; });
+      var sw = $('.swaps', el); if (sw) sw.scrollLeft = 0;
+    });
+    on(el, '[data-act="more"]', 'click', function () {
+      Sheet.close();
+      openCatalog({ title: 'Swap ' + item.name, sub: 'Pick anything. It replaces ' + item.name + ' in this workout.', current: item.name,
+        onPick: function (n) { Layers.pop(); if (n !== item.name) doSwap(n); } });
     });
     on(el, '[data-act="rm"]', 'click', function () {
       var m = modsGet(id), k = key(), prev = m[k] ? clone(m[k]) : null;

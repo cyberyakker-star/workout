@@ -360,6 +360,7 @@ function renderMe(v) {
   }).join('') + '</div><p class="muted" style="font-size:13px;margin:8px 4px 0">Open a workout and press and hold any move to swap it or change sets and reps.</p>';
   html += '<div class="sec"><h2>More</h2></div><div class="card list">' +
     '<button class="li" data-act="library">' + I.book + '<span class="grow">Exercise library</span><span class="chev">' + I.chev + '</span></button>' +
+    '<button class="li" data-act="ai">' + I.spark + '<span class="grow">Plan workouts with AI<small>Copy the app’s exercises to ChatGPT, Claude or any AI, paste workouts back</small></span><span class="chev">' + I.chev + '</span></button>' +
     '<button class="li" data-act="people">' + I.users + '<span class="grow">People<small>Switch, add or remove</small></span><span class="chev">' + I.chev + '</span></button>' +
     '<button class="li" data-act="sound">' + (Sound.on() ? I.sound : I.mute) + '<span class="grow">Beeps<small>' + (Sound.on() ? 'On — plays over your music' : 'Off') + '</small></span></button>' +
     '<button class="li" data-act="voice">' + (Sound.voice() ? I.sound : I.mute) + '<span class="grow">Voice cues<small>' + (Sound.voice() ? 'On — music may pause while it talks' : 'Off') + '</small></span></button>' +
@@ -375,6 +376,7 @@ function renderMe(v) {
   on(v, '[data-act="days"]', 'click', function () { openDaysPicker(id); });
   on(v, '[data-key]', 'click', function (e, b) { openOverview({ type: 'plan', key: b.dataset.key }); });
   on(v, '[data-act="library"]', 'click', openLibrary);
+  on(v, '[data-act="ai"]', 'click', openAIHelper);
   on(v, '[data-act="logrun"]', 'click', function () { logRunFlow(null, false); });
   on(v, '[data-act="sound"]', 'click', function () { Sound.set(!Sound.on()); Sound.unlock(); if (Sound.on()) Sound.chime(); renderTab(); });
   on(v, '[data-act="voice"]', 'click', function () { Sound.setVoice(!Sound.voice()); Sound.unlock(); if (Sound.voice()) Sound.say('Voice cues on'); renderTab(); });
@@ -402,32 +404,6 @@ function renderMe(v) {
       delete ATHLETES[id]; App.id = peopleIds()[0]; setCurrent(App.id); Sheet.close(); App.tab = 'today'; renderTab();
     });
   });
-}
-
-/* ---------- exercise library ---------- */
-function openLibrary() {
-  var id = App.id, names = allMoveNames().concat(Object.keys(STRETCHES)).filter(function (n, i, a) { return a.indexOf(n) === i; }).sort();
-  var el = h('<div></div>');
-  Layers.push(el);
-  el.innerHTML = '<div class="lwrap"><div class="lhead"><button class="icon-btn" data-act="back" aria-label="Back">' + I.back + '</button></div>' +
-    '<h1 style="font-weight:900;font-size:30px;margin-top:10px">Exercise library</h1>' +
-    '<div class="field"><input id="lib-q" type="search" placeholder="Search ' + names.length + ' moves" aria-label="Search moves"></div>' +
-    '<div class="card list" style="margin-top:14px" id="lib-list"></div></div>';
-  function list(q) {
-    q = (q || '').toLowerCase();
-    $('#lib-list', el).innerHTML = names.filter(function (n) { return !q || n.toLowerCase().indexOf(q) !== -1; }).map(function (n) {
-      return '<button class="li" data-n="' + esc(n) + '">' + figHTML(n, 48, id) + '<span class="grow">' + esc(n) + '</span><span class="chev">' + I.chev + '</span></button>';
-    }).join('') || '<p class="muted" style="padding:14px 0">No moves match.</p>';
-    on(el, '[data-n]', 'click', function (e, b) {
-      var n = b.dataset.n;
-      var sh = Sheet.open('<div style="display:flex;gap:14px;align-items:center">' + figHTML(n, 76, id) + '<h2>' + esc(n) + '</h2></div>' + moveInfoHTML(id, n, { name: n }) +
-        '<button class="btn soft sm" style="margin-top:18px" data-a="close">Done</button>');
-      wireVideo(sh); on(sh, '[data-a="close"]', 'click', function () { Sheet.close(); });
-    });
-  }
-  list('');
-  $('#lib-q', el).addEventListener('input', function () { list(this.value); });
-  on(el, '[data-act="back"]', 'click', function () { Layers.pop(); });
 }
 
 /* ---------- Make your own (Bend-style picker) ---------- */

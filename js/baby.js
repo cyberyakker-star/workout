@@ -16,6 +16,15 @@ var BABY_CUES = {
   "kiss-the-baby sit-up": ["Baby sits on your legs facing you", "Sit up and give them a kiss", "Lower back down slowly"]
 };
 Object.assign(CUE_LIB, BABY_CUES);
+// in the catalog too (equipment "baby"), so swaps can offer a with-baby version
+EX_DB.push(
+  { name: "Baby Squat", pat: "squat", eq: "baby", flags: [] }, { name: "Slow Baby Squat", pat: "squat", eq: "baby", flags: [] },
+  { name: "Baby Squat Hold", pat: "squat", eq: "baby", flags: [] }, { name: "Wall Sit with Baby", pat: "squat", eq: "baby", flags: [] },
+  { name: "Peekaboo Push-up", pat: "pushH", eq: "baby", flags: ["floor"] }, { name: "Kneeling Baby Lift", pat: "pushV", eq: "baby", flags: ["overhead"] },
+  { name: "Baby Bridge", pat: "hinge", eq: "baby", flags: ["floor"] }, { name: "Slow Baby Bridge", pat: "hinge", eq: "baby", flags: ["floor"] },
+  { name: "Peekaboo Plank", pat: "core", eq: "baby", flags: ["floor"] }, { name: "Baby Airplane", pat: "core", eq: "baby", flags: ["floor"] },
+  { name: "Kiss-the-Baby Sit-up", pat: "core", eq: "baby", flags: ["floor"] }
+);
 Object.assign(POSE_OF, {
   "Baby Squat": "babySquat", "Slow Baby Squat": "babySquat", "Baby Squat Hold": "babySquat", "Peekaboo Push-up": "peekabooPushUp",
   "Peekaboo Plank": "peekabooPlank", "Baby Bridge": "babyBridge", "Slow Baby Bridge": "babyBridge", "Kneeling Baby Lift": "babyLift",
