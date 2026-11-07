@@ -540,7 +540,7 @@ function showFinish(src, rd, st) {
       (nxt ? '<div class="card" style="display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px">' + figHTML(repName(nxt), 52, id) +
         '<div><span class="cap">Next time</span><div style="font-size:16px;font-weight:600">' + esc(sessionFull(nxt)) + '</div></div></div>' : '') +
       '</div><div class="foot"><div class="in"><button class="btn" data-act="fin">Done</button></div></div>';
-    on(el, '[data-si]', 'click', function (ev, b) { logCheck(id, +b.dataset.si); render(); if (+b.dataset.si === 3) toast('Noted — next time goes easier on it'); });
+    on(el, '[data-si]', 'click', function (ev, b) { logCheck(id, +b.dataset.si); render(); if (+b.dataset.si === 3) toast('Noted'); });
     on(el, '[data-act="fin"]', 'click', function () { Layers.closeAll(); App.tab = 'today'; renderTab(); });
     on(el, '[data-act="lvlup"]', 'click', function () { lvUp = !lvUp; setRoutineLevel(id, r.id, lvUp ? lvNow + 1 : lvNow); render(); });
   }
