@@ -321,7 +321,7 @@ var ATHLETES = {
     rotation:true,   // sessions run in order (A → B → C) on whatever days she trains
     perWeek:3,
     quickMin:10,
-    check:"back & joints", checkTag:"JOINTS", // quick check-in after each session
+    // no back/joint check-in or filtering: Celina handles that herself
     programWeeks:0,
     phases:[
       { key:"glow", label:"3 × 20 min · any days", range:"Rotation", name:"Strength & 5K", from:1, to:999 }
